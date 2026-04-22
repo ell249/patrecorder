@@ -42,4 +42,5 @@ Thumbs.db
 env.sh
 start.sh
 rebuild.sh
+debug.sh
 Dockerfile

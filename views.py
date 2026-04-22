@@ -2,7 +2,7 @@ import os
 from datetime import datetime, timedelta
 from flask import (
     Blueprint, render_template, request, redirect,
-    url_for, flash, current_app, make_response
+    url_for, flash, make_response
 )
 from sqlalchemy import or_, func
 from weasyprint import HTML
@@ -11,52 +11,199 @@ from werkzeug.utils import secure_filename
 from app import db
 from config import Config
 from models import Appliance, TestRecord, TestPhoto, RetestRule
-from utils import fuzzy, get_suggested_interval, summarize_test_types, generate_qr_code
+from utils import (
+    fuzzy,
+    get_suggested_interval,
+    summarize_test_types,
+    generate_qr_code
+)
 
 bp = Blueprint("main", __name__)
 
+# ---------------------------------------------------------
+# Dashboard
+# ---------------------------------------------------------
+
 @bp.route("/")
 def dashboard():
-    recent_tests = TestRecord.query.order_by(TestRecord.test_date.desc()).limit(10).all()
-    appliance_count = Appliance.query.count()
-    test_count = TestRecord.query.count()
-    return render_template("dashboard.html",
-                           recent_tests=recent_tests,
-                           appliance_count=appliance_count,
-                           test_count=test_count)
-
-@bp.route("/appliances")
-def appliance_list():
-    appliances = Appliance.query.order_by(Appliance.asset_number).all()
-    return render_template("appliance_list.html", appliances=appliances)
-
-@bp.route("/appliances/due")
-def appliance_due():
-    today = datetime.today().date()
-    upcoming = today + timedelta(days=30)
-
-    appliances = (
-        db.session.query(Appliance)
-        .join(TestRecord)
-        .group_by(Appliance.id)
-        .having(func.min(TestRecord.next_test_due) <= upcoming)
+    recent_tests = (
+        TestRecord.query.filter_by(disposed=False)
+        .order_by(TestRecord.test_date.desc())
+        .limit(10)
         .all()
     )
 
-    return render_template("appliance_due.html", appliances=appliances)
+    appliance_count = Appliance.query.filter_by(disposed=False).count()
+    test_count = TestRecord.query.filter_by(disposed=False).count()
+
+    return render_template(
+        "dashboard.html",
+        recent_tests=recent_tests,
+        appliance_count=appliance_count,
+        test_count=test_count
+    )
+
+# ---------------------------------------------------------
+# Appliance List
+# ---------------------------------------------------------
+
+@bp.route("/appliances")
+def appliance_list():
+    show_disposed = request.args.get("show_disposed") == "1"
+
+    if show_disposed:
+        appliances = Appliance.query.order_by(Appliance.asset_number).all()
+    else:
+        appliances = (
+            Appliance.query.filter_by(disposed=False)
+            .order_by(Appliance.asset_number)
+            .all()
+        )
+
+    return render_template(
+        "appliance_list.html",
+        appliances=appliances,
+        show_disposed=show_disposed
+    )
+
+# ---------------------------------------------------------
+# Add Appliance
+# ---------------------------------------------------------
+
+@bp.route("/appliances/new", methods=["GET", "POST"])
+def new_appliance():
+    if request.method == "POST":
+        form = request.form
+
+        asset_number = form["asset_number"]
+
+        # Ensure uniqueness
+        existing = Appliance.query.filter_by(asset_number=asset_number).first()
+        if existing:
+            suffix = 1
+            while True:
+                candidate = f"{asset_number}-{suffix}"
+                if not Appliance.query.filter_by(asset_number=candidate).first():
+                    asset_number = candidate
+                    break
+                suffix += 1
+
+        appliance = Appliance(
+            asset_number=asset_number,
+            description=form.get("description"),
+            make_model=form.get("make_model"),        # NEW
+            location=form.get("location"),
+            owner=form.get("owner"),
+            class_type=form.get("class_type"),
+            supply_type=form.get("supply_type"),
+        )
+
+        db.session.add(appliance)
+        db.session.commit()
+
+        flash("Appliance added successfully.", "success")
+        return redirect(url_for("main.appliance_detail", appliance_id=appliance.id))
+
+    return render_template("appliance_form.html")
+
+# ---------------------------------------------------------
+# Edit Appliance
+# ---------------------------------------------------------
+
+@bp.route("/appliance/<int:appliance_id>/edit", methods=["GET", "POST"])
+def edit_appliance(appliance_id):
+    appliance = Appliance.query.get_or_404(appliance_id)
+
+    if request.method == "POST":
+        form = request.form
+
+        appliance.asset_number = form["asset_number"]
+        appliance.description = form.get("description")
+        appliance.make_model = form.get("make_model")      # NEW
+        appliance.location = form.get("location")
+        appliance.owner = form.get("owner")
+        appliance.class_type = form.get("class_type")
+        appliance.supply_type = form.get("supply_type")
+
+        db.session.commit()
+
+        flash("Appliance updated successfully.", "success")
+        return redirect(url_for("main.appliance_detail", appliance_id=appliance.id))
+
+    return render_template(
+        "appliance_form.html",
+        appliance=appliance,
+        edit_mode=True
+    )
+
+# ---------------------------------------------------------
+# Dispose Appliance (Soft Delete)
+# ---------------------------------------------------------
+
+@bp.route("/appliance/<int:appliance_id>/dispose", methods=["POST"])
+def dispose_appliance(appliance_id):
+    appliance = Appliance.query.get_or_404(appliance_id)
+
+    appliance.disposed = True
+    for test in appliance.tests:
+        test.disposed = True
+
+    db.session.commit()
+
+    flash("Appliance has been marked as disposed.", "warning")
+    return redirect(url_for("main.appliance_list"))
+
+# ---------------------------------------------------------
+# Delete Appliance (Hard Delete)
+# ---------------------------------------------------------
+
+@bp.route("/appliance/<int:appliance_id>/delete", methods=["POST"])
+def delete_appliance(appliance_id):
+    appliance = Appliance.query.get_or_404(appliance_id)
+
+    # Delete tests + photos
+    for test in appliance.tests:
+        for photo in test.photos:
+            db.session.delete(photo)
+        db.session.delete(test)
+
+    db.session.delete(appliance)
+    db.session.commit()
+
+    flash("Appliance and all associated tests have been permanently deleted.", "success")
+    return redirect(url_for("main.appliance_list"))
+
+# ---------------------------------------------------------
+# Appliance Detail
+# ---------------------------------------------------------
 
 @bp.route("/appliance/<int:appliance_id>")
 def appliance_detail(appliance_id):
     appliance = Appliance.query.get_or_404(appliance_id)
-    test_summary = summarize_test_types(appliance.tests)
-    return render_template("appliance_detail.html",
-                           appliance=appliance,
-                           test_summary=test_summary)
+
+    # Only count non‑disposed tests in summary
+    test_summary = summarize_test_types(
+        [t for t in appliance.tests if not t.disposed]
+    )
+
+    return render_template(
+        "appliance_detail.html",
+        appliance=appliance,
+        test_summary=test_summary
+    )
+
+# ---------------------------------------------------------
+# Test Detail
+# ---------------------------------------------------------
 
 @bp.route("/test/<int:test_id>")
 def test_detail(test_id):
     test = TestRecord.query.get_or_404(test_id)
     return render_template("test_detail.html", test=test)
+
+# ---------------------------------------------------------
+# Add Test
+# ---------------------------------------------------------
 
 @bp.route("/tests/new/<int:appliance_id>", methods=["GET", "POST"])
 def new_test(appliance_id):
@@ -100,12 +247,14 @@ def new_test(appliance_id):
         db.session.add(test)
         db.session.commit()
 
+        # Handle photos
         upload_dir = os.path.join(Config.UPLOAD_FOLDER, str(test.id))
         os.makedirs(upload_dir, exist_ok=True)
 
         for file in files:
             if not file or file.filename == "":
                 continue
+
             filename = secure_filename(file.filename)
             filepath = os.path.join(upload_dir, filename)
             file.save(filepath)
@@ -119,17 +268,26 @@ def new_test(appliance_id):
             db.session.add(photo)
 
         db.session.commit()
+
         flash("Test record saved.", "success")
         return redirect(url_for("main.appliance_detail", appliance_id=appliance.id))
 
     rules = RetestRule.query.order_by(RetestRule.interval_days).all()
-    suggested_rule = get_suggested_interval(appliance.class_type or "ANY",
-                                            appliance.supply_type or "ANY")
+    suggested_rule = get_suggested_interval(
+        appliance.class_type or "ANY",
+        appliance.supply_type or "ANY"
+    )
 
-    return render_template("test_form.html",
-                           appliance=appliance,
-                           rules=rules,
-                           suggested_rule=suggested_rule)
+    return render_template(
+        "test_form.html",
+        appliance=appliance,
+        rules=rules,
+        suggested_rule=suggested_rule
+    )
+
+# ---------------------------------------------------------
+# Search
+# ---------------------------------------------------------
 
 @bp.route("/search")
 def search():
@@ -144,6 +302,7 @@ def search():
         or_(
             Appliance.asset_number.ilike(fq),
             Appliance.description.ilike(fq),
+            Appliance.make_model.ilike(fq),
             Appliance.location.ilike(fq),
             Appliance.owner.ilike(fq),
         )
@@ -153,10 +312,16 @@ def search():
         TestRecord.tag_number.ilike(fq)
     ).all()
 
-    return render_template("search_results.html",
-                           q=q,
-                           appliances=appliances,
-                           tests=tests)
+    return render_template(
+        "search_results.html",
+        q=q,
+        appliances=appliances,
+        tests=tests
+    )
+
+# ---------------------------------------------------------
+# PDF Export
+# ---------------------------------------------------------
 
 @bp.route("/test/<int:test_id>/pdf")
 def test_pdf(test_id):

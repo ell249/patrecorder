@@ -1,0 +1,156 @@
+Test & Tag System (MVP Edition)  
+Installation Instructions  
+---------------------------------------------
+
+This document describes how to install and run the Test & Tag System on a local machine or server. It includes system requirements, dependency installation, database setup, and application startup.
+
+---------------------------------------------
+1. System Requirements
+---------------------------------------------
+
+Operating System:
+- Ubuntu or Debian (recommended)
+- macOS
+- Windows (via WSL2 for full PDF support)
+
+Required Software:
+- Python 3.9 or newer
+- MySQL 5.7+ or MariaDB 10.4+
+- WeasyPrint dependencies (Cairo, Pango, GObject)
+
+---------------------------------------------
+2. Install System Dependencies
+---------------------------------------------
+
+Ubuntu / Debian:
+    sudo apt update
+    sudo apt install -y python3 python3-venv python3-pip libffi-dev libcairo2 libpango-1.0-0 libpangocairo-1.0-0 gobject-introspection libgirepository1.0-dev
+
+macOS (Homebrew):
+    brew install python3 cairo pango gobject-introspection
+
+Windows:
+Use WSL2 with Ubuntu for compatibility:
+    wsl --install
+
+---------------------------------------------
+3. Prepare the Project
+---------------------------------------------
+
+Place the project folder anywhere on your system:
+
+    test_and_tag/
+
+---------------------------------------------
+4. Create Python Virtual Environment
+---------------------------------------------
+
+    cd test_and_tag
+    python3 -m venv venv
+    source venv/bin/activate
+    pip install -r requirements.txt
+
+---------------------------------------------
+5. Install and Configure MySQL
+---------------------------------------------
+
+Ubuntu:
+    sudo apt install mysql-server
+
+macOS:
+    brew install mysql
+    brew services start mysql
+
+Log into MySQL:
+    mysql -u root -p
+
+Run the SQL setup files:
+
+    SOURCE sql/create_database.sql;
+    SOURCE sql/create_tables.sql;
+    SOURCE sql/insert_default_retest_rules.sql;
+
+This creates the required tables:
+- appliances
+- tests
+- test_photos
+- retest_rules
+
+---------------------------------------------
+6. Configure Database Credentials
+---------------------------------------------
+
+Edit config.py and update the database URI:
+
+    SQLALCHEMY_DATABASE_URI = "mysql+pymysql://USERNAME:PASSWORD@localhost/test_and_tag"
+
+Replace USERNAME and PASSWORD with your MySQL credentials.
+
+---------------------------------------------
+7. Create Uploads Directory
+---------------------------------------------
+
+Ensure the uploads folder exists:
+
+    mkdir -p static/uploads/tests
+
+---------------------------------------------
+8. Run the Application
+---------------------------------------------
+
+    export FLASK_APP=app.py
+    flask run
+
+The application will be available at:
+
+    http://127.0.0.1:5000
+
+---------------------------------------------
+9. Development Mode (Optional)
+---------------------------------------------
+
+    export FLASK_ENV=development
+    flask run
+
+This enables automatic reload on file changes.
+
+---------------------------------------------
+10. Troubleshooting
+---------------------------------------------
+
+PDF generation errors:
+Install missing libraries:
+
+Ubuntu:
+    sudo apt install libcairo2 libpango-1.0-0 libpangocairo-1.0-0
+
+macOS:
+    brew install cairo pango
+
+MySQL connection refused:
+    sudo service mysql status
+
+Permission denied on uploads:
+    chmod -R 755 static/uploads
+
+---------------------------------------------
+11. Next Steps
+---------------------------------------------
+
+After installation you can:
+- Add appliances
+- Record tests under 3760, 5761, or 5762
+- Upload photos
+- Export PDF certificates
+- Use fuzzy search
+- View upcoming test reminders
+
+---------------------------------------------
+12. Support
+---------------------------------------------
+
+If you need help extending or deploying the system, additional documentation or modules can be generated on request.
+
+---------------------------------------------
+END OF FILE
+---------------------------------------------

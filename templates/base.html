@@ -18,7 +18,17 @@
     </button>
     <div class="collapse navbar-collapse" id="navbarNav">
       <ul class="navbar-nav me-auto">
-        <li class="nav-item"><a class="nav-link" href="{{ url_for('main.appliance_list') }}">Appliances</a></li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('main.appliance_list') }}">Appliances</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('main.new_appliance') }}">Add Appliance</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('main.appliance_list') }}#add-test">
+            Add Test
+          </a>
+        </li>
       </ul>
       <form class="d-flex" action="{{ url_for('main.search') }}" method="get">
         <input class="form-control form-control-sm" type="search" name="q"

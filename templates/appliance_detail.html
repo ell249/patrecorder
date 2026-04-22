@@ -1,138 +1,125 @@
 {% extends "base.html" %}
 {% block title %}Appliance Details{% endblock %}
+
 {% block content %}
+
 <h3 class="mb-3">Appliance Details</h3>
 
 <div class="card mb-4">
   <div class="card-body">
-    <h5 class="card-title">{{ appliance.asset_number }} — {{ appliance.description }}</h5>
-    <div class="row g-2">
-      <div class="col-md-4"><strong>Location:</strong> {{ appliance.location }}</div>
-      <div class="col-md-4"><strong>Owner:</strong> {{ appliance.owner }}</div>
-      <div class="col-md-4"><strong>Class Type:</strong> {{ appliance.class_type }}</div>
-      <div class="col-md-4"><strong>Supply Type:</strong> {{ appliance.supply_type }}</div>
-      <div class="col-md-4"><strong>Created:</strong> {{ appliance.created_at.strftime('%Y-%m-%d') }}</div>
-    </div>
-  </div>
-</div>
 
-<div class="card mb-4">
-  <div class="card-header bg-light"><strong>Test Type Summary</strong></div>
-  <div class="card-body">
-    {% if test_summary %}
-    <div class="table-responsive">
-      <table class="table table-striped align-middle">
-        <thead>
-          <tr>
-            <th>Standard</th>
-            <th>Tests</th>
-            <th>Most Recent</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for std, info in test_summary.items() %}
-          <tr>
-            <td>
-              {% if std == "3760" %}
-                <span class="badge bg-primary">AS/NZS 3760</span>
-              {% elif std == "5761" %}
-                <span class="badge bg-success">AS/NZS 5761</span>
-              {% elif std == "5762" %}
-                <span class="badge bg-warning text-dark">AS/NZS 5762</span>
-              {% else %}
-                {{ std }}
-              {% endif %}
-            </td>
-            <td>{{ info.count }}</td>
-            <td>{{ info.latest.strftime('%Y-%m-%d') }}</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+    <div class="row mb-2">
+      <div class="col-md-4"><strong>Asset Number:</strong></div>
+      <div class="col-md-8">{{ appliance.asset_number }}</div>
     </div>
-    {% else %}
-      <p class="text-muted">No tests recorded for this appliance.</p>
-    {% endif %}
-  </div>
-</div>
 
-<div class="card mb-4" id="tests">
-  <div class="card-header bg-light"><strong>Test History</strong></div>
-  <div class="card-body">
-    {% if appliance.tests %}
-    <div class="table-responsive">
-      <table class="table table-striped align-middle">
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Tag #</th>
-            <th>Tester</th>
-            <th>Result</th>
-            <th>Next Due</th>
-            <th>Standard</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for t in appliance.tests|sort(attribute='test_date', reverse=True) %}
-          <tr>
-            <td>{{ t.test_date.strftime('%Y-%m-%d') }}</td>
-            <td>{{ t.tag_number }}</td>
-            <td>{{ t.tester_name }}</td>
-            <td>
-              <span class="badge bg-{{ 'success' if t.overall_result == 'PASS' else 'danger' }}">
-                {{ t.overall_result }}
-              </span>
-            </td>
-            <td>{{ t.next_test_due.strftime('%Y-%m-%d') }}</td>
-            <td>{{ t.test_standard }}</td>
-            <td>
-              <a href="{{ url_for('main.test_detail', test_id=t.id) }}"
-                 class="btn btn-sm btn-primary">View</a>
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+    <div class="row mb-2">
+      <div class="col-md-4"><strong>Description:</strong></div>
+      <div class="col-md-8">{{ appliance.description }}</div>
     </div>
-    {% else %}
-      <p class="text-muted">No tests recorded.</p>
+
+    <div class="row mb-2">
+      <div class="col-md-4"><strong>Make / Model:</strong></div>
+      <div class="col-md-8">{{ appliance.make_model }}</div>
+    </div>
+
+    <div class="row mb-2">
+      <div class="col-md-4"><strong>Location:</strong></div>
+      <div class="col-md-8">{{ appliance.location }}</div>
+    </div>
+
+    <div class="row mb-2">
+      <div class="col-md-4"><strong>Owner:</strong></div>
+      <div class="col-md-8">{{ appliance.owner }}</div>
+    </div>
+
+    <div class="row mb-2">
+      <div class="col-md-4"><strong>Class Type:</strong></div>
+      <div class="col-md-8">{{ appliance.class_type }}</div>
+    </div>
+
+    <div class="row mb-2">
+      <div class="col-md-4"><strong>Supply Type:</strong></div>
+      <div class="col-md-8">{{ appliance.supply_type }}</div>
+    </div>
+
+    {% if appliance.disposed %}
+    <div class="alert alert-warning mt-3">
+      <strong>Disposed:</strong> This appliance has been marked as disposed and is hidden from normal lists.
+    </div>
     {% endif %}
 
-    <a href="{{ url_for('main.new_test', appliance_id=appliance.id) }}"
-       class="btn btn-success mt-3">Add New Test</a>
+    <div class="mt-3">
+      <a href="{{ url_for('main.edit_appliance', appliance_id=appliance.id) }}" class="btn btn-primary">
+        Edit Appliance
+      </a>
+      <a href="{{ url_for('main.new_test', appliance_id=appliance.id) }}" class="btn btn-success">
+        Add Test
+      </a>
+    </div>
+
   </div>
 </div>
 
-<div class="card mb-4">
-  <div class="card-header bg-light"><strong>Photo Gallery</strong></div>
-  <div class="card-body">
-    {% set photos = [] %}
-    {% for t in appliance.tests %}
-      {% for p in t.photos %}
-        {% do photos.append(p) %}
-      {% endfor %}
-    {% endfor %}
+<!-- Test Summary -->
+<h4 class="mb-3">Test Summary</h4>
 
-    {% if photos %}
-    <div class="row g-2">
-      {% for photo in photos %}
-      <div class="col-4 col-md-3 col-lg-2">
-        <a href="{{ url_for('static', filename='uploads/' ~ photo.filepath) }}"
-           data-lightbox="appliance-{{ appliance.id }}"
-           data-title="Test {{ photo.test_id }}">
-          <img src="{{ url_for('static', filename='uploads/' ~ photo.filepath) }}"
-               class="img-fluid rounded shadow-sm"
-               style="object-fit: cover; height: 120px; width: 100%;">
-        </a>
+{% if test_summary %}
+  <div class="row mb-4">
+    {% for standard, info in test_summary.items() %}
+      <div class="col-md-4 mb-2">
+        <div class="card p-3">
+          <h6 class="mb-1">{{ standard }}</h6>
+          <span class="badge bg-info">Total: {{ info.count }}</span>
+          <span class="badge bg-secondary">Latest: {{ info.latest }}</span>
+        </div>
       </div>
-      {% endfor %}
-    </div>
-    {% else %}
-      <p class="text-muted">No photos available for this appliance.</p>
-    {% endif %}
+    {% endfor %}
   </div>
-</div>
+{% else %}
+  <p>No tests recorded for this appliance.</p>
+{% endif %}
 
-<a href="{{ url_for('main.appliance_list') }}" class="btn btn-secondary">Back to Appliances</a>
+<!-- Test History -->
+<h4 class="mb-3">Test History</h4>
+
+{% if appliance.tests %}
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th>Date</th>
+      <th>Tag Number</th>
+      <th>Standard</th>
+      <th>Result</th>
+      <th>Next Due</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for test in appliance.tests if not test.disposed %}
+    <tr>
+      <td>{{ test.test_date.strftime('%Y-%m-%d') }}</td>
+      <td>{{ test.tag_number }}</td>
+      <td>{{ test.test_standard }}</td>
+      <td>
+        {% if test.overall_result == 'PASS' %}
+          <span class="badge bg-success">PASS</span>
+        {% else %}
+          <span class="badge bg-danger">FAIL</span>
+        {% endif %}
+      </td>
+      <td>{{ test.next_test_due }}</td>
+      <td>
+        <a href="{{ url_for('main.test_detail', test_id=test.id) }}" class="btn btn-sm btn-outline-primary">
+          View
+        </a>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p>No tests recorded.</p>
+{% endif %}
+
 {% endblock %}

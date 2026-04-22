@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% block title %}{% if edit_mode %}Edit Appliance{% else %}Add Appliance{% endif %}{% endblock %}
+
+{% block content %}
+<h3 class="mb-3">
+  {% if edit_mode %}Edit Appliance{% else %}Add New Appliance{% endif %}
+</h3>
+
+<form method="post" class="row g-3">
+
+  <!-- Asset Number -->
+  <div class="col-md-4">
+    <label class="form-label">Asset Number</label>
+    <input type="text" name="asset_number" id="assetNumberField" class="form-control"
+           value="{% if edit_mode %}{{ appliance.asset_number }}{% endif %}"
+           required>
+  </div>
+
+  <!-- Description -->
+  <div class="col-md-8">
+    <label class="form-label">Description</label>
+    <input type="text" name="description" class="form-control"
+           value="{{ appliance.description if edit_mode else '' }}">
+  </div>
+
+  <!-- Make / Model -->
+  <div class="col-md-6">
+    <label class="form-label">Make / Model</label>
+    <input type="text" name="make_model" class="form-control"
+           value="{{ appliance.make_model if edit_mode else '' }}">
+  </div>
+
+  <!-- Location -->
+  <div class="col-md-6">
+    <label class="form-label">Location</label>
+    <input type="text" name="location" class="form-control"
+           value="{{ appliance.location if edit_mode else '' }}">
+  </div>
+
+  <!-- Owner -->
+  <div class="col-md-6">
+    <label class="form-label">Owner</label>
+    <input type="text" name="owner" class="form-control"
+           value="{{ appliance.owner if edit_mode else '' }}">
+  </div>
+
+  <!-- Class Type -->
+  <div class="col-md-3">
+    <label class="form-label">Class Type</label>
+    <select name="class_type" class="form-select">
+      <option value="">Select…</option>
+      <option value="CLASS I"  {% if edit_mode and appliance.class_type == 'CLASS I' %}selected{% endif %}>Class I</option>
+      <option value="CLASS II" {% if edit_mode and appliance.class_type == 'CLASS II' %}selected{% endif %}>Class II</option>
+    </select>
+  </div>
+
+  <!-- Supply Type -->
+  <div class="col-md-3">
+    <label class="form-label">Supply Type</label>
+    <select name="supply_type" class="form-select" id="supplyTypeSelect" onchange="updateAssetNumber()">
+      <option value="">Select…</option>
+      <option value="PORTABLE"     {% if edit_mode and appliance.supply_type == 'PORTABLE' %}selected{% endif %}>Portable</option>
+      <option value="FIXED"        {% if edit_mode and appliance.supply_type == 'FIXED' %}selected{% endif %}>Fixed</option>
+      <option value="CONSTRUCTION" {% if edit_mode and appliance.supply_type == 'CONSTRUCTION' %}selected{% endif %}>Construction</option>
+    </select>
+  </div>
+
+  <!-- Save + Cancel -->
+  <div class="col-12">
+    <button type="submit" class="btn btn-primary">
+      {% if edit_mode %}Save Changes{% else %}Save Appliance{% endif %}
+    </button>
+    <a href="{{ url_for('main.appliance_list') }}" class="btn btn-secondary">Cancel</a>
+  </div>
+
+</form>
+
+{% if edit_mode %}
+<hr class="my-4">
+
+<!-- Dispose (Soft Delete) -->
+<form method="post" action="{{ url_for('main.dispose_appliance', appliance_id=appliance.id) }}"
+      onsubmit="return confirm('Mark this appliance as disposed? It will be hidden unless filters are used.');">
+  <button type="submit" class="btn btn-warning mb-3">
+    Dispose Appliance
+  </button>
+</form>
+
+<!-- Delete (Hard Delete) -->
+<form method="post" action="{{ url_for('main.delete_appliance', appliance_id=appliance.id) }}"
+      onsubmit="return confirm('Are you sure you want to permanently delete this appliance and all its tests?');">
+  <button type="submit" class="btn btn-danger">
+    Delete Appliance
+  </button>
+</form>
+{% endif %}
+
+{% if not edit_mode %}
+<script>
+function generateTimestamp() {
+    const now = new Date();
+    const pad = n => n.toString().padStart(2, '0');
+
+    return (
+        pad(now.getFullYear() % 100) +
+        pad(now.getMonth() + 1) +
+        pad(now.getDate()) +
+        "-" +
+        pad(now.getHours()) +
+        pad(now.getMinutes()) +
+        pad(now.getSeconds())
+    );
+}
+
+let timestamp = generateTimestamp();
+
+function updateAssetNumber() {
+    const supply = document.getElementById("supplyTypeSelect").value;
+    const field = document.getElementById("assetNumberField");
+
+    const prefixes = {
+        "PORTABLE": "P",
+        "FIXED": "F",
+        "CONSTRUCTION": "C"
+    };
+
+    const prefix = prefixes[supply] || "A";
+
+    field.value = prefix + timestamp;
+}
+
+window.addEventListener("DOMContentLoaded", () => {
+    updateAssetNumber();
+});
+</script>
+{% endif %}
+
+{% endblock %}

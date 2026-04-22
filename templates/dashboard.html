@@ -1,54 +1,78 @@
 {% extends "base.html" %}
 {% block title %}Dashboard{% endblock %}
-{% block content %}
-<h3 class="mb-3">Dashboard</h3>
 
-<div class="row g-3 mb-3">
-  <div class="col-6 col-md-3">
-    <div class="card text-bg-primary">
-      <div class="card-body">
-        <h6 class="card-title">Appliances</h6>
-        <h3 class="card-text">{{ appliance_count }}</h3>
-      </div>
-    </div>
-  </div>
-  <div class="col-6 col-md-3">
-    <div class="card text-bg-success">
-      <div class="card-body">
-        <h6 class="card-title">Total Tests</h6>
-        <h3 class="card-text">{{ test_count }}</h3>
-      </div>
-    </div>
-  </div>
+{% block content %}
+
+<h3 class="mb-4">Dashboard</h3>
+
+<!-- Action Buttons -->
+<div class="mb-4">
+    <a href="{{ url_for('main.new_appliance') }}" class="btn btn-primary">
+        New Appliance
+    </a>
+
+    <a href="{{ url_for('main.appliance_list', show_disposed=1) }}" class="btn btn-warning">
+        Show Disposed Appliances
+    </a>
 </div>
 
-<h5>Recent Tests</h5>
-<div class="table-responsive">
-  <table class="table table-sm table-striped align-middle">
+<!-- Stats -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card text-center p-3">
+            <h5>Active Appliances</h5>
+            <div class="display-6">{{ appliance_count }}</div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card text-center p-3">
+            <h5>Active Tests</h5>
+            <div class="display-6">{{ test_count }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Tests -->
+<h4 class="mb-3">Recent Tests</h4>
+
+{% if recent_tests %}
+<table class="table table-striped">
     <thead>
-      <tr>
-        <th>Date</th>
-        <th>Asset</th>
-        <th>Tag</th>
-        <th>Result</th>
-        <th>Standard</th>
-      </tr>
+        <tr>
+            <th>Date</th>
+            <th>Appliance</th>
+            <th>Tag</th>
+            <th>Standard</th>
+            <th>Result</th>
+            <th></th>
+        </tr>
     </thead>
     <tbody>
-      {% for t in recent_tests %}
-      <tr>
-        <td>{{ t.test_date.strftime('%Y-%m-%d') }}</td>
-        <td>{{ t.appliance.asset_number }}</td>
-        <td>{{ t.tag_number }}</td>
-        <td>
-          <span class="badge bg-{{ 'success' if t.overall_result == 'PASS' else 'danger' }}">
-            {{ t.overall_result }}
-          </span>
-        </td>
-        <td>{{ t.test_standard }}</td>
-      </tr>
-      {% endfor %}
+        {% for test in recent_tests %}
+        <tr>
+            <td>{{ test.test_date.strftime('%Y-%m-%d') }}</td>
+            <td>{{ test.appliance.asset_number }}</td>
+            <td>{{ test.tag_number }}</td>
+            <td>{{ test.test_standard }}</td>
+            <td>
+                {% if test.overall_result == 'PASS' %}
+                    <span class="badge bg-success">PASS</span>
+                {% else %}
+                    <span class="badge bg-danger">FAIL</span>
+                {% endif %}
+            </td>
+            <td>
+                <a href="{{ url_for('main.test_detail', test_id=test.id) }}" class="btn btn-sm btn-outline-primary">
+                    View
+                </a>
+            </td>
+        </tr>
+        {% endfor %}
     </tbody>
-  </table>
-</div>
+</table>
+{% else %}
+<p>No recent tests found.</p>
+{% endif %}
+
 {% endblock %}
