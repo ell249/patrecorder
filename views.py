@@ -281,15 +281,31 @@ def new_test(appliance_id):
             test_type=form["test_type"],
             test_standard=form["test_standard"],
             tag_number=form["tag_number"],
-            visual_pass=("visual_pass" in form),
+
+            # Visual inspection (boolean items)
+            vi_plug=("vi_plug" in form),
+            vi_cord=("vi_cord" in form),
+            vi_casing=("vi_casing" in form),
+            vi_overheat=("vi_overheat" in form),
+            vi_label=("vi_label" in form),
+            vi_exposed=("vi_exposed" in form),
+
+            # PASS / FAIL / N/A items
+            vi_repairs=form.get("vi_repairs"),
+            vi_strain=form.get("vi_strain"),
+            vi_guards=form.get("vi_guards"),
+
+            # Electrical tests
             earth_continuity_ohms=form.get("earth_continuity_ohms") or None,
             insulation_mohms=form.get("insulation_mohms") or None,
-            polarity_pass=("polarity_pass" in form) if "polarity_pass" in form else None,
+            polarity_pass=("polarity_pass" in form),
             leakage_mA=form.get("leakage_mA") or None,
+
             overall_result=form["overall_result"],
             next_test_due=next_due.date(),
             comments=form.get("comments"),
 
+            # 5761 / 5762 fields
             condition_assessment=form.get("condition_assessment"),
             functional_check=form.get("functional_check"),
             accessories=form.get("accessories"),
@@ -304,6 +320,7 @@ def new_test(appliance_id):
         db.session.add(test)
         db.session.commit()
 
+        # Handle photos
         upload_dir = os.path.join(Config.UPLOAD_FOLDER, str(test.id))
         os.makedirs(upload_dir, exist_ok=True)
 
