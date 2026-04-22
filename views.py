@@ -4,7 +4,7 @@ from flask import (
     Blueprint, render_template, request, redirect,
     url_for, flash, make_response
 )
-from sqlalchemy import or_, func
+from sqlalchemy import or_
 from weasyprint import HTML
 from werkzeug.utils import secure_filename
 
@@ -26,6 +26,48 @@ bp = Blueprint("main", __name__)
 
 @bp.route("/")
 def dashboard():
+    today = datetime.today().date()
+    soon = today + timedelta(days=30)
+
+    # Appliances with NO tests
+    never_tested = (
+        Appliance.query
+        .filter(Appliance.disposed == False)
+        .filter(~Appliance.tests.any())
+        .all()
+    )
+
+    # Appliances with overdue or due-soon tests
+    due_tests = (
+        Appliance.query
+        .join(TestRecord)
+        .filter(
+            Appliance.disposed == False,
+            TestRecord.disposed == False,
+            TestRecord.next_test_due != None,
+            TestRecord.next_test_due <= soon
+        )
+        .all()
+    )
+
+    # Merge + dedupe
+    due_appliances = {a.id: a for a in (never_tested + due_tests)}.values()
+
+    # Count upcoming tests (next 30 days, excluding overdue)
+    upcoming_count = (
+        Appliance.query
+        .join(TestRecord)
+        .filter(
+            Appliance.disposed == False,
+            TestRecord.disposed == False,
+            TestRecord.next_test_due != None,
+            TestRecord.next_test_due > today,
+            TestRecord.next_test_due <= soon
+        )
+        .distinct()
+        .count()
+    )
+
     recent_tests = (
         TestRecord.query.filter_by(disposed=False)
         .order_by(TestRecord.test_date.desc())
@@ -34,13 +76,13 @@ def dashboard():
     )
 
     appliance_count = Appliance.query.filter_by(disposed=False).count()
-    test_count = TestRecord.query.filter_by(disposed=False).count()
 
     return render_template(
         "dashboard.html",
         recent_tests=recent_tests,
         appliance_count=appliance_count,
-        test_count=test_count
+        due_appliances=due_appliances,
+        upcoming_count=upcoming_count
     )
 
 # ---------------------------------------------------------
@@ -91,7 +133,7 @@ def new_appliance():
         appliance = Appliance(
             asset_number=asset_number,
             description=form.get("description"),
-            make_model=form.get("make_model"),        # NEW
+            make_model=form.get("make_model"),
             location=form.get("location"),
             owner=form.get("owner"),
             class_type=form.get("class_type"),
@@ -119,7 +161,7 @@ def edit_appliance(appliance_id):
 
         appliance.asset_number = form["asset_number"]
         appliance.description = form.get("description")
-        appliance.make_model = form.get("make_model")      # NEW
+        appliance.make_model = form.get("make_model")
         appliance.location = form.get("location")
         appliance.owner = form.get("owner")
         appliance.class_type = form.get("class_type")
@@ -137,7 +179,7 @@ def edit_appliance(appliance_id):
     )
 
 # ---------------------------------------------------------
-# Dispose Appliance (Soft Delete)
+# Dispose Appliance
 # ---------------------------------------------------------
 
 @bp.route("/appliance/<int:appliance_id>/dispose", methods=["POST"])
@@ -154,14 +196,30 @@ def dispose_appliance(appliance_id):
     return redirect(url_for("main.appliance_list"))
 
 # ---------------------------------------------------------
-# Delete Appliance (Hard Delete)
+# Restore Appliance
+# ---------------------------------------------------------
+
+@bp.route("/appliance/<int:appliance_id>/restore", methods=["POST"])
+def restore_appliance(appliance_id):
+    appliance = Appliance.query.get_or_404(appliance_id)
+
+    appliance.disposed = False
+    for test in appliance.tests:
+        test.disposed = False
+
+    db.session.commit()
+
+    flash("Appliance has been restored.", "success")
+    return redirect(url_for("main.edit_appliance", appliance_id=appliance.id))
+
+# ---------------------------------------------------------
+# Delete Appliance
 # ---------------------------------------------------------
 
 @bp.route("/appliance/<int:appliance_id>/delete", methods=["POST"])
 def delete_appliance(appliance_id):
     appliance = Appliance.query.get_or_404(appliance_id)
 
-    # Delete tests + photos
     for test in appliance.tests:
         for photo in test.photos:
             db.session.delete(photo)
@@ -181,7 +239,6 @@ def delete_appliance(appliance_id):
 def appliance_detail(appliance_id):
     appliance = Appliance.query.get_or_404(appliance_id)
 
-    # Only count non‑disposed tests in summary
     test_summary = summarize_test_types(
         [t for t in appliance.tests if not t.disposed]
     )
@@ -247,7 +304,6 @@ def new_test(appliance_id):
         db.session.add(test)
         db.session.commit()
 
-        # Handle photos
         upload_dir = os.path.join(Config.UPLOAD_FOLDER, str(test.id))
         os.makedirs(upload_dir, exist_ok=True)
 

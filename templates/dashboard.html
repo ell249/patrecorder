@@ -18,6 +18,7 @@
 
 <!-- Stats -->
 <div class="row mb-4">
+
     <div class="col-md-4">
         <div class="card text-center p-3">
             <h5>Active Appliances</h5>
@@ -27,14 +28,70 @@
 
     <div class="col-md-4">
         <div class="card text-center p-3">
-            <h5>Active Tests</h5>
-            <div class="display-6">{{ test_count }}</div>
+            <h5>Upcoming Tests (Next 30 Days)</h5>
+            <div class="display-6 text-warning">{{ upcoming_count }}</div>
         </div>
     </div>
+
 </div>
 
+<!-- Appliances Due for Test -->
+<h4 class="mb-3">Appliances Due for Test</h4>
+
+{% if due_appliances %}
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Asset Number</th>
+            <th>Description</th>
+            <th>Make/Model</th>
+            <th>Location</th>
+            <th>Next Test Due</th>
+            <th>Status</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for appliance in due_appliances %}
+        {% set latest = appliance.tests|selectattr('disposed', 'equalto', False)|sort(attribute='next_test_due')|list %}
+        {% set next_due = latest[0].next_test_due if latest else None %}
+        <tr>
+            <td>{{ appliance.asset_number }}</td>
+            <td>{{ appliance.description }}</td>
+            <td>{{ appliance.make_model }}</td>
+            <td>{{ appliance.location }}</td>
+            <td>
+                {% if next_due %}
+                    {{ next_due }}
+                {% else %}
+                    <span class="text-danger fw-bold">Never Tested</span>
+                {% endif %}
+            </td>
+            <td>
+                {% if not next_due %}
+                    <span class="badge bg-danger">Never Tested</span>
+                {% elif next_due < date.today() %}
+                    <span class="badge bg-danger">Overdue</span>
+                {% else %}
+                    <span class="badge bg-warning text-dark">Due Soon</span>
+                {% endif %}
+            </td>
+            <td>
+                <a href="{{ url_for('main.appliance_detail', appliance_id=appliance.id) }}"
+                   class="btn btn-sm btn-outline-primary">
+                    View
+                </a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>No appliances are currently due for testing.</p>
+{% endif %}
+
 <!-- Recent Tests -->
-<h4 class="mb-3">Recent Tests</h4>
+<h4 class="mb-3 mt-5">Recent Tests</h4>
 
 {% if recent_tests %}
 <table class="table table-striped">

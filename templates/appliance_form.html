@@ -78,21 +78,32 @@
 {% if edit_mode %}
 <hr class="my-4">
 
-<!-- Dispose (Soft Delete) -->
+{% if not appliance.disposed %}
+<!-- Dispose Appliance -->
 <form method="post" action="{{ url_for('main.dispose_appliance', appliance_id=appliance.id) }}"
       onsubmit="return confirm('Mark this appliance as disposed? It will be hidden unless filters are used.');">
   <button type="submit" class="btn btn-warning mb-3">
     Dispose Appliance
   </button>
 </form>
+{% else %}
+<!-- Restore Appliance -->
+<form method="post" action="{{ url_for('main.restore_appliance', appliance_id=appliance.id) }}"
+      onsubmit="return confirm('Restore this appliance to active status?');">
+  <button type="submit" class="btn btn-success mb-3">
+    Restore Appliance
+  </button>
+</form>
+{% endif %}
 
-<!-- Delete (Hard Delete) -->
+<!-- Hard Delete -->
 <form method="post" action="{{ url_for('main.delete_appliance', appliance_id=appliance.id) }}"
       onsubmit="return confirm('Are you sure you want to permanently delete this appliance and all its tests?');">
   <button type="submit" class="btn btn-danger">
     Delete Appliance
   </button>
 </form>
+
 {% endif %}
 
 {% if not edit_mode %}
