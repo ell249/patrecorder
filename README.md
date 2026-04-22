@@ -63,4 +63,63 @@ Technicians can attach multiple photos to each test.
 ---
 
 ## 📁 Project Structure
+test_and_tag/
+├── app.py
+├── config.py
+├── models.py
+├── utils.py
+├── views.py
+├── requirements.txt
+│
+├── sql/
+│   ├── create_database.sql
+│   ├── create_tables.sql
+│   └── insert_default_retest_rules.sql
+│
+├── static/
+│   ├── css/custom.css
+│   └── uploads/tests/
+│
+└── templates/
+├── base.html
+├── dashboard.html
+├── appliance_list.html
+├── appliance_detail.html
+├── appliance_due.html
+├── search_results.html
+├── test_form.html
+├── test_detail.html
+│
+└── pdf/
+├── test_3760.html
+├── test_5761.html
+└── test_5762.html
+
+---
+
+## 🛠 Installation
+
+See **INSTALL.md** for full installation instructions.
+
+---
+
+## 📄 SQL Schema Overview
+
+### appliances  
+Stores appliance metadata.
+
+### tests  
+Stores test records, including standard‑specific fields.
+
+### test_photos  
+Stores uploaded photos linked to tests.
+
+### retest_rules  
+Stores configurable retest intervals and matching logic.
+
+---
+
+## 🔧 Note
+
+AI (Copilot) used in the generation of this code
 
