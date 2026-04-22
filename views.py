@@ -29,7 +29,6 @@ def dashboard():
     today = datetime.today().date()
     soon = today + timedelta(days=30)
 
-    # Appliances with NO tests
     never_tested = (
         Appliance.query
         .filter(Appliance.disposed == False)
@@ -37,7 +36,6 @@ def dashboard():
         .all()
     )
 
-    # Appliances with overdue or due-soon tests
     due_tests = (
         Appliance.query
         .join(TestRecord)
@@ -50,10 +48,8 @@ def dashboard():
         .all()
     )
 
-    # Merge + dedupe
     due_appliances = {a.id: a for a in (never_tested + due_tests)}.values()
 
-    # Count upcoming tests (next 30 days, excluding overdue)
     upcoming_count = (
         Appliance.query
         .join(TestRecord)
@@ -119,7 +115,6 @@ def new_appliance():
 
         asset_number = form["asset_number"]
 
-        # Ensure uniqueness
         existing = Appliance.query.filter_by(asset_number=asset_number).first()
         if existing:
             suffix = 1
@@ -345,6 +340,7 @@ def new_test(appliance_id):
         flash("Test record saved.", "success")
         return redirect(url_for("main.appliance_detail", appliance_id=appliance.id))
 
+    # IMPORTANT: appliance is passed here
     rules = RetestRule.query.order_by(RetestRule.interval_days).all()
     suggested_rule = get_suggested_interval(
         appliance.class_type or "ANY",
@@ -353,7 +349,7 @@ def new_test(appliance_id):
 
     return render_template(
         "test_form.html",
-        appliance=appliance,
+        appliance=appliance,   # <-- THIS gives the form access to class_type
         rules=rules,
         suggested_rule=suggested_rule
     )
