@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Upcoming Tests{% endblock %}
+
+{% block content %}
+<h3 class="mb-3">Upcoming Test Reminders</h3>
+<p class="text-muted">Showing appliances with tests due in the next 30 days.</p>
+
+{% if appliances %}
+<div class="table-responsive">
+  <table class="table table-striped align-middle">
+    <thead>
+      <tr>
+        <th>Asset #</th>
+        <th>Description</th>
+        <th>Location</th>
+        <th>Next Test Due</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for a in appliances %}
+      {% set next_due = a.tests | sort(attribute='next_test_due') | first %}
+      <tr>
+        <td>{{ a.asset_number }}</td>
+        <td>{{ a.description }}</td>
+        <td>{{ a.location }}</td>
+        <td class="text-danger fw-bold">
+          {{ next_due.next_test_due.strftime('%Y-%m-%d') }}
+        </td>
+        <td>
+          <a href="{{ url_for('main.appliance_detail', appliance_id=a.id) }}"
+             class="btn btn-sm btn-primary">View</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p class="text-muted">No appliances are due for testing in the next 30 days.</p>
+{% endif %}
+
+<a href="{{ url_for('main.appliance_list') }}" class="btn btn-secondary mt-3">Back to Appliances</a>
+{% endblock %}

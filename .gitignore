@@ -1,0 +1,45 @@
+# --- Python ---
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pdb
+*.egg-info/
+*.egg
+*.log
+
+# Virtual environment
+venv/
+env/
+
+# --- Flask / App ---
+instance/
+*.db
+*.sqlite3
+
+# Prevent sensitive configuration files from being committed
+config.py
+config.local.py
+*.secret
+*.env
+.env*
+
+# --- Uploads ---
+static/uploads/
+static/uploads/tests/
+
+# --- OS / Editor Files ---
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# --- WeasyPrint temp files ---
+*.pdf-temp
+
+
+# --- Docker stuff ---
+env.sh
+start.sh
+rebuild.sh
+Dockerfile

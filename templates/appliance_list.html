@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Appliances{% endblock %}
+{% block content %}
+<h3 class="mb-3">Appliances</h3>
+
+<div class="mb-3">
+  <a href="{{ url_for('main.appliance_list') }}" class="btn btn-secondary btn-sm">All Appliances</a>
+  <a href="{{ url_for('main.appliance_due') }}" class="btn btn-warning btn-sm">Upcoming Tests</a>
+</div>
+
+<form class="row mb-3" action="{{ url_for('main.search') }}" method="get">
+  <div class="col-10">
+    <input type="text" name="q" class="form-control"
+           placeholder="Search appliances or tags (fuzzy search enabled)">
+  </div>
+  <div class="col-2">
+    <button class="btn btn-primary w-100">Search</button>
+  </div>
+</form>
+
+<div class="table-responsive">
+  <table class="table table-striped align-middle">
+    <thead>
+      <tr>
+        <th>Asset #</th>
+        <th>Description</th>
+        <th>Location</th>
+        <th>Owner</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for a in appliances %}
+      <tr>
+        <td>{{ a.asset_number }}</td>
+        <td>{{ a.description }}</td>
+        <td>{{ a.location }}</td>
+        <td>{{ a.owner }}</td>
+        <td>
+          <a href="{{ url_for('main.appliance_detail', appliance_id=a.id) }}"
+             class="btn btn-sm btn-primary">View</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

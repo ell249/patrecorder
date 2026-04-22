@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  body { font-family: sans-serif; font-size: 12px; }
+  h1 { text-align: center; margin-bottom: 0; }
+  h2 { margin-top: 25px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+  td, th { border: 1px solid #ccc; padding: 6px; vertical-align: top; }
+  .qr { text-align: right; margin-top: 25px; }
+</style>
+</head>
+<body>
+
+<h1>Repaired Appliance Test Certificate</h1>
+<p style="text-align:center;">AS/NZS 5762:2011</p>
+
+<h2>Appliance Details</h2>
+<table>
+  <tr><th>Asset Number</th><td>{{ appliance.asset_number }}</td></tr>
+  <tr><th>Description</th><td>{{ appliance.description }}</td></tr>
+  <tr><th>Location</th><td>{{ appliance.location }}</td></tr>
+  <tr><th>Owner</th><td>{{ appliance.owner }}</td></tr>
+</table>
+
+<h2>Test Details</h2>
+<table>
+  <tr><th>Test Date</th><td>{{ test.test_date.strftime('%Y-%m-%d') }}</td></tr>
+  <tr><th>Tester</th><td>{{ test.tester_name }}</td></tr>
+  <tr><th>Tag Number</th><td>{{ test.tag_number }}</td></tr>
+  <tr><th>Overall Result</th><td>{{ test.overall_result }}</td></tr>
+  <tr><th>Next Test Due</th><td>{{ test.next_test_due.strftime('%Y-%m-%d') }}</td></tr>
+</table>
+
+<h2>5762‑Specific Requirements</h2>
+<table>
+  <tr><th>Repair Description</th><td>{{ test.repair_description or '—' }}</td></tr>
+  <tr><th>Repaired By</th><td>{{ test.repaired_by or '—' }}</td></tr>
+  <tr><th>Parts Replaced</th><td>{{ test.parts_replaced or '—' }}</td></tr>
+  <tr><th>Post‑repair Functional Test</th><td>{{ test.post_repair_test or '—' }}</td></tr>
+</table>
+
+<div class="qr">
+  <p>Scan for full test record:</p>
+  <img src="{{ qr_code }}" width="120">
+</div>
+
+</body>
+</html>

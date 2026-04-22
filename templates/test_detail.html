@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% block title %}Test Details{% endblock %}
+{% block content %}
+<h3 class="mb-3">Test Details</h3>
+
+<a href="{{ url_for('main.test_pdf', test_id=test.id) }}"
+   class="btn btn-outline-secondary mb-3">Export PDF</a>
+
+<div class="card mb-4">
+  <div class="card-body">
+    <h5 class="card-title">{{ test.appliance.asset_number }} — {{ test.appliance.description }}</h5>
+    <p class="mb-1"><strong>Location:</strong> {{ test.appliance.location }}</p>
+    <p class="mb-1"><strong>Owner:</strong> {{ test.appliance.owner }}</p>
+    <p class="mb-1"><strong>Class Type:</strong> {{ test.appliance.class_type }}</p>
+    <p class="mb-0"><strong>Supply Type:</strong> {{ test.appliance.supply_type }}</p>
+  </div>
+</div>
+
+<div class="card mb-4">
+  <div class="card-header bg-light"><strong>Test Information</strong></div>
+  <div class="card-body row g-3">
+    <div class="col-md-4">
+      <label class="form-label fw-bold">Test Date</label>
+      <div>{{ test.test_date.strftime('%Y-%m-%d') }}</div>
+    </div>
+    <div class="col-md-4">
+      <label class="form-label fw-bold">Tester</label>
+      <div>{{ test.tester_name }}</div>
+    </div>
+    <div class="col-md-4">
+      <label class="form-label fw-bold">Test Type</label>
+      <div>{{ test.test_type }}</div>
+    </div>
+    <div class="col-md-4">
+      <label class="form-label fw-bold">Test Standard</label>
+      <div>{{ test.test_standard }}</div>
+    </div>
+    <div class="col-md-4">
+      <label class="form-label fw-bold">Tag Number</label>
+      <div>{{ test.tag_number }}</div>
+    </div>
+    <div class="col-md-4">
+      <label class="form-label fw-bold">Next Test Due</label>
+      <div>{{ test.next_test_due.strftime('%Y-%m-%d') }}</div>
+    </div>
+    <div class="col-md-4">
+      <label class="form-label fw-bold">Overall Result</label>
+      <div>
+        <span class="badge bg-{{ 'success' if test.overall_result == 'PASS' else 'danger' }}">
+          {{ test.overall_result }}
+        </span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-4">
+  <div class="card-header bg-light"><strong>Electrical Test Results</strong></div>
+  <div class="card-body row g-3">
+    <div class="col-md-4">
+      <label class="form-label fw-bold">Visual Inspection</label>
+      <div>{{ 'PASS' if test.visual_pass else 'FAIL' }}</div>
+    </div>
+    <div class="col-md-4">
+      <label class="form-label fw-bold">Earth Continuity (Ω)</label>
+      <div>{{ test.earth_continuity_ohms or '—' }}</div>
+    </div>
+    <div class="col-md-4">
+      <label class="form-label fw-bold">Insulation Resistance (MΩ)</label>
+      <div>{{ test.insulation_mohms or '—' }}</div>
+    </div>
+    <div class="col-md-4">
+      <label class="form-label fw-bold">Polarity</label>
+      <div>
+        {% if test.polarity_pass is not none %}
+          {{ 'PASS' if test.polarity_pass else 'FAIL' }}
+        {% else %}
+          —
+        {% endif %}
+      </div>
+    </div>
+    <div class="col-md-4">
+      <label class="form-label fw-bold">Leakage Current (mA)</label>
+      <div>{{ test.leakage_mA or '—' }}</div>
+    </div>
+  </div>
+</div>
+
+{% if test.test_standard == "5761" %}
+<div class="card mb-4">
+  <div class="card-header bg-light"><strong>AS/NZS 5761 Details</strong></div>
+  <div class="card-body">
+    <p><strong>Condition Assessment:</strong> {{ test.condition_assessment or '—' }}</p>
+    <p><strong>Functional Check:</strong> {{ test.functional_check or '—' }}</p>
+    <p><strong>Accessories:</strong> {{ test.accessories or '—' }}</p>
+    <p><strong>Safe for Resale:</strong> {{ test.safe_for_resale or '—' }}</p>
+  </div>
+</div>
+{% elif test.test_standard == "5762" %}
+<div class="card mb-4">
+  <div class="card-header bg-light"><strong>AS/NZS 5762 Details</strong></div>
+  <div class="card-body">
+    <p><strong>Repair Description:</strong> {{ test.repair_description or '—' }}</p>
+    <p><strong>Repaired By:</strong> {{ test.repaired_by or '—' }}</p>
+    <p><strong>Parts Replaced:</strong> {{ test.parts_replaced or '—' }}</p>
+    <p><strong>Post‑repair Functional Test:</strong> {{ test.post_repair_test or '—' }}</p>
+  </div>
+</div>
+{% endif %}
+
+<div class="card mb-4">
+  <div class="card-header bg-light"><strong>Technician Comments</strong></div>
+  <div class="card-body">
+    <p class="mb-0">{{ test.comments or 'No comments provided.' }}</p>
+  </div>
+</div>
+
+<div class="card mb-4">
+  <div class="card-header bg-light"><strong>Photos</strong></div>
+  <div class="card-body">
+    {% if test.photos %}
+    <div class="row g-2">
+      {% for photo in test.photos %}
+      <div class="col-4 col-md-3 col-lg-2">
+        <a href="{{ url_for('static', filename='uploads/' ~ photo.filepath) }}"
+           data-lightbox="test-{{ test.id }}"
+           data-title="Photo {{ loop.index }}">
+          <img src="{{ url_for('static', filename='uploads/' ~ photo.filepath) }}"
+               class="img-fluid rounded shadow-sm"
+               style="object-fit: cover; height: 120px; width: 100%;">
+        </a>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+      <p class="text-muted">No photos uploaded for this test.</p>
+    {% endif %}
+  </div>
+</div>
+
+<a href="{{ url_for('main.appliance_detail', appliance_id=test.appliance.id) }}"
+   class="btn btn-secondary">Back to Appliance</a>
+{% endblock %}

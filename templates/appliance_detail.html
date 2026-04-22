@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% block title %}Appliance Details{% endblock %}
+{% block content %}
+<h3 class="mb-3">Appliance Details</h3>
+
+<div class="card mb-4">
+  <div class="card-body">
+    <h5 class="card-title">{{ appliance.asset_number }} — {{ appliance.description }}</h5>
+    <div class="row g-2">
+      <div class="col-md-4"><strong>Location:</strong> {{ appliance.location }}</div>
+      <div class="col-md-4"><strong>Owner:</strong> {{ appliance.owner }}</div>
+      <div class="col-md-4"><strong>Class Type:</strong> {{ appliance.class_type }}</div>
+      <div class="col-md-4"><strong>Supply Type:</strong> {{ appliance.supply_type }}</div>
+      <div class="col-md-4"><strong>Created:</strong> {{ appliance.created_at.strftime('%Y-%m-%d') }}</div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-4">
+  <div class="card-header bg-light"><strong>Test Type Summary</strong></div>
+  <div class="card-body">
+    {% if test_summary %}
+    <div class="table-responsive">
+      <table class="table table-striped align-middle">
+        <thead>
+          <tr>
+            <th>Standard</th>
+            <th>Tests</th>
+            <th>Most Recent</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for std, info in test_summary.items() %}
+          <tr>
+            <td>
+              {% if std == "3760" %}
+                <span class="badge bg-primary">AS/NZS 3760</span>
+              {% elif std == "5761" %}
+                <span class="badge bg-success">AS/NZS 5761</span>
+              {% elif std == "5762" %}
+                <span class="badge bg-warning text-dark">AS/NZS 5762</span>
+              {% else %}
+                {{ std }}
+              {% endif %}
+            </td>
+            <td>{{ info.count }}</td>
+            <td>{{ info.latest.strftime('%Y-%m-%d') }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+      <p class="text-muted">No tests recorded for this appliance.</p>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card mb-4" id="tests">
+  <div class="card-header bg-light"><strong>Test History</strong></div>
+  <div class="card-body">
+    {% if appliance.tests %}
+    <div class="table-responsive">
+      <table class="table table-striped align-middle">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Tag #</th>
+            <th>Tester</th>
+            <th>Result</th>
+            <th>Next Due</th>
+            <th>Standard</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for t in appliance.tests|sort(attribute='test_date', reverse=True) %}
+          <tr>
+            <td>{{ t.test_date.strftime('%Y-%m-%d') }}</td>
+            <td>{{ t.tag_number }}</td>
+            <td>{{ t.tester_name }}</td>
+            <td>
+              <span class="badge bg-{{ 'success' if t.overall_result == 'PASS' else 'danger' }}">
+                {{ t.overall_result }}
+              </span>
+            </td>
+            <td>{{ t.next_test_due.strftime('%Y-%m-%d') }}</td>
+            <td>{{ t.test_standard }}</td>
+            <td>
+              <a href="{{ url_for('main.test_detail', test_id=t.id) }}"
+                 class="btn btn-sm btn-primary">View</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+      <p class="text-muted">No tests recorded.</p>
+    {% endif %}
+
+    <a href="{{ url_for('main.new_test', appliance_id=appliance.id) }}"
+       class="btn btn-success mt-3">Add New Test</a>
+  </div>
+</div>
+
+<div class="card mb-4">
+  <div class="card-header bg-light"><strong>Photo Gallery</strong></div>
+  <div class="card-body">
+    {% set photos = [] %}
+    {% for t in appliance.tests %}
+      {% for p in t.photos %}
+        {% do photos.append(p) %}
+      {% endfor %}
+    {% endfor %}
+
+    {% if photos %}
+    <div class="row g-2">
+      {% for photo in photos %}
+      <div class="col-4 col-md-3 col-lg-2">
+        <a href="{{ url_for('static', filename='uploads/' ~ photo.filepath) }}"
+           data-lightbox="appliance-{{ appliance.id }}"
+           data-title="Test {{ photo.test_id }}">
+          <img src="{{ url_for('static', filename='uploads/' ~ photo.filepath) }}"
+               class="img-fluid rounded shadow-sm"
+               style="object-fit: cover; height: 120px; width: 100%;">
+        </a>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+      <p class="text-muted">No photos available for this appliance.</p>
+    {% endif %}
+  </div>
+</div>
+
+<a href="{{ url_for('main.appliance_list') }}" class="btn btn-secondary">Back to Appliances</a>
+{% endblock %}
