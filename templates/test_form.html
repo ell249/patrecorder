@@ -52,46 +52,63 @@
 
     <!-- Visual Inspection Checklist -->
     <h4 class="mt-3">Visual Inspection Checklist</h4>
-    <p class="text-muted">All PASS items must be satisfied unless marked N/A (where applicable).</p>
+    <p class="text-muted">Select PASS or FAIL for standard checks. Use N/A only where applicable.</p>
 
     <div class="col-md-6">
 
-        <div class="form-check">
-            <input class="form-check-input" type="checkbox" name="vi_plug" id="vi_plug">
-            <label class="form-check-label" for="vi_plug">Plug condition OK</label>
+        <div class="mt-2">
+            <label class="form-label">Plug condition OK</label>
+            <select name="vi_plug" class="form-select">
+                <option value="PASS">PASS</option>
+                <option value="FAIL">FAIL</option>
+            </select>
         </div>
 
-        <div class="form-check">
-            <input class="form-check-input" type="checkbox" name="vi_cord" id="vi_cord">
-            <label class="form-check-label" for="vi_cord">Cord condition OK</label>
+        <div class="mt-2">
+            <label class="form-label">Cord condition OK</label>
+            <select name="vi_cord" class="form-select">
+                <option value="PASS">PASS</option>
+                <option value="FAIL">FAIL</option>
+            </select>
         </div>
 
-        <div class="form-check">
-            <input class="form-check-input" type="checkbox" name="vi_casing" id="vi_casing">
-            <label class="form-check-label" for="vi_casing">No damage to casing</label>
+        <div class="mt-2">
+            <label class="form-label">No damage to casing</label>
+            <select name="vi_casing" class="form-select">
+                <option value="PASS">PASS</option>
+                <option value="FAIL">FAIL</option>
+            </select>
         </div>
 
-        <div class="form-check">
-            <input class="form-check-input" type="checkbox" name="vi_overheat" id="vi_overheat">
-            <label class="form-check-label" for="vi_overheat">No signs of overheating</label>
+        <div class="mt-2">
+            <label class="form-label">No signs of overheating</label>
+            <select name="vi_overheat" class="form-select">
+                <option value="PASS">PASS</option>
+                <option value="FAIL">FAIL</option>
+            </select>
         </div>
 
     </div>
 
     <div class="col-md-6">
 
-        <div class="form-check">
-            <input class="form-check-input" type="checkbox" name="vi_label" id="vi_label">
-            <label class="form-check-label" for="vi_label">Rating label intact and legible</label>
+        <div class="mt-2">
+            <label class="form-label">Rating label intact and legible</label>
+            <select name="vi_label" class="form-select">
+                <option value="PASS">PASS</option>
+                <option value="FAIL">FAIL</option>
+            </select>
         </div>
 
-        <div class="form-check">
-            <input class="form-check-input" type="checkbox" name="vi_exposed" id="vi_exposed">
-            <label class="form-check-label" for="vi_exposed">No exposed conductors</label>
+        <div class="mt-2">
+            <label class="form-label">No exposed conductors</label>
+            <select name="vi_exposed" class="form-select">
+                <option value="PASS">PASS</option>
+                <option value="FAIL">FAIL</option>
+            </select>
         </div>
 
-        <!-- PASS / FAIL / N/A fields -->
-        <div class="mt-3">
+        <div class="mt-2">
             <label class="form-label">Evidence of Unsafe Previous Repairs</label>
             <select name="vi_repairs" class="form-select">
                 <option value="PASS">PASS</option>
@@ -100,7 +117,7 @@
             </select>
         </div>
 
-        <div class="mt-3">
+        <div class="mt-2">
             <label class="form-label">Correct Cable Strain Relief</label>
             <select name="vi_strain" class="form-select">
                 <option value="PASS">PASS</option>
@@ -109,7 +126,7 @@
             </select>
         </div>
 
-        <div class="mt-3">
+        <div class="mt-2">
             <label class="form-label">Safety Functions / Guards Working</label>
             <select name="vi_guards" class="form-select">
                 <option value="PASS">PASS</option>
@@ -156,9 +173,9 @@
         </label>
         <input type="text" name="leakage_mA" class="form-control">
 
-        {% if appliance.class_type == "Class I" %}
+        {% if appliance.class_type == "CLASS I" %}
             <small class="text-muted">PASS: ≤ 5 mA (Class I appliance).</small>
-        {% elif appliance.class_type == "Class II" %}
+        {% elif appliance.class_type == "CLASS II" %}
             <small class="text-muted">PASS: ≤ 1 mA (Class II appliance).</small>
         {% else %}
             <small class="text-muted">PASS: ≤ 5 mA (default limit).</small>
@@ -207,7 +224,6 @@
 </form>
 
 <script>
-    // Enable Bootstrap tooltips
     var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
     tooltipTriggerList.map(function (tooltipTriggerEl) {
         return new bootstrap.Tooltip(tooltipTriggerEl)

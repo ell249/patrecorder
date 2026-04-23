@@ -18,34 +18,13 @@
 <div class="card p-4 mb-4">
     <h4>General Information</h4>
     <table class="table">
-        <tr>
-            <th>Appliance</th>
-            <td>{{ test.appliance.asset_number }} — {{ test.appliance.description }}</td>
-        </tr>
-        <tr>
-            <th>Test Date</th>
-            <td>{{ test.test_date }}</td>
-        </tr>
-        <tr>
-            <th>Tester</th>
-            <td>{{ test.tester_name }}</td>
-        </tr>
-        <tr>
-            <th>Test Standard</th>
-            <td>{{ test.test_standard }}</td>
-        </tr>
-        <tr>
-            <th>Test Type</th>
-            <td>{{ test.test_type }}</td>
-        </tr>
-        <tr>
-            <th>Tag Number</th>
-            <td>{{ test.tag_number }}</td>
-        </tr>
-        <tr>
-            <th>Next Test Due</th>
-            <td>{{ test.next_test_due }}</td>
-        </tr>
+        <tr><th>Appliance</th><td>{{ test.appliance.asset_number }} — {{ test.appliance.description }}</td></tr>
+        <tr><th>Test Date</th><td>{{ test.test_date }}</td></tr>
+        <tr><th>Tester</th><td>{{ test.tester_name }}</td></tr>
+        <tr><th>Test Standard</th><td>{{ test.test_standard }}</td></tr>
+        <tr><th>Test Type</th><td>{{ test.test_type }}</td></tr>
+        <tr><th>Tag Number</th><td>{{ test.tag_number }}</td></tr>
+        <tr><th>Next Test Due</th><td>{{ test.next_test_due }}</td></tr>
         <tr>
             <th>Overall Result</th>
             <td>
@@ -65,58 +44,20 @@
 
     <table class="table table-bordered">
         <thead>
-            <tr>
-                <th>Inspection Item</th>
-                <th>Result</th>
-            </tr>
+            <tr><th>Inspection Item</th><th>Result</th></tr>
         </thead>
         <tbody>
 
-            <tr>
-                <td>Plug condition OK</td>
-                <td>{{ 'PASS' if test.vi_plug else 'FAIL' }}</td>
-            </tr>
+            <tr><td>Plug condition OK</td><td>{{ 'PASS' if test.vi_plug else 'FAIL' }}</td></tr>
+            <tr><td>Cord condition OK</td><td>{{ 'PASS' if test.vi_cord else 'FAIL' }}</td></tr>
+            <tr><td>No damage to casing</td><td>{{ 'PASS' if test.vi_casing else 'FAIL' }}</td></tr>
+            <tr><td>No signs of overheating</td><td>{{ 'PASS' if test.vi_overheat else 'FAIL' }}</td></tr>
+            <tr><td>Rating label intact</td><td>{{ 'PASS' if test.vi_label else 'FAIL' }}</td></tr>
+            <tr><td>No exposed conductors</td><td>{{ 'PASS' if test.vi_exposed else 'FAIL' }}</td></tr>
 
-            <tr>
-                <td>Cord condition OK</td>
-                <td>{{ 'PASS' if test.vi_cord else 'FAIL' }}</td>
-            </tr>
-
-            <tr>
-                <td>No damage to casing</td>
-                <td>{{ 'PASS' if test.vi_casing else 'FAIL' }}</td>
-            </tr>
-
-            <tr>
-                <td>No signs of overheating</td>
-                <td>{{ 'PASS' if test.vi_overheat else 'FAIL' }}</td>
-            </tr>
-
-            <tr>
-                <td>Rating label intact and legible</td>
-                <td>{{ 'PASS' if test.vi_label else 'FAIL' }}</td>
-            </tr>
-
-            <tr>
-                <td>No exposed conductors</td>
-                <td>{{ 'PASS' if test.vi_exposed else 'FAIL' }}</td>
-            </tr>
-
-            <!-- PASS / FAIL / N/A items -->
-            <tr>
-                <td>Evidence of unsafe previous repairs</td>
-                <td>{{ test.vi_repairs }}</td>
-            </tr>
-
-            <tr>
-                <td>Correct cable strain relief</td>
-                <td>{{ test.vi_strain }}</td>
-            </tr>
-
-            <tr>
-                <td>Safety functions / guards working</td>
-                <td>{{ test.vi_guards }}</td>
-            </tr>
+            <tr><td>Unsafe previous repairs</td><td>{{ test.vi_repairs }}</td></tr>
+            <tr><td>Cable strain relief</td><td>{{ test.vi_strain }}</td></tr>
+            <tr><td>Safety guards working</td><td>{{ test.vi_guards }}</td></tr>
 
         </tbody>
     </table>
@@ -128,33 +69,13 @@
 
     <table class="table table-bordered">
         <thead>
-            <tr>
-                <th>Test</th>
-                <th>Value</th>
-            </tr>
+            <tr><th>Test</th><th>Value</th></tr>
         </thead>
         <tbody>
-
-            <tr>
-                <td>Earth Continuity (Ω)</td>
-                <td>{{ test.earth_continuity_ohms or 'N/A' }}</td>
-            </tr>
-
-            <tr>
-                <td>Insulation Resistance (MΩ)</td>
-                <td>{{ test.insulation_mohms or 'N/A' }}</td>
-            </tr>
-
-            <tr>
-                <td>Leakage Current (mA)</td>
-                <td>{{ test.leakage_mA or 'N/A' }}</td>
-            </tr>
-
-            <tr>
-                <td>Polarity Pass</td>
-                <td>{{ 'PASS' if test.polarity_pass else 'FAIL' }}</td>
-            </tr>
-
+            <tr><td>Earth Continuity (Ω)</td><td>{{ test.earth_continuity_ohms or 'N/A' }}</td></tr>
+            <tr><td>Insulation Resistance (MΩ)</td><td>{{ test.insulation_mohms or 'N/A' }}</td></tr>
+            <tr><td>Leakage Current (mA)</td><td>{{ test.leakage_mA or 'N/A' }}</td></tr>
+            <tr><td>Polarity</td><td>{{ 'PASS' if test.polarity_pass else 'FAIL' }}</td></tr>
         </tbody>
     </table>
 </div>
@@ -166,38 +87,14 @@
 
     <table class="table table-bordered">
         <tbody>
-            <tr>
-                <th>Condition Assessment</th>
-                <td>{{ test.condition_assessment or 'N/A' }}</td>
-            </tr>
-            <tr>
-                <th>Functional Check</th>
-                <td>{{ test.functional_check or 'N/A' }}</td>
-            </tr>
-            <tr>
-                <th>Accessories</th>
-                <td>{{ test.accessories or 'N/A' }}</td>
-            </tr>
-            <tr>
-                <th>Safe for Resale</th>
-                <td>{{ test.safe_for_resale or 'N/A' }}</td>
-            </tr>
-            <tr>
-                <th>Repair Description</th>
-                <td>{{ test.repair_description or 'N/A' }}</td>
-            </tr>
-            <tr>
-                <th>Repaired By</th>
-                <td>{{ test.repaired_by or 'N/A' }}</td>
-            </tr>
-            <tr>
-                <th>Parts Replaced</th>
-                <td>{{ test.parts_replaced or 'N/A' }}</td>
-            </tr>
-            <tr>
-                <th>Post‑Repair Test</th>
-                <td>{{ test.post_repair_test or 'N/A' }}</td>
-            </tr>
+            <tr><th>Condition Assessment</th><td>{{ test.condition_assessment or 'N/A' }}</td></tr>
+            <tr><th>Functional Check</th><td>{{ test.functional_check or 'N/A' }}</td></tr>
+            <tr><th>Accessories</th><td>{{ test.accessories or 'N/A' }}</td></tr>
+            <tr><th>Safe for Resale</th><td>{{ test.safe_for_resale or 'N/A' }}</td></tr>
+            <tr><th>Repair Description</th><td>{{ test.repair_description or 'N/A' }}</td></tr>
+            <tr><th>Repaired By</th><td>{{ test.repaired_by or 'N/A' }}</td></tr>
+            <tr><th>Parts Replaced</th><td>{{ test.parts_replaced or 'N/A' }}</td></tr>
+            <tr><th>Post‑Repair Test</th><td>{{ test.post_repair_test or 'N/A' }}</td></tr>
         </tbody>
     </table>
 </div>

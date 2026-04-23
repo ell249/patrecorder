@@ -1,43 +1,58 @@
-CREATE DATABASE IF NOT EXISTS test_and_tag;
-USE test_and_tag;
-
-DROP TABLE IF EXISTS appliance;
+-- -----------------------------------------------------
+-- Database: test_and_tag   (or your chosen DB name)
+-- -----------------------------------------------------
 
 CREATE TABLE appliance (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    asset_number VARCHAR(64) NOT NULL UNIQUE,
+    asset_number VARCHAR(255) NOT NULL UNIQUE,
     description VARCHAR(255),
-    make_model VARCHAR(255),                    -- NEW FIELD
+    make_model VARCHAR(255),
     location VARCHAR(255),
     owner VARCHAR(255),
-    class_type VARCHAR(64),
-    supply_type VARCHAR(64),
-    disposed BOOLEAN DEFAULT FALSE,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    class_type VARCHAR(50),
+    supply_type VARCHAR(50),
+    disposed TINYINT(1) DEFAULT 0
 );
 
-DROP TABLE IF EXISTS test_record;
+-- -----------------------------------------------------
+-- Test Records
+-- -----------------------------------------------------
 
 CREATE TABLE test_record (
     id INT AUTO_INCREMENT PRIMARY KEY,
     appliance_id INT NOT NULL,
 
-    test_date DATETIME,
-    tester_name VARCHAR(255),
-    test_type VARCHAR(255),
-    test_standard VARCHAR(32),
-    tag_number VARCHAR(64),
+    test_date DATE NOT NULL,
+    tester_name VARCHAR(255) NOT NULL,
+    test_type VARCHAR(255) NOT NULL,
+    test_standard VARCHAR(50) NOT NULL,
+    tag_number VARCHAR(255) NOT NULL,
 
-    visual_pass BOOLEAN,
-    earth_continuity_ohms VARCHAR(64),
-    insulation_mohms VARCHAR(64),
-    polarity_pass BOOLEAN,
-    leakage_mA VARCHAR(64),
+    -- Visual Inspection (boolean PASS/FAIL)
+    vi_plug TINYINT(1) DEFAULT 0,
+    vi_cord TINYINT(1) DEFAULT 0,
+    vi_casing TINYINT(1) DEFAULT 0,
+    vi_overheat TINYINT(1) DEFAULT 0,
+    vi_label TINYINT(1) DEFAULT 0,
+    vi_exposed TINYINT(1) DEFAULT 0,
 
-    overall_result VARCHAR(16),
+    -- Visual Inspection (PASS / FAIL / N/A)
+    vi_repairs VARCHAR(10),
+    vi_strain VARCHAR(10),
+    vi_guards VARCHAR(10),
+
+    -- Electrical Tests
+    visual_pass TINYINT(1) DEFAULT 0,
+    earth_continuity_ohms VARCHAR(50),
+    insulation_mohms VARCHAR(50),
+    polarity_pass TINYINT(1) DEFAULT 0,
+    leakage_mA VARCHAR(50),
+
+    overall_result VARCHAR(10) NOT NULL,
     next_test_due DATE,
     comments TEXT,
 
+    -- 5761 / 5762 fields
     condition_assessment VARCHAR(255),
     functional_check VARCHAR(255),
     accessories VARCHAR(255),
@@ -45,34 +60,40 @@ CREATE TABLE test_record (
 
     repair_description TEXT,
     repaired_by VARCHAR(255),
-    parts_replaced VARCHAR(255),
+    parts_replaced TEXT,
     post_repair_test VARCHAR(255),
 
-    disposed BOOLEAN DEFAULT FALSE,
+    disposed TINYINT(1) DEFAULT 0,
 
-    FOREIGN KEY (appliance_id) REFERENCES appliance(id)
+    CONSTRAINT fk_test_appliance
+        FOREIGN KEY (appliance_id)
+        REFERENCES appliance(id)
         ON DELETE CASCADE
 );
 
-DROP TABLE IF EXISTS test_photo;
+-- -----------------------------------------------------
+-- Test Photos
+-- -----------------------------------------------------
 
 CREATE TABLE test_photo (
     id INT AUTO_INCREMENT PRIMARY KEY,
     test_id INT NOT NULL,
-    filename VARCHAR(255),
-    filepath VARCHAR(255),
+    filename VARCHAR(255) NOT NULL,
+    filepath VARCHAR(255) NOT NULL,
 
-    FOREIGN KEY (test_id) REFERENCES test_record(id)
+    CONSTRAINT fk_photo_test
+        FOREIGN KEY (test_id)
+        REFERENCES test_record(id)
         ON DELETE CASCADE
 );
 
-DROP TABLE IF EXISTS retest_rule;
+-- -----------------------------------------------------
+-- Retest Rules
+-- -----------------------------------------------------
 
 CREATE TABLE retest_rule (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    class_type VARCHAR(64) NOT NULL,
-    supply_type VARCHAR(64) NOT NULL,
-    interval_days INT NOT NULL,
-    description VARCHAR(255),
-    priority INT DEFAULT 0
+    class_type VARCHAR(50),
+    supply_type VARCHAR(50),
+    interval_days INT NOT NULL
 );

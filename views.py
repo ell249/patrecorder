@@ -269,6 +269,10 @@ def new_test(appliance_id):
         interval_days = int(form["retest_interval"])
         next_due = test_date + timedelta(days=interval_days)
 
+        # Convert dropdown PASS/FAIL to booleans for the 6 boolean fields
+        def bool_from_dropdown(value):
+            return value == "PASS"
+
         test = TestRecord(
             appliance_id=appliance.id,
             test_date=test_date,
@@ -277,15 +281,15 @@ def new_test(appliance_id):
             test_standard=form["test_standard"],
             tag_number=form["tag_number"],
 
-            # Visual inspection (boolean items)
-            vi_plug=("vi_plug" in form),
-            vi_cord=("vi_cord" in form),
-            vi_casing=("vi_casing" in form),
-            vi_overheat=("vi_overheat" in form),
-            vi_label=("vi_label" in form),
-            vi_exposed=("vi_exposed" in form),
+            # Visual inspection (converted from dropdown)
+            vi_plug=bool_from_dropdown(form.get("vi_plug")),
+            vi_cord=bool_from_dropdown(form.get("vi_cord")),
+            vi_casing=bool_from_dropdown(form.get("vi_casing")),
+            vi_overheat=bool_from_dropdown(form.get("vi_overheat")),
+            vi_label=bool_from_dropdown(form.get("vi_label")),
+            vi_exposed=bool_from_dropdown(form.get("vi_exposed")),
 
-            # PASS / FAIL / N/A items
+            # PASS / FAIL / N/A items (stored as strings)
             vi_repairs=form.get("vi_repairs"),
             vi_strain=form.get("vi_strain"),
             vi_guards=form.get("vi_guards"),
@@ -340,7 +344,6 @@ def new_test(appliance_id):
         flash("Test record saved.", "success")
         return redirect(url_for("main.appliance_detail", appliance_id=appliance.id))
 
-    # IMPORTANT: appliance is passed here
     rules = RetestRule.query.order_by(RetestRule.interval_days).all()
     suggested_rule = get_suggested_interval(
         appliance.class_type or "ANY",
@@ -349,7 +352,7 @@ def new_test(appliance_id):
 
     return render_template(
         "test_form.html",
-        appliance=appliance,   # <-- THIS gives the form access to class_type
+        appliance=appliance,
         rules=rules,
         suggested_rule=suggested_rule
     )
