@@ -5,7 +5,7 @@
 
 <h3 class="mb-4">New Test for {{ appliance.asset_number }}</h3>
 
-<form method="post" enctype="multipart/form-data" class="row g-3">
+<form method="post" enctype="multipart/form-data" class="row g-3" id="testForm">
 
     <!-- Test Date -->
     <div class="col-md-3">
@@ -21,7 +21,16 @@
 
     <!-- Test Standard -->
     <div class="col-md-4">
-        <label class="form-label">Test Standard</label>
+        <label class="form-label">
+            Test Standard
+            <span data-bs-toggle="tooltip"
+                  title="AS/NZS 3760: In‑service safety inspection and testing of electrical equipment.
+AS/NZS 5761: Testing of second‑hand electrical equipment prior to sale.
+AS/NZS 5762: Testing of electrical equipment after repair.">
+                ⓘ
+            </span>
+        </label>
+
         <select name="test_standard" class="form-select" required>
             <option value="3760">AS/NZS 3760</option>
             <option value="5761">AS/NZS 5761</option>
@@ -29,36 +38,52 @@
         </select>
     </div>
 
-    <!-- Tag Number -->
-    <div class="col-md-4">
-        <label class="form-label">Tag Number</label>
-        <input type="text" name="tag_number" class="form-control" required>
+    <!-- Retest Interval Selector -->
+    <div class="col-md-6">
+        <label class="form-label">
+            Recommended Retest Interval
+            <span data-bs-toggle="tooltip"
+                  title="Intervals follow AS/NZS 3760 guidance.
+3 months (Red): High‑risk environments such as construction and workshops.
+6 months (Orange): Medium‑risk areas like commercial kitchens and labs.
+12 months (Green): Low‑risk office or admin environments.
+24 months (Blue): Low‑use or residential‑type equipment.
+5 years (White): Fixed or rarely moved equipment in controlled environments.">
+                ⓘ
+            </span>
+        </label>
+
+        <select id="retest_selector" class="form-select" required>
+            <option value="" selected disabled>Select interval...</option>
+            <option value="90">3 months — High‑risk environments</option>
+            <option value="180">6 months — Medium‑risk areas</option>
+            <option value="365">12 months — Low‑risk commercial</option>
+            <option value="730">24 months — Residential‑type</option>
+            <option value="1825">5 years — Fixed equipment</option>
+        </select>
     </div>
 
-    <!-- Retest Interval -->
-    <div class="col-md-4">
-        <label class="form-label">Retest Interval (Days)</label>
-        <input type="number" name="retest_interval" class="form-control"
-               value="{{ suggested_rule.interval_days if suggested_rule else '' }}" required>
-    </div>
+    <!-- Hidden integer field -->
+    <input type="hidden" name="retest_interval" id="retest_interval" required>
 
     <!-- Test Type -->
-    <div class="col-md-4">
+    <div class="col-md-6">
         <label class="form-label">Test Type</label>
         <input type="text" name="test_type" class="form-control" required>
     </div>
 
     <hr class="mt-4">
 
-    <!-- Visual Inspection Checklist -->
+    <!-- VISUAL INSPECTION -->
     <h4 class="mt-3">Visual Inspection Checklist</h4>
-    <p class="text-muted">Select PASS or FAIL for standard checks. Use N/A only where applicable.</p>
+    <p class="text-muted">All fields must be selected before submitting.</p>
 
     <div class="col-md-6">
 
         <div class="mt-2">
             <label class="form-label">Plug condition OK</label>
-            <select name="vi_plug" class="form-select">
+            <select name="vi_plug" class="form-select vi-required" required>
+                <option value="" selected disabled>Select...</option>
                 <option value="PASS">PASS</option>
                 <option value="FAIL">FAIL</option>
             </select>
@@ -66,7 +91,8 @@
 
         <div class="mt-2">
             <label class="form-label">Cord condition OK</label>
-            <select name="vi_cord" class="form-select">
+            <select name="vi_cord" class="form-select vi-required" required>
+                <option value="" selected disabled>Select...</option>
                 <option value="PASS">PASS</option>
                 <option value="FAIL">FAIL</option>
             </select>
@@ -74,7 +100,8 @@
 
         <div class="mt-2">
             <label class="form-label">No damage to casing</label>
-            <select name="vi_casing" class="form-select">
+            <select name="vi_casing" class="form-select vi-required" required>
+                <option value="" selected disabled>Select...</option>
                 <option value="PASS">PASS</option>
                 <option value="FAIL">FAIL</option>
             </select>
@@ -82,7 +109,8 @@
 
         <div class="mt-2">
             <label class="form-label">No signs of overheating</label>
-            <select name="vi_overheat" class="form-select">
+            <select name="vi_overheat" class="form-select vi-required" required>
+                <option value="" selected disabled>Select...</option>
                 <option value="PASS">PASS</option>
                 <option value="FAIL">FAIL</option>
             </select>
@@ -94,7 +122,8 @@
 
         <div class="mt-2">
             <label class="form-label">Rating label intact and legible</label>
-            <select name="vi_label" class="form-select">
+            <select name="vi_label" class="form-select vi-required" required>
+                <option value="" selected disabled>Select...</option>
                 <option value="PASS">PASS</option>
                 <option value="FAIL">FAIL</option>
             </select>
@@ -102,7 +131,8 @@
 
         <div class="mt-2">
             <label class="form-label">No exposed conductors</label>
-            <select name="vi_exposed" class="form-select">
+            <select name="vi_exposed" class="form-select vi-required" required>
+                <option value="" selected disabled>Select...</option>
                 <option value="PASS">PASS</option>
                 <option value="FAIL">FAIL</option>
             </select>
@@ -110,7 +140,8 @@
 
         <div class="mt-2">
             <label class="form-label">Evidence of Unsafe Previous Repairs</label>
-            <select name="vi_repairs" class="form-select">
+            <select name="vi_repairs" class="form-select vi-required" required>
+                <option value="" selected disabled>Select...</option>
                 <option value="PASS">PASS</option>
                 <option value="FAIL">FAIL</option>
                 <option value="N/A">N/A</option>
@@ -119,7 +150,8 @@
 
         <div class="mt-2">
             <label class="form-label">Correct Cable Strain Relief</label>
-            <select name="vi_strain" class="form-select">
+            <select name="vi_strain" class="form-select vi-required" required>
+                <option value="" selected disabled>Select...</option>
                 <option value="PASS">PASS</option>
                 <option value="FAIL">FAIL</option>
                 <option value="N/A">N/A</option>
@@ -128,7 +160,8 @@
 
         <div class="mt-2">
             <label class="form-label">Safety Functions / Guards Working</label>
-            <select name="vi_guards" class="form-select">
+            <select name="vi_guards" class="form-select vi-required" required>
+                <option value="" selected disabled>Select...</option>
                 <option value="PASS">PASS</option>
                 <option value="FAIL">FAIL</option>
                 <option value="N/A">N/A</option>
@@ -139,13 +172,13 @@
 
     <hr class="mt-4">
 
-    <!-- Electrical Tests -->
+    <!-- ELECTRICAL TESTS -->
     <h4 class="mt-3">Electrical Tests</h4>
 
     <div class="col-md-6 mb-3">
         <label class="form-label">
             Earth Continuity (Ω)
-            <span data-bs-toggle="tooltip" title="Ensures the protective earth path is intact. High resistance indicates poor earthing, which can prevent fault currents from tripping protection devices.">
+            <span data-bs-toggle="tooltip" title="Ensures the protective earth path is intact. High resistance indicates poor earthing.">
                 ⓘ
             </span>
         </label>
@@ -156,18 +189,18 @@
     <div class="col-md-6 mb-3">
         <label class="form-label">
             Insulation Resistance (MΩ)
-            <span data-bs-toggle="tooltip" title="Checks breakdown of insulation between live parts and accessible metal. Low insulation increases shock risk and indicates moisture, damage, or degradation.">
+            <span data-bs-toggle="tooltip" title="Checks breakdown of insulation between live parts and accessible metal.">
                 ⓘ
             </span>
         </label>
         <input type="text" name="insulation_mohms" class="form-control">
-        <small class="text-muted">PASS: ≥ 1 MΩ at 500 V DC (250 V for sensitive equipment).</small>
+        <small class="text-muted">PASS: ≥ 1 MΩ at 500 V DC.</small>
     </div>
 
     <div class="col-md-6 mb-3">
         <label class="form-label">
             Leakage Current (mA)
-            <span data-bs-toggle="tooltip" title="Measures unintended current flowing to accessible metal parts. Excessive leakage indicates insulation failure or internal faults that may cause electric shock.">
+            <span data-bs-toggle="tooltip" title="Measures unintended current flowing to accessible metal parts.">
                 ⓘ
             </span>
         </label>
@@ -185,12 +218,12 @@
     <div class="col-md-6 mb-3">
         <label class="form-label">
             Polarity Test
-            <span data-bs-toggle="tooltip" title="Ensures active, neutral and earth conductors are correctly wired. Incorrect polarity can energise exposed metal parts or bypass safety mechanisms.">
+            <span data-bs-toggle="tooltip" title="Ensures active, neutral and earth conductors are correctly wired.">
                 ⓘ
             </span>
         </label><br>
         <input type="checkbox" name="polarity_pass" class="form-check-input">
-        <small class="text-muted ms-2">PASS: Active, neutral and earth correctly connected.</small>
+        <small class="text-muted ms-2">PASS: Correct polarity.</small>
     </div>
 
     <hr class="mt-4">
@@ -204,8 +237,14 @@
         </select>
     </div>
 
+    <!-- Tag Number (moved here) -->
+    <div class="col-md-4">
+        <label class="form-label">Tag Number</label>
+        <input type="text" name="tag_number" class="form-control" required>
+    </div>
+
     <!-- Comments -->
-    <div class="col-md-8">
+    <div class="col-md-12">
         <label class="form-label">Comments</label>
         <textarea name="comments" class="form-control" rows="3"></textarea>
     </div>
@@ -223,11 +262,52 @@
 
 </form>
 
+<!-- Tooltip Activation -->
 <script>
     var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
     tooltipTriggerList.map(function (tooltipTriggerEl) {
         return new bootstrap.Tooltip(tooltipTriggerEl)
     })
 </script>
+
+<!-- Retest interval generator -->
+<script>
+document.getElementById("retest_selector").addEventListener("change", function () {
+    document.getElementById("retest_interval").value = this.value;
+});
+</script>
+
+<!-- Client-side validation -->
+<script>
+document.getElementById("testForm").addEventListener("submit", function (e) {
+    let valid = true;
+
+    document.querySelectorAll(".vi-required").forEach(function (sel) {
+        if (!sel.value) {
+            sel.classList.add("is-invalid");
+            valid = false;
+        } else {
+            sel.classList.remove("is-invalid");
+        }
+    });
+
+    if (!document.getElementById("retest_interval").value) {
+        alert("Please select a recommended retest interval.");
+        valid = false;
+    }
+
+    if (!valid) {
+        e.preventDefault();
+        alert("Please complete all required fields before submitting.");
+    }
+});
+</script>
+
+<style>
+.is-invalid {
+    border-color: #dc3545 !important;
+    background-color: #ffe6e6;
+}
+</style>
 
 {% endblock %}
