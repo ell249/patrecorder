@@ -1,64 +1,125 @@
-# Test & Tag System (MVP)
-A lightweight, technician‑friendly web application for managing electrical appliance testing under:
+# PAT Recorder — Portable Appliance Testing System
 
-- **AS/NZS 3760** — In‑service safety inspection & testing  
-- **AS/NZS 5761** — Second‑hand appliance safety testing  
-- **AS/NZS 5762** — Repaired appliance safety testing  
+A lightweight, technician‑friendly web application for recording, managing, and exporting Portable Appliance Testing (PAT) results in compliance with **AS/NZS 3760**, **AS/NZS 5761**, and **AS/NZS 5762**.
 
-This MVP provides a clean workflow for recording tests, generating certificates, tracking retest intervals, and managing appliances.
+Built with **Flask**, **Bootstrap 5**, **WeasyPrint**, and **DataTables**, the system provides a clean workflow for technicians performing electrical safety testing on appliances.
 
 ---
 
-## 🚀 Features
+## Features
 
-### ✔ Appliance Management
-- Add and view appliances  
-- Track class type, supply type, location, owner  
-- View complete test history  
-- Photo gallery aggregated from all tests  
+### 🔌 Modern, Branded Interface
+- Application renamed to **PAT Recorder**
+- MDI **power‑plug icon** added to the navbar
+- Streamlined navigation:
+  - Dashboard  
+  - Appliances  
+  - Add Appliance  
+- *Testers* menu removed (tester selection now handled internally)
 
-### ✔ Test Entry (Multi‑Standard)
-Supports three standards:
+---
 
-| Standard | Purpose |
-|---------|---------|
-| **AS/NZS 3760** | In‑service testing (default) |
-| **AS/NZS 5761** | Second‑hand appliance testing |
-| **AS/NZS 5762** | Repaired appliance testing |
+## 🧰 Appliance Management
+- Add, edit, and view appliances
+- Appliance fields:
+  - Asset Number  
+  - Description  
+  - **Make / Model**  
+  - Location  
+  - Owner  
+  - Notes  
+- Appliance detail page includes:
+  - Full test history  
+  - Quick actions (Add Test, View PDF)
 
-Each standard automatically reveals the correct additional fields.
+---
 
-### ✔ Retest Interval Rules (Database‑Driven)
-- Retest intervals stored in a **retest_rules** table  
-- Auto‑suggested interval based on **appliance class + supply type**  
-- Fully editable without code changes  
+## 🧪 Test Recording
+Supports all major Australian/New Zealand PAT standards:
 
-### ✔ Fuzzy Search
-Search appliances and test tags with typo‑tolerant matching.
+- **AS/NZS 3760** — In‑service safety inspection & testing  
+- **AS/NZS 5761** — Repaired electrical equipment  
+- **AS/NZS 5762** — Re‑testing of repaired equipment  
 
-Examples:
-- `ketle` → *kettle*  
-- `A12` → *A12345*  
-- `tg24` → *TAG‑2024‑001*  
+Includes:
+- Visual inspection checklist  
+- Electrical test results  
+- PASS / FAIL logic  
+- Technician dropdown (from database)  
+- Auto‑calculated next test due date  
+- QR code linking back to the test record
 
-### ✔ Upcoming Test Reminders
-A dedicated page showing appliances due for testing in the next 30 days.
+---
 
-### ✔ PDF Export (with QR Codes)
-Generates standard‑specific certificates:
+## 📄 PDF Generation
+Each test record can be exported as a **professional PDF**, including:
 
-- **AS/NZS 3760 Test Report**
-- **AS/NZS 5761 Second‑Hand Appliance Certificate**
-- **AS/NZS 5762 Repair Certificate**
-
-Each PDF includes:
 - Appliance details  
 - Test results  
-- Standard‑specific fields  
-- A **QR code** linking back to the test record  
+- PASS/FAIL summary  
+- Technician details  
+- Timestamp  
+- **Embedded QR code** linking to the online record  
+- Clean layout optimised for A4 printing  
 
-### ✔ Photo Uploads
-Technicians can attach multiple photos to each test.
+Powered by **WeasyPrint**.
+
+---
+
+## 📱 QR Code Integration
+Every PDF includes a QR code that links directly to the test record.
+
+QR codes are generated using:
+- `qrcode` Python library  
+- Base64‑embedded PNG images  
+- No temporary files required  
+
+---
+
+## 📊 Appliance List Enhancements
+The appliance list now includes:
+
+### ✔ DataTables Sorting
+Sort by:
+- Asset  
+- Description  
+- Make/Model  
+- Location  
+- Owner  
+
+### ✔ Global Search
+Instant search across all columns.
+
+### ✔ Column Filters
+- Text filters for:
+  - Asset  
+  - Description  
+  - Make/Model  
+- Dropdown filters for:
+  - Location  
+  - Owner  
+
+### ✔ Responsive Layout
+Action buttons remain aligned and consistent:
+- **View**
+- **Add Test**
+
+---
+
+## Technology Stack
+
+### Backend
+- Python 3.x  
+- Flask  
+- SQLAlchemy  
+- WeasyPrint  
+- qrcode  
+
+### Frontend
+- Bootstrap 5  
+- jQuery  
+- DataTables 1.13.x  
+- Material Design Icons  
 
 ---
 
@@ -100,22 +161,6 @@ test_and_tag/
 ## 🛠 Installation
 
 See **INSTALL.md** for full installation instructions.
-
----
-
-## 📄 SQL Schema Overview
-
-### appliances  
-Stores appliance metadata.
-
-### tests  
-Stores test records, including standard‑specific fields.
-
-### test_photos  
-Stores uploaded photos linked to tests.
-
-### retest_rules  
-Stores configurable retest intervals and matching logic.
 
 ---
 
