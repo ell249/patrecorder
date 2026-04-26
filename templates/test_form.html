@@ -22,13 +22,11 @@
                 ⓘ
             </span>
         </label>
-
         <select name="tester_id" class="form-select" required>
             <option value="" disabled selected>Select tester...</option>
-
             {% for t in testers %}
                 <option value="{{ t.id }}">
-                    {{ t.full_name }} — Cert {{ t.certificate_number }}
+                    {{ t.full_name }} – Cert {{ t.certificate_number }}
                 </option>
             {% endfor %}
         </select>
@@ -39,19 +37,21 @@
         <label class="form-label">
             Test Standard
             <span data-bs-toggle="tooltip"
-                  title="AS/NZS 3760: In‑service safety inspection and testing of electrical equipment.
-AS/NZS 5761: Testing of second‑hand electrical equipment prior to sale.
+                  title="AS/NZS 3760: In-service safety inspection and testing of electrical equipment.
+AS/NZS 5761: Testing of second-hand electrical equipment prior to sale.
 AS/NZS 5762: Testing of electrical equipment after repair.">
                 ⓘ
             </span>
         </label>
-
         <select name="test_standard" class="form-select" required>
             <option value="3760">AS/NZS 3760</option>
             <option value="5761">AS/NZS 5761</option>
             <option value="5762">AS/NZS 5762</option>
         </select>
     </div>
+
+    <!-- Hidden integer field for retest interval -->
+    <input type="hidden" name="retest_interval" id="retest_interval" required>
 
     <!-- Retest Interval Selector -->
     <div class="col-md-6">
@@ -67,24 +67,26 @@ AS/NZS 5762: Testing of electrical equipment after repair.">
                 ⓘ
             </span>
         </label>
-
         <select id="retest_selector" class="form-select" required>
             <option value="" selected disabled>Select interval...</option>
-            <option value="90">3 months — High‑risk environments</option>
-            <option value="180">6 months — Medium‑risk areas</option>
-            <option value="365">12 months — Low‑risk commercial</option>
-            <option value="730">24 months — Residential‑type</option>
-            <option value="1825">5 years — Fixed equipment</option>
+            <option value="90">3 months – High‑risk environments</option>
+            <option value="180">6 months – Medium‑risk areas</option>
+            <option value="365">12 months – Low‑risk commercial</option>
+            <option value="730">24 months – Residential‑type</option>
+            <option value="1825">5 years – Fixed equipment</option>
         </select>
     </div>
 
-    <!-- Hidden integer field -->
-    <input type="hidden" name="retest_interval" id="retest_interval" required>
-
-    <!-- Test Type -->
+    <!-- Test Type (DROPDOWN) -->
     <div class="col-md-6">
         <label class="form-label">Test Type</label>
-        <input type="text" name="test_type" class="form-control" required>
+        <select name="test_type" class="form-select" required>
+            <option value="" disabled selected>Select test type...</option>
+            <option value="Lead">Lead</option>
+            <option value="Appliance Leakage (Fixed Cord)">Appliance Leakage (Fixed Cord)</option>
+            <option value="Lead+Appliance Leakage">Lead + Appliance Leakage</option>
+            <option value="Lead+RCD">Lead + RCD</option>
+        </select>
     </div>
 
     <hr class="mt-4">
@@ -96,7 +98,13 @@ AS/NZS 5762: Testing of electrical equipment after repair.">
     <div class="col-md-6">
 
         <div class="mt-2">
-            <label class="form-label">Plug condition OK</label>
+            <label class="form-label">
+                Plug condition OK
+                <span data-bs-toggle="tooltip"
+                      title="Check plug body, pins and cord anchorage for cracks, burns or other damage.">
+                    ⓘ
+                </span>
+            </label>
             <select name="vi_plug" class="form-select vi-required" required>
                 <option value="" selected disabled>Select...</option>
                 <option value="PASS">PASS</option>
@@ -105,7 +113,13 @@ AS/NZS 5762: Testing of electrical equipment after repair.">
         </div>
 
         <div class="mt-2">
-            <label class="form-label">Cord condition OK</label>
+            <label class="form-label">
+                Cord condition OK
+                <span data-bs-toggle="tooltip"
+                      title="Check for cuts, abrasions, kinks, exposed conductors or repairs.">
+                    ⓘ
+                </span>
+            </label>
             <select name="vi_cord" class="form-select vi-required" required>
                 <option value="" selected disabled>Select...</option>
                 <option value="PASS">PASS</option>
@@ -114,7 +128,13 @@ AS/NZS 5762: Testing of electrical equipment after repair.">
         </div>
 
         <div class="mt-2">
-            <label class="form-label">No damage to casing</label>
+            <label class="form-label">
+                No damage to casing
+                <span data-bs-toggle="tooltip"
+                      title="Check enclosure for cracks, missing covers, loose parts or other damage.">
+                    ⓘ
+                </span>
+            </label>
             <select name="vi_casing" class="form-select vi-required" required>
                 <option value="" selected disabled>Select...</option>
                 <option value="PASS">PASS</option>
@@ -123,7 +143,13 @@ AS/NZS 5762: Testing of electrical equipment after repair.">
         </div>
 
         <div class="mt-2">
-            <label class="form-label">No signs of overheating</label>
+            <label class="form-label">
+                No signs of overheating
+                <span data-bs-toggle="tooltip"
+                      title="Look for discolouration, melting, scorching or odour indicating overheating.">
+                    ⓘ
+                </span>
+            </label>
             <select name="vi_overheat" class="form-select vi-required" required>
                 <option value="" selected disabled>Select...</option>
                 <option value="PASS">PASS</option>
@@ -136,7 +162,13 @@ AS/NZS 5762: Testing of electrical equipment after repair.">
     <div class="col-md-6">
 
         <div class="mt-2">
-            <label class="form-label">Rating label intact and legible</label>
+            <label class="form-label">
+                Rating label intact and legible
+                <span data-bs-toggle="tooltip"
+                      title="Ensure rating label is present, readable and matches supply conditions.">
+                    ⓘ
+                </span>
+            </label>
             <select name="vi_label" class="form-select vi-required" required>
                 <option value="" selected disabled>Select...</option>
                 <option value="PASS">PASS</option>
@@ -145,7 +177,13 @@ AS/NZS 5762: Testing of electrical equipment after repair.">
         </div>
 
         <div class="mt-2">
-            <label class="form-label">No exposed conductors</label>
+            <label class="form-label">
+                No exposed conductors
+                <span data-bs-toggle="tooltip"
+                      title="Check that no live or earthed conductors are accessible.">
+                    ⓘ
+                </span>
+            </label>
             <select name="vi_exposed" class="form-select vi-required" required>
                 <option value="" selected disabled>Select...</option>
                 <option value="PASS">PASS</option>
@@ -154,7 +192,13 @@ AS/NZS 5762: Testing of electrical equipment after repair.">
         </div>
 
         <div class="mt-2">
-            <label class="form-label">Evidence of Unsafe Previous Repairs</label>
+            <label class="form-label">
+                Evidence of unsafe previous repairs
+                <span data-bs-toggle="tooltip"
+                      title="Look for taped joints, non‑approved connectors or other unsafe repairs.">
+                    ⓘ
+                </span>
+            </label>
             <select name="vi_repairs" class="form-select vi-required" required>
                 <option value="" selected disabled>Select...</option>
                 <option value="PASS">PASS</option>
@@ -164,7 +208,13 @@ AS/NZS 5762: Testing of electrical equipment after repair.">
         </div>
 
         <div class="mt-2">
-            <label class="form-label">Correct Cable Strain Relief</label>
+            <label class="form-label">
+                Correct cable strain relief
+                <span data-bs-toggle="tooltip"
+                      title="Check that cord grips or glands are correctly fitted and secure.">
+                    ⓘ
+                </span>
+            </label>
             <select name="vi_strain" class="form-select vi-required" required>
                 <option value="" selected disabled>Select...</option>
                 <option value="PASS">PASS</option>
@@ -174,7 +224,13 @@ AS/NZS 5762: Testing of electrical equipment after repair.">
         </div>
 
         <div class="mt-2">
-            <label class="form-label">Safety Functions / Guards Working</label>
+            <label class="form-label">
+                Safety functions / guards working
+                <span data-bs-toggle="tooltip"
+                      title="Confirm guards, interlocks and safety devices operate correctly.">
+                    ⓘ
+                </span>
+            </label>
             <select name="vi_guards" class="form-select vi-required" required>
                 <option value="" selected disabled>Select...</option>
                 <option value="PASS">PASS</option>
@@ -193,7 +249,8 @@ AS/NZS 5762: Testing of electrical equipment after repair.">
     <div class="col-md-6 mb-3">
         <label class="form-label">
             Earth Continuity (Ω)
-            <span data-bs-toggle="tooltip" title="Ensures the protective earth path is intact. High resistance indicates poor earthing.">
+            <span data-bs-toggle="tooltip"
+                  title="Ensures the protective earth path is intact. High resistance indicates poor earthing.">
                 ⓘ
             </span>
         </label>
@@ -204,7 +261,8 @@ AS/NZS 5762: Testing of electrical equipment after repair.">
     <div class="col-md-6 mb-3">
         <label class="form-label">
             Insulation Resistance (MΩ)
-            <span data-bs-toggle="tooltip" title="Checks breakdown of insulation between live parts and accessible metal.">
+            <span data-bs-toggle="tooltip"
+                  title="Checks breakdown of insulation between live parts and accessible metal.">
                 ⓘ
             </span>
         </label>
@@ -215,12 +273,12 @@ AS/NZS 5762: Testing of electrical equipment after repair.">
     <div class="col-md-6 mb-3">
         <label class="form-label">
             Leakage Current (mA)
-            <span data-bs-toggle="tooltip" title="Measures unintended current flowing to accessible metal parts.">
+            <span data-bs-toggle="tooltip"
+                  title="Measures unintended current flowing to accessible metal parts.">
                 ⓘ
             </span>
         </label>
         <input type="text" name="leakage_mA" class="form-control">
-
         {% if appliance.class_type == "CLASS I" %}
             <small class="text-muted">PASS: ≤ 5 mA (Class I appliance).</small>
         {% elif appliance.class_type == "CLASS II" %}
@@ -233,7 +291,8 @@ AS/NZS 5762: Testing of electrical equipment after repair.">
     <div class="col-md-6 mb-3">
         <label class="form-label">
             Polarity Test
-            <span data-bs-toggle="tooltip" title="Ensures active, neutral and earth conductors are correctly wired.">
+            <span data-bs-toggle="tooltip"
+                  title="Ensures active, neutral and earth conductors are correctly wired.">
                 ⓘ
             </span>
         </label><br>
@@ -252,7 +311,7 @@ AS/NZS 5762: Testing of electrical equipment after repair.">
         </select>
     </div>
 
-    <!-- Tag Number (moved here) -->
+    <!-- Tag Number -->
     <div class="col-md-4">
         <label class="form-label">Tag Number</label>
         <input type="text" name="tag_number" class="form-control" required>
@@ -297,6 +356,7 @@ document.getElementById("retest_selector").addEventListener("change", function (
 document.getElementById("testForm").addEventListener("submit", function (e) {
     let valid = true;
 
+    // Visual inspection required selects
     document.querySelectorAll(".vi-required").forEach(function (sel) {
         if (!sel.value) {
             sel.classList.add("is-invalid");
@@ -306,6 +366,7 @@ document.getElementById("testForm").addEventListener("submit", function (e) {
         }
     });
 
+    // Retest interval must be set
     if (!document.getElementById("retest_interval").value) {
         alert("Please select a recommended retest interval.");
         valid = false;
