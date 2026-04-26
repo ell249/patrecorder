@@ -65,9 +65,22 @@
                     <span class="text-danger">N/A</span>
                 {% endif %}
             </td>
-            <td>
+            <td class="text-end">
                 <a href="{{ url_for('main.appliance_detail', appliance_id=a.id) }}"
-                   class="btn btn-sm btn-primary">View</a>
+                class="btn btn-sm btn-primary">View</a>
+
+                {% if last_test %}
+                <a href="{{ url_for('main.test_pdf', test_id=last_test.id) }}"
+                class="btn btn-sm btn-danger ms-1"
+                target="_blank">
+                    PDF
+                </a>
+                {% endif %}
+
+                <a href="{{ url_for('main.new_test', appliance_id=a.id) }}"
+                class="btn btn-sm btn-success ms-1">
+                    Add Test
+                </a>
             </td>
         </tr>
         {% endfor %}
@@ -82,6 +95,7 @@
         <tr>
             <th>Date</th>
             <th>Asset</th>
+            <th>Description</th>   <!-- NEW COLUMN -->
             <th>Standard</th>
             <th>Result</th>
             <th></th>
@@ -92,6 +106,7 @@
         <tr>
             <td>{{ test.test_date }}</td>
             <td>{{ test.appliance.asset_number }}</td>
+            <td>{{ test.appliance.description }}</td>   <!-- NEW COLUMN -->
             <td>{{ test.test_standard | std }}</td>
             <td>
                 {% if test.overall_result == "PASS" %}
@@ -100,9 +115,15 @@
                     <span class="badge bg-danger">FAIL</span>
                 {% endif %}
             </td>
-            <td>
+            <td class="text-end">
                 <a href="{{ url_for('main.test_detail', test_id=test.id) }}"
-                   class="btn btn-sm btn-primary">View</a>
+                class="btn btn-sm btn-primary">View</a>
+
+                <a href="{{ url_for('main.test_pdf', test_id=test.id) }}"
+                class="btn btn-sm btn-danger ms-1"
+                target="_blank">
+                    PDF
+                </a>
             </td>
         </tr>
         {% endfor %}
