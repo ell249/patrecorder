@@ -1,7 +1,23 @@
 from app import db
-from datetime import datetime
+
+# ---------------------------------------------------------
+# Tester Table
+# ---------------------------------------------------------
+class Tester(db.Model):
+    __tablename__ = "tester"
+
+    id = db.Column(db.Integer, primary_key=True)
+    full_name = db.Column(db.String(255), nullable=False)
+    certificate_number = db.Column(db.String(255), nullable=False)
+    phone_number = db.Column(db.String(50))
+
+    # Relationship: one tester → many test records
+    tests = db.relationship("TestRecord", back_populates="tester")
 
 
+# ---------------------------------------------------------
+# Appliance Table
+# ---------------------------------------------------------
 class Appliance(db.Model):
     __tablename__ = "appliance"
 
@@ -13,32 +29,33 @@ class Appliance(db.Model):
     owner = db.Column(db.String(255))
     class_type = db.Column(db.String(50))
     supply_type = db.Column(db.String(50))
-
     disposed = db.Column(db.Boolean, default=False)
 
-    tests = db.relationship("TestRecord", backref="appliance", lazy=True)
-
-    def __repr__(self):
-        return f"<Appliance {self.asset_number}>"
+    tests = db.relationship("TestRecord", back_populates="appliance")
 
 
+# ---------------------------------------------------------
+# Test Record Table
+# ---------------------------------------------------------
 class TestRecord(db.Model):
     __tablename__ = "test_record"
 
     id = db.Column(db.Integer, primary_key=True)
+
     appliance_id = db.Column(db.Integer, db.ForeignKey("appliance.id"), nullable=False)
+    tester_id = db.Column(db.Integer, db.ForeignKey("tester.id"), nullable=False)
 
     test_date = db.Column(db.Date, nullable=False)
-    tester_name = db.Column(db.String(255), nullable=False)
     test_type = db.Column(db.String(255), nullable=False)
     test_standard = db.Column(db.String(50), nullable=False)
     tag_number = db.Column(db.String(255), nullable=False)
 
-    # -------------------------------
-    # Visual Inspection Fields
-    # -------------------------------
+    next_test_due = db.Column(db.Date)
+    overall_result = db.Column(db.String(10), nullable=False)
+    comments = db.Column(db.Text)
+    disposed = db.Column(db.Boolean, default=False)
 
-    # Simple PASS/FAIL items (boolean)
+    # Visual inspection (booleans)
     vi_plug = db.Column(db.Boolean)
     vi_cord = db.Column(db.Boolean)
     vi_casing = db.Column(db.Boolean)
@@ -46,27 +63,18 @@ class TestRecord(db.Model):
     vi_label = db.Column(db.Boolean)
     vi_exposed = db.Column(db.Boolean)
 
-    # PASS / FAIL / N/A items (string)
-    vi_repairs = db.Column(db.String(10))   # PASS / FAIL / N/A
-    vi_strain = db.Column(db.String(10))    # PASS / FAIL / N/A
-    vi_guards = db.Column(db.String(10))    # PASS / FAIL / N/A
+    # PASS / FAIL / N/A fields
+    vi_repairs = db.Column(db.String(10))
+    vi_strain = db.Column(db.String(10))
+    vi_guards = db.Column(db.String(10))
 
-    # -------------------------------
-    # Electrical Test Fields
-    # -------------------------------
-    visual_pass = db.Column(db.Boolean)  # (legacy, can be removed later)
+    # Electrical tests
     earth_continuity_ohms = db.Column(db.String(50))
     insulation_mohms = db.Column(db.String(50))
-    polarity_pass = db.Column(db.Boolean)
     leakage_mA = db.Column(db.String(50))
+    polarity_pass = db.Column(db.Boolean)
 
-    overall_result = db.Column(db.String(10), nullable=False)
-    next_test_due = db.Column(db.Date)
-    comments = db.Column(db.Text)
-
-    # -------------------------------
-    # 5761 / 5762 Additional Fields
-    # -------------------------------
+    # 5761 / 5762 fields
     condition_assessment = db.Column(db.String(255))
     functional_check = db.Column(db.String(255))
     accessories = db.Column(db.String(255))
@@ -77,27 +85,29 @@ class TestRecord(db.Model):
     parts_replaced = db.Column(db.Text)
     post_repair_test = db.Column(db.String(255))
 
-    disposed = db.Column(db.Boolean, default=False)
-
-    photos = db.relationship("TestPhoto", backref="test", lazy=True)
-
-    def __repr__(self):
-        return f"<TestRecord {self.id}>"
+    # Relationships
+    appliance = db.relationship("Appliance", back_populates="tests")
+    tester = db.relationship("Tester", back_populates="tests")
+    photos = db.relationship("TestPhoto", back_populates="test", cascade="all, delete")
 
 
+# ---------------------------------------------------------
+# Test Photo Table
+# ---------------------------------------------------------
 class TestPhoto(db.Model):
     __tablename__ = "test_photo"
 
     id = db.Column(db.Integer, primary_key=True)
     test_id = db.Column(db.Integer, db.ForeignKey("test_record.id"), nullable=False)
-
     filename = db.Column(db.String(255), nullable=False)
     filepath = db.Column(db.String(255), nullable=False)
 
-    def __repr__(self):
-        return f"<TestPhoto {self.filename}>"
+    test = db.relationship("TestRecord", back_populates="photos")
 
 
+# ---------------------------------------------------------
+# Retest Rule Table
+# ---------------------------------------------------------
 class RetestRule(db.Model):
     __tablename__ = "retest_rule"
 
@@ -105,6 +115,3 @@ class RetestRule(db.Model):
     class_type = db.Column(db.String(50))
     supply_type = db.Column(db.String(50))
     interval_days = db.Column(db.Integer, nullable=False)
-
-    def __repr__(self):
-        return f"<RetestRule {self.class_type}/{self.supply_type}: {self.interval_days} days>"

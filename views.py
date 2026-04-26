@@ -10,7 +10,7 @@ from werkzeug.utils import secure_filename
 
 from app import db
 from config import Config
-from models import Appliance, TestRecord, TestPhoto, RetestRule
+from models import Appliance, TestRecord, TestPhoto, RetestRule, Tester
 from utils import (
     fuzzy,
     get_suggested_interval,
@@ -269,19 +269,24 @@ def new_test(appliance_id):
         interval_days = int(form["retest_interval"])
         next_due = test_date + timedelta(days=interval_days)
 
-        # Convert dropdown PASS/FAIL to booleans for the 6 boolean fields
+        tester_id = int(form["tester_id"])
+        tester = Tester.query.get(tester_id)
+
         def bool_from_dropdown(value):
             return value == "PASS"
 
         test = TestRecord(
             appliance_id=appliance.id,
+            tester_id=tester.id,
             test_date=test_date,
-            tester_name=form["tester_name"],
             test_type=form["test_type"],
             test_standard=form["test_standard"],
             tag_number=form["tag_number"],
+            next_test_due=next_due.date(),
+            overall_result=form["overall_result"],
+            comments=form.get("comments"),
 
-            # Visual inspection (converted from dropdown)
+            # Visual inspection
             vi_plug=bool_from_dropdown(form.get("vi_plug")),
             vi_cord=bool_from_dropdown(form.get("vi_cord")),
             vi_casing=bool_from_dropdown(form.get("vi_casing")),
@@ -289,7 +294,6 @@ def new_test(appliance_id):
             vi_label=bool_from_dropdown(form.get("vi_label")),
             vi_exposed=bool_from_dropdown(form.get("vi_exposed")),
 
-            # PASS / FAIL / N/A items (stored as strings)
             vi_repairs=form.get("vi_repairs"),
             vi_strain=form.get("vi_strain"),
             vi_guards=form.get("vi_guards"),
@@ -297,14 +301,10 @@ def new_test(appliance_id):
             # Electrical tests
             earth_continuity_ohms=form.get("earth_continuity_ohms") or None,
             insulation_mohms=form.get("insulation_mohms") or None,
-            polarity_pass=("polarity_pass" in form),
             leakage_mA=form.get("leakage_mA") or None,
+            polarity_pass=("polarity_pass" in form),
 
-            overall_result=form["overall_result"],
-            next_test_due=next_due.date(),
-            comments=form.get("comments"),
-
-            # 5761 / 5762 fields
+            # 5761 / 5762
             condition_assessment=form.get("condition_assessment"),
             functional_check=form.get("functional_check"),
             accessories=form.get("accessories"),
@@ -344,6 +344,8 @@ def new_test(appliance_id):
         flash("Test record saved.", "success")
         return redirect(url_for("main.appliance_detail", appliance_id=appliance.id))
 
+    # GET request
+    testers = Tester.query.order_by(Tester.full_name).all()
     rules = RetestRule.query.order_by(RetestRule.interval_days).all()
     suggested_rule = get_suggested_interval(
         appliance.class_type or "ANY",
@@ -353,6 +355,7 @@ def new_test(appliance_id):
     return render_template(
         "test_form.html",
         appliance=appliance,
+        testers=testers,
         rules=rules,
         suggested_rule=suggested_rule
     )
@@ -399,6 +402,7 @@ def search():
 def test_pdf(test_id):
     test = TestRecord.query.get_or_404(test_id)
     appliance = test.appliance
+    tester = test.tester
 
     record_url = url_for("main.test_detail", test_id=test.id, _external=True)
     qr_code = generate_qr_code(record_url)
@@ -410,7 +414,14 @@ def test_pdf(test_id):
     else:
         template = "pdf/test_3760.html"
 
-    html = render_template(template, test=test, appliance=appliance, qr_code=qr_code)
+    html = render_template(
+        template,
+        test=test,
+        appliance=appliance,
+        tester=tester,
+        qr_code=qr_code
+    )
+
     pdf = HTML(string=html).write_pdf()
 
     response = make_response(pdf)

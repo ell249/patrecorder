@@ -1,15 +1,15 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="utf-8">
-    <style>
-        body { font-family: Arial, sans-serif; font-size: 12px; }
-        h2 { margin-bottom: 0; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { border: 1px solid #444; padding: 6px; }
-        th { background: #eee; }
-        .qr { float: right; width: 120px; }
-    </style>
+<meta charset="utf-8">
+<style>
+body { font-family: Arial, sans-serif; font-size: 12px; }
+h2 { margin-bottom: 0; }
+table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+th, td { border: 1px solid #444; padding: 6px; }
+th { background: #eee; }
+.qr { float: right; width: 120px; }
+</style>
 </head>
 <body>
 
@@ -18,44 +18,49 @@
 
 <h3>Appliance Information</h3>
 <table>
-    <tr><th>Asset Number</th><td>{{ appliance.asset_number }}</td></tr>
-    <tr><th>Description</th><td>{{ appliance.description }}</td></tr>
-    <tr><th>Make / Model</th><td>{{ appliance.make_model }}</td></tr>
-    <tr><th>Location</th><td>{{ appliance.location }}</td></tr>
+<tr><th>Asset Number</th><td>{{ appliance.asset_number }}</td></tr>
+<tr><th>Description</th><td>{{ appliance.description }}</td></tr>
+<tr><th>Make / Model</th><td>{{ appliance.make_model }}</td></tr>
+<tr><th>Location</th><td>{{ appliance.location }}</td></tr>
+</table>
+
+<h3>Tester Information</h3>
+<table>
+<tr><th>Tester Name</th><td>{{ tester.full_name }}</td></tr>
+<tr><th>Certificate Number</th><td>{{ tester.certificate_number }}</td></tr>
+<tr><th>Phone</th><td>{{ tester.phone_number or 'N/A' }}</td></tr>
 </table>
 
 <h3>Test Information</h3>
 <table>
-    <tr><th>Test Date</th><td>{{ test.test_date }}</td></tr>
-    <tr><th>Tester</th><td>{{ test.tester_name }}</td></tr>
-    <tr><th>Tag Number</th><td>{{ test.tag_number }}</td></tr>
-    <tr><th>Next Test Due</th><td>{{ test.next_test_due }}</td></tr>
-    <tr><th>Overall Result</th><td>{{ test.overall_result }}</td></tr>
+<tr><th>Test Date</th><td>{{ test.test_date }}</td></tr>
+<tr><th>Tag Number</th><td>{{ test.tag_number }}</td></tr>
+<tr><th>Next Test Due</th><td>{{ test.next_test_due }}</td></tr>
+<tr><th>Overall Result</th><td>{{ test.overall_result }}</td></tr>
 </table>
 
 <h3>Visual Inspection</h3>
 <table>
-    <tr><th>Inspection Item</th><th>Result</th></tr>
+<tr><th>Inspection Item</th><th>Result</th></tr>
+<tr><td>Plug condition OK</td><td>{{ 'PASS' if test.vi_plug else 'FAIL' }}</td></tr>
+<tr><td>Cord condition OK</td><td>{{ 'PASS' if test.vi_cord else 'FAIL' }}</td></tr>
+<tr><td>No damage to casing</td><td>{{ 'PASS' if test.vi_casing else 'FAIL' }}</td></tr>
+<tr><td>No signs of overheating</td><td>{{ 'PASS' if test.vi_overheat else 'FAIL' }}</td></tr>
+<tr><td>Rating label intact</td><td>{{ 'PASS' if test.vi_label else 'FAIL' }}</td></tr>
+<tr><td>No exposed conductors</td><td>{{ 'PASS' if test.vi_exposed else 'FAIL' }}</td></tr>
 
-    <tr><td>Plug condition OK</td><td>{{ 'PASS' if test.vi_plug else 'FAIL' }}</td></tr>
-    <tr><td>Cord condition OK</td><td>{{ 'PASS' if test.vi_cord else 'FAIL' }}</td></tr>
-    <tr><td>No damage to casing</td><td>{{ 'PASS' if test.vi_casing else 'FAIL' }}</td></tr>
-    <tr><td>No signs of overheating</td><td>{{ 'PASS' if test.vi_overheat else 'FAIL' }}</td></tr>
-    <tr><td>Rating label intact</td><td>{{ 'PASS' if test.vi_label else 'FAIL' }}</td></tr>
-    <tr><td>No exposed conductors</td><td>{{ 'PASS' if test.vi_exposed else 'FAIL' }}</td></tr>
-
-    <tr><td>Unsafe previous repairs</td><td>{{ test.vi_repairs }}</td></tr>
-    <tr><td>Cable strain relief</td><td>{{ test.vi_strain }}</td></tr>
-    <tr><td>Safety guards working</td><td>{{ test.vi_guards }}</td></tr>
+<tr><td>Unsafe previous repairs</td><td>{{ test.vi_repairs }}</td></tr>
+<tr><td>Cable strain relief</td><td>{{ test.vi_strain }}</td></tr>
+<tr><td>Safety guards working</td><td>{{ test.vi_guards }}</td></tr>
 </table>
 
 <h3>Electrical Tests</h3>
 <table>
-    <tr><th>Test</th><th>Value</th></tr>
-    <tr><td>Earth Continuity (Ω)</td><td>{{ test.earth_continuity_ohms or 'N/A' }}</td></tr>
-    <tr><td>Insulation Resistance (MΩ)</td><td>{{ test.insulation_mohms or 'N/A' }}</td></tr>
-    <tr><td>Leakage Current (mA)</td><td>{{ test.leakage_mA or 'N/A' }}</td></tr>
-    <tr><td>Polarity</td><td>{{ 'PASS' if test.polarity_pass else 'FAIL' }}</td></tr>
+<tr><th>Test</th><th>Value</th></tr>
+<tr><td>Earth Continuity (Ω)</td><td>{{ test.earth_continuity_ohms or 'N/A' }}</td></tr>
+<tr><td>Insulation Resistance (MΩ)</td><td>{{ test.insulation_mohms or 'N/A' }}</td></tr>
+<tr><td>Leakage Current (mA)</td><td>{{ test.leakage_mA or 'N/A' }}</td></tr>
+<tr><td>Polarity</td><td>{{ 'PASS' if test.polarity_pass else 'FAIL' }}</td></tr>
 </table>
 
 <h3>Comments</h3>

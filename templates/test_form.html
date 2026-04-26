@@ -13,10 +13,25 @@
         <input type="date" name="test_date" class="form-control" required>
     </div>
 
-    <!-- Tester Name -->
+    <!-- Tester Dropdown -->
     <div class="col-md-5">
-        <label class="form-label">Tester Name</label>
-        <input type="text" name="tester_name" class="form-control" required>
+        <label class="form-label">
+            Tester
+            <span data-bs-toggle="tooltip"
+                  title="Select the certified technician performing this test. Certificate numbers are recorded for compliance.">
+                ⓘ
+            </span>
+        </label>
+
+        <select name="tester_id" class="form-select" required>
+            <option value="" disabled selected>Select tester...</option>
+
+            {% for t in testers %}
+                <option value="{{ t.id }}">
+                    {{ t.full_name }} — Cert {{ t.certificate_number }}
+                </option>
+            {% endfor %}
+        </select>
     </div>
 
     <!-- Test Standard -->
