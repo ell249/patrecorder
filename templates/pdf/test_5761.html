@@ -3,17 +3,18 @@
 <head>
 <meta charset="utf-8">
 <style>
-body { font-family: Arial, sans-serif; font-size: 12px; }
+body { font-family: Arial, sans-serif; font-size: 12px; margin: 20px; }
 h2 { margin-bottom: 0; }
+h3 { margin-top: 25px; margin-bottom: 5px; }
 table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-th, td { border: 1px solid #444; padding: 6px; }
+th, td { border: 1px solid #444; padding: 6px; vertical-align: top; }
 th { background: #eee; }
 .qr { float: right; width: 120px; }
 </style>
 </head>
 <body>
 
-<h2>AS/NZS 5761 Second‑Hand Appliance Test Report</h2>
+<h2>{{ test.test_standard | std }} Second‑Hand Appliance Test Report</h2>
 <img src="data:image/png;base64,{{ qr_code }}" class="qr">
 
 <h3>Appliance Information</h3>
@@ -22,6 +23,8 @@ th { background: #eee; }
 <tr><th>Description</th><td>{{ appliance.description }}</td></tr>
 <tr><th>Make / Model</th><td>{{ appliance.make_model }}</td></tr>
 <tr><th>Location</th><td>{{ appliance.location }}</td></tr>
+<tr><th>Class Type</th><td>{{ appliance.class_type }}</td></tr>
+<tr><th>Supply Type</th><td>{{ appliance.supply_type }}</td></tr>
 </table>
 
 <h3>Tester Information</h3>
@@ -34,6 +37,7 @@ th { background: #eee; }
 <h3>Test Information</h3>
 <table>
 <tr><th>Test Date</th><td>{{ test.test_date }}</td></tr>
+<tr><th>Test Standard</th><td>{{ test.test_standard | std }}</td></tr>
 <tr><th>Tag Number</th><td>{{ test.tag_number }}</td></tr>
 <tr><th>Next Test Due</th><td>{{ test.next_test_due }}</td></tr>
 <tr><th>Overall Result</th><td>{{ test.overall_result }}</td></tr>
@@ -48,19 +52,9 @@ th { background: #eee; }
 <tr><td>No signs of overheating</td><td>{{ 'PASS' if test.vi_overheat else 'FAIL' }}</td></tr>
 <tr><td>Rating label intact</td><td>{{ 'PASS' if test.vi_label else 'FAIL' }}</td></tr>
 <tr><td>No exposed conductors</td><td>{{ 'PASS' if test.vi_exposed else 'FAIL' }}</td></tr>
-
 <tr><td>Unsafe previous repairs</td><td>{{ test.vi_repairs }}</td></tr>
 <tr><td>Cable strain relief</td><td>{{ test.vi_strain }}</td></tr>
 <tr><td>Safety guards working</td><td>{{ test.vi_guards }}</td></tr>
-</table>
-
-<h3>Electrical Tests</h3>
-<table>
-<tr><th>Test</th><th>Value</th></tr>
-<tr><td>Earth Continuity (Ω)</td><td>{{ test.earth_continuity_ohms or 'N/A' }}</td></tr>
-<tr><td>Insulation Resistance (MΩ)</td><td>{{ test.insulation_mohms or 'N/A' }}</td></tr>
-<tr><td>Leakage Current (mA)</td><td>{{ test.leakage_mA or 'N/A' }}</td></tr>
-<tr><td>Polarity</td><td>{{ 'PASS' if test.polarity_pass else 'FAIL' }}</td></tr>
 </table>
 
 <h3>5761 Additional Checks</h3>
