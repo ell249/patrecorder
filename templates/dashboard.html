@@ -5,101 +5,83 @@
 
 <h3 class="mb-4">Dashboard</h3>
 
-<!-- Action Buttons -->
-<div class="mb-4">
-    <a href="{{ url_for('main.new_appliance') }}" class="btn btn-primary">
-        New Appliance
-    </a>
-
-    <a href="{{ url_for('main.appliance_list', show_disposed=1) }}" class="btn btn-warning">
-        Show Disposed Appliances
-    </a>
-</div>
-
-<!-- Stats -->
 <div class="row mb-4">
 
+    <!-- Active Appliances -->
     <div class="col-md-4">
-        <div class="card text-center p-3">
-            <h5>Active Appliances</h5>
-            <div class="display-6">{{ appliance_count }}</div>
+        <div class="card text-bg-primary mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Active Appliances</h5>
+                <p class="card-text display-6">{{ appliance_count }}</p>
+            </div>
         </div>
     </div>
 
+    <!-- Upcoming Tests (Next 30 Days) -->
     <div class="col-md-4">
-        <div class="card text-center p-3">
-            <h5>Upcoming Tests (Next 30 Days)</h5>
-            <div class="display-6 text-warning">{{ upcoming_count }}</div>
+        <div class="card text-bg-warning mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Upcoming Tests (Next 30 Days)</h5>
+                <p class="card-text display-6">{{ upcoming_count }}</p>
+            </div>
         </div>
     </div>
 
 </div>
 
-<!-- Appliances Due for Test -->
-<h4 class="mb-3">Appliances Due for Test</h4>
+<!-- Appliances Due or Never Tested -->
+<h4 class="mt-4">Appliances Due for Testing</h4>
+<p class="text-muted">Includes appliances never tested or with tests due within 30 days.</p>
 
-{% if due_appliances %}
 <table class="table table-striped">
     <thead>
         <tr>
-            <th>Asset Number</th>
+            <th>Asset</th>
             <th>Description</th>
-            <th>Make/Model</th>
             <th>Location</th>
-            <th>Next Test Due</th>
-            <th>Status</th>
+            <th>Last Test</th>
+            <th>Next Due</th>
             <th></th>
         </tr>
     </thead>
     <tbody>
-        {% for appliance in due_appliances %}
-        {% set latest = appliance.tests|selectattr('disposed', 'equalto', False)|sort(attribute='next_test_due')|list %}
-        {% set next_due = latest[0].next_test_due if latest else None %}
+        {% for a in due_appliances %}
+        {% set last_test = a.tests|selectattr('disposed', 'equalto', False)|sort(attribute='test_date')|last %}
         <tr>
-            <td>{{ appliance.asset_number }}</td>
-            <td>{{ appliance.description }}</td>
-            <td>{{ appliance.make_model }}</td>
-            <td>{{ appliance.location }}</td>
+            <td>{{ a.asset_number }}</td>
+            <td>{{ a.description }}</td>
+            <td>{{ a.location }}</td>
             <td>
-                {% if next_due %}
-                    {{ next_due }}
+                {% if last_test %}
+                    {{ last_test.test_date }} ({{ last_test.test_standard | std }})
                 {% else %}
-                    <span class="text-danger fw-bold">Never Tested</span>
+                    <span class="text-danger">Never Tested</span>
                 {% endif %}
             </td>
             <td>
-                {% if not next_due %}
-                    <span class="badge bg-danger">Never Tested</span>
-                {% elif next_due < date.today() %}
-                    <span class="badge bg-danger">Overdue</span>
+                {% if last_test and last_test.next_test_due %}
+                    {{ last_test.next_test_due }}
                 {% else %}
-                    <span class="badge bg-warning text-dark">Due Soon</span>
+                    <span class="text-danger">N/A</span>
                 {% endif %}
             </td>
             <td>
-                <a href="{{ url_for('main.appliance_detail', appliance_id=appliance.id) }}"
-                   class="btn btn-sm btn-outline-primary">
-                    View
-                </a>
+                <a href="{{ url_for('main.appliance_detail', appliance_id=a.id) }}"
+                   class="btn btn-sm btn-primary">View</a>
             </td>
         </tr>
         {% endfor %}
     </tbody>
 </table>
-{% else %}
-<p>No appliances are currently due for testing.</p>
-{% endif %}
 
 <!-- Recent Tests -->
-<h4 class="mb-3 mt-5">Recent Tests</h4>
+<h4 class="mt-5">Recent Tests</h4>
 
-{% if recent_tests %}
 <table class="table table-striped">
     <thead>
         <tr>
             <th>Date</th>
-            <th>Appliance</th>
-            <th>Tag</th>
+            <th>Asset</th>
             <th>Standard</th>
             <th>Result</th>
             <th></th>
@@ -108,28 +90,23 @@
     <tbody>
         {% for test in recent_tests %}
         <tr>
-            <td>{{ test.test_date.strftime('%Y-%m-%d') }}</td>
+            <td>{{ test.test_date }}</td>
             <td>{{ test.appliance.asset_number }}</td>
-            <td>{{ test.tag_number }}</td>
-            <td>{{ test.test_standard }}</td>
+            <td>{{ test.test_standard | std }}</td>
             <td>
-                {% if test.overall_result == 'PASS' %}
+                {% if test.overall_result == "PASS" %}
                     <span class="badge bg-success">PASS</span>
                 {% else %}
                     <span class="badge bg-danger">FAIL</span>
                 {% endif %}
             </td>
             <td>
-                <a href="{{ url_for('main.test_detail', test_id=test.id) }}" class="btn btn-sm btn-outline-primary">
-                    View
-                </a>
+                <a href="{{ url_for('main.test_detail', test_id=test.id) }}"
+                   class="btn btn-sm btn-primary">View</a>
             </td>
         </tr>
         {% endfor %}
     </tbody>
 </table>
-{% else %}
-<p>No recent tests found.</p>
-{% endif %}
 
 {% endblock %}

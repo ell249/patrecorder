@@ -2,94 +2,81 @@
 {% block title %}Search Results{% endblock %}
 
 {% block content %}
-<h3 class="mb-3">Search Results</h3>
-<p class="text-muted">Results for: <strong>{{ q }}</strong></p>
 
-<!-- Appliance Matches -->
-<div class="card mb-4">
-  <div class="card-header bg-light">
-    <strong>Matching Appliances</strong>
-  </div>
-  <div class="card-body">
+<h3 class="mb-4">Search Results for "{{ q }}"</h3>
 
-    {% if appliances %}
-    <div class="table-responsive">
-      <table class="table table-striped align-middle">
-        <thead>
-          <tr>
-            <th>Asset #</th>
+<!-- Appliances -->
+<h4>Matching Appliances</h4>
+
+{% if appliances %}
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Asset</th>
             <th>Description</th>
             <th>Location</th>
             <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for a in appliances %}
-          <tr>
+        </tr>
+    </thead>
+    <tbody>
+        {% for a in appliances %}
+        <tr>
             <td>{{ a.asset_number }}</td>
             <td>{{ a.description }}</td>
             <td>{{ a.location }}</td>
             <td>
-              <a href="{{ url_for('main.appliance_detail', appliance_id=a.id) }}"
-                 class="btn btn-sm btn-primary">View</a>
+                <a href="{{ url_for('main.appliance_detail', appliance_id=a.id) }}"
+                   class="btn btn-sm btn-primary">View</a>
             </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-    {% else %}
-      <p class="text-muted">No appliances found.</p>
-    {% endif %}
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p class="text-muted">No appliances matched your search.</p>
+{% endif %}
 
-  </div>
-</div>
+<hr class="my-4">
 
-<!-- Test Tag Matches -->
-<div class="card mb-4">
-  <div class="card-header bg-light">
-    <strong>Matching Test Tags</strong>
-  </div>
-  <div class="card-body">
+<!-- Tests -->
+<h4>Matching Tests</h4>
 
-    {% if tests %}
-    <div class="table-responsive">
-      <table class="table table-striped align-middle">
-        <thead>
-          <tr>
-            <th>Tag #</th>
+{% if tests %}
+<table class="table table-striped">
+    <thead>
+        <tr>
             <th>Date</th>
-            <th>Asset #</th>
+            <th>Asset</th>
+            <th>Standard</th>
             <th>Result</th>
+            <th>Tag</th>
             <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for t in tests %}
-          <tr>
-            <td>{{ t.tag_number }}</td>
-            <td>{{ t.test_date.strftime('%Y-%m-%d') }}</td>
+        </tr>
+    </thead>
+    <tbody>
+        {% for t in tests %}
+        <tr>
+            <td>{{ t.test_date }}</td>
             <td>{{ t.appliance.asset_number }}</td>
+            <td>{{ t.test_standard | std }}</td>
             <td>
-              <span class="badge bg-{{ 'success' if t.overall_result == 'PASS' else 'danger' }}">
-                {{ t.overall_result }}
-              </span>
+                {% if t.overall_result == "PASS" %}
+                    <span class="badge bg-success">PASS</span>
+                {% else %}
+                    <span class="badge bg-danger">FAIL</span>
+                {% endif %}
             </td>
+            <td>{{ t.tag_number }}</td>
             <td>
-              <a href="{{ url_for('main.test_detail', test_id=t.id) }}"
-                 class="btn btn-sm btn-primary">View</a>
+                <a href="{{ url_for('main.test_detail', test_id=t.id) }}"
+                   class="btn btn-sm btn-primary">View</a>
             </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-    {% else %}
-      <p class="text-muted">No test tags found.</p>
-    {% endif %}
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p class="text-muted">No tests matched your search.</p>
+{% endif %}
 
-  </div>
-</div>
-
-<a href="{{ url_for('main.appliance_list') }}" class="btn btn-secondary">Back to Appliances</a>
 {% endblock %}

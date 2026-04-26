@@ -11,7 +11,7 @@
     <table class="table table-bordered">
         <tr><th>Test Date</th><td>{{ test.test_date }}</td></tr>
         <tr><th>Tester</th><td>{{ test.tester.full_name }} (Cert {{ test.tester.certificate_number }})</td></tr>
-        <tr><th>Test Standard</th><td>{{ test.test_standard }}</td></tr>
+        <tr><th>Test Standard</th><td>{{ test.test_standard | std }}</td></tr>
         <tr><th>Test Type</th><td>{{ test.test_type }}</td></tr>
         <tr><th>Tag Number</th><td>{{ test.tag_number }}</td></tr>
         <tr><th>Next Test Due</th><td>{{ test.next_test_due }}</td></tr>
