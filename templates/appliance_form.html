@@ -94,9 +94,9 @@
     </select>
   </div>
 
-  <!-- Supply Type -->
+  <!-- Appliance Type -->
   <div class="col-md-3">
-    <label class="form-label">Supply Type</label>
+    <label class="form-label">Appliance Type</label>
     <select name="supply_type" class="form-select" id="supplyTypeSelect" onchange="updateAssetNumber()">
       <option value="">Select…</option>
       <option value="PORTABLE"     {% if edit_mode and appliance.supply_type == 'PORTABLE' %}selected{% endif %}>Portable</option>
