@@ -8,7 +8,7 @@ class Tester(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     full_name = db.Column(db.String(120), nullable=False)
-    certificate_number = db.Column(db.String(50), nullable=False)
+    certificate_number = db.Column(db.String(120), nullable=False)
     phone_number = db.Column(db.String(50))
 
     # Relationship to TestRecord (tester_id foreign key)
@@ -36,6 +36,7 @@ class Appliance(db.Model):
     purchase_date = db.Column(db.Date)
     purchase_price = db.Column(db.Numeric(10, 2))
     receipt_filepath = db.Column(db.String(255))
+    created_at = db.Column(db.DateTime, server_default=db.func.now())
     disposed = db.Column(db.Boolean, default=False)
     disposal_date = db.Column(db.Date)
     disposal_price = db.Column(db.Numeric(10, 2))

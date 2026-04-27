@@ -56,6 +56,10 @@
                 {% endif %}
             </td>
         </tr>
+        <tr>
+            <th>Record Created</th>
+            <td>{{ appliance.created_at.strftime('%d/%m/%Y %H:%M') if appliance.created_at else '—' }}</td>
+        </tr>
     </table>
 
     <div class="d-flex justify-content-between align-items-center mt-4 mb-2">
