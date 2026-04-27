@@ -53,7 +53,7 @@ AS/NZS 5762: Testing of electrical equipment after repair.">
                 ⓘ
             </span>
         </label>
-        <select name="test_standard" class="form-select" required>
+        <select name="test_standard" id="test_standard" class="form-select" required>
             <option value="3760">AS/NZS 3760</option>
             <option value="5761">AS/NZS 5761</option>
             <option value="5762">AS/NZS 5762</option>
@@ -312,7 +312,58 @@ AS/NZS 5762: Testing of electrical equipment after repair.">
 
     <hr class="mt-4">
 
+     <!-- Additional tests -->
+    <div id="fields_5761" class="col-12 mt-3" style="display:none;">
+        <h4 class="mt-3">Additional Requirements for AS/NZS 5761</h4>
+        <div class="row g-3">
+        <div class="col-md-6">
+            <label class="form-label">Condition Assessment</label>
+            <textarea name="condition_assessment" class="form-control"></textarea>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Functional Check Result</label>
+            <textarea name="functional_check" class="form-control"></textarea>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Accessories Included</label>
+            <input type="text" name="accessories" class="form-control">
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Is appliance safe for resale?</label>
+            <select name="safe_for_resale" class="form-select">
+            <option value="YES">YES</option>
+            <option value="NO">NO</option>
+            </select>
+        </div>
+        </div>
+        <hr class="mt-4">
+    </div>
+
+    <div id="fields_5762" class="col-12 mt-3" style="display:none;">
+        <h4 class="mt-3">Additional Requirements for AS/NZS 5762</h4>
+        <div class="row g-3">
+        <div class="col-md-6">
+            <label class="form-label">Repair Description</label>
+            <textarea name="repair_description" class="form-control"></textarea>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Repaired By</label>
+            <input type="text" name="repaired_by" class="form-control">
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Parts Replaced</label>
+            <textarea name="parts_replaced" class="form-control"></textarea>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Post‑repair Functional Test</label>
+            <textarea name="post_repair_test" class="form-control"></textarea>
+        </div>
+        </div>
+        <hr class="mt-4">
+    </div>
+
     <!-- Overall Result -->
+    <h4 class="mt-3">Overall Assessment</h4>
     <div class="col-md-4">
         <label class="form-label">Overall Result</label>
         <select name="overall_result" class="form-select" required>
@@ -345,6 +396,27 @@ AS/NZS 5762: Testing of electrical equipment after repair.">
     </div>
 
 </form>
+
+<!-- Extra checks for additional standards -->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const select = document.getElementById("test_standard");
+    const f5761 = document.getElementById("fields_5761");
+    const f5762 = document.getElementById("fields_5762");
+    function updateFields() {
+        const val = select.value;
+        f5761.style.display = "none";
+        f5762.style.display = "none";
+        if (val === "5761") {
+            f5761.style.display = "block";
+        } else if (val === "5762") {
+            f5762.style.display = "block";
+        }
+    }
+    select.addEventListener("change", updateFields);
+    updateFields();
+});
+</script>
 
 <!-- If it's a Lead + RCD -->
 <script>
