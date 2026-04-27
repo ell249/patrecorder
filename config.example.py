@@ -8,4 +8,4 @@ class Config:
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), "static", "uploads", "tests")
-    MAX_CONTENT_LENGTH = 20 * 1024 * 1024
+    MAX_CONTENT_LENGTH = 200 * 1024 * 1024

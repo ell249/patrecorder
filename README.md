@@ -9,13 +9,10 @@ Built with **Flask**, **Bootstrap 5**, **WeasyPrint**, and **DataTables**, the s
 ## Features
 
 ### 🔌 Modern, Branded Interface
-- Application renamed to **PAT Recorder**
-- MDI **power‑plug icon** added to the navbar
 - Streamlined navigation:
   - Dashboard  
   - Appliances  
   - Add Appliance  
-- *Testers* menu removed (tester selection now handled internally)
 
 ---
 
@@ -148,7 +145,7 @@ Action buttons remain aligned and consistent:
 ---
 
 ## 📁 Project Structure
-test_and_tag/
+`test_and_tag/
 ├── app.py
 ├── config.py
 ├── models.py
@@ -182,17 +179,17 @@ test_and_tag/
 ├── test_3760.html
 ├── test_5761.html
 ├── test_5762.html
-└── repair_history.html
+└── repair_history.html`
 
 ---
 
 ## 🛠 Installation
 
-See **INSTALL.md** for full installation instructions.
+See **INSTALL.txt** for full installation instructions.
 
 ---
 
 ## 🔧 Note
 
-AI (Copilot) used in the generation of this code
+AI (Claude) used in the generation of this code
 
