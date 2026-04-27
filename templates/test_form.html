@@ -22,14 +22,24 @@
                 ⓘ
             </span>
         </label>
-        <select name="tester_id" class="form-select" required>
-            <option value="" disabled selected>Select tester...</option>
-            {% for t in testers %}
-                <option value="{{ t.id }}">
-                    {{ t.full_name }} – Cert {{ t.certificate_number }}
-                </option>
-            {% endfor %}
-        </select>
+        <div class="input-group">
+            <select name="tester_id" class="form-select" required >
+                <option value="" disabled selected>Select tester...</option>
+                {% for t in testers %}
+                    <option value="{{ t.id }}">
+                        {{ t.full_name }} – Cert {{ t.certificate_number }}
+                    </option>
+                {% endfor %}
+            </select>
+            <!-- Add Tester Button -->
+            <!-- Modal Trigger -->
+            <button type="button"
+                    class="btn btn-outline-success"
+                    data-bs-toggle="modal"
+                    data-bs-target="#addTesterModal">
+                <i class="mdi mdi-plus"></i>
+            </button>
+        </div>
     </div>
 
     <!-- Test Standard -->
@@ -385,5 +395,49 @@ document.getElementById("testForm").addEventListener("submit", function (e) {
     background-color: #ffe6e6;
 }
 </style>
+
+<!-- Add Tester Modal -->
+<div class="modal fade" id="addTesterModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+
+      <form id="addTesterForm" method="POST" action="{{ url_for('main.new_tester_modal') }}">
+        <div class="modal-header">
+          <h5 class="modal-title">Add Tester</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+
+        <div class="modal-body">
+
+          <input type="hidden" name="appliance_id" value="{{ appliance.id }}">
+
+          <div class="mb-3">
+            <label class="form-label">Full Name</label>
+            <input type="text" name="full_name" class="form-control" required>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Certificate Number</label>
+            <input type="text" name="certificate_number" class="form-control" required>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Phone Number</label>
+            <input type="text" name="phone" class="form-control">
+          </div>
+
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-success">Save Tester</button>
+        </div>
+
+      </form>
+
+    </div>
+  </div>
+</div>
+
 
 {% endblock %}

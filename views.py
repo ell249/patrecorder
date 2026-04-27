@@ -428,3 +428,21 @@ def test_pdf(test_id):
     response.headers["Content-Type"] = "application/pdf"
     response.headers["Content-Disposition"] = f"inline; filename=test_{test.id}.pdf"
     return response
+
+# ---------------------------------------------------------
+# Add Tester
+# ---------------------------------------------------------
+
+@bp.route("/testers/new/modal", methods=["POST"])
+def new_tester_modal():
+    full_name = request.form["full_name"]
+    cert = request.form["certificate_number"]
+    phone = request.form.get("phone")
+    appliance_id = request.form.get("appliance_id")
+
+    tester = Tester(full_name=full_name, certificate_number=cert, phone_number=phone)
+    db.session.add(tester)
+    db.session.commit()
+
+    # Return to the test form
+    return redirect(url_for("main.new_test", appliance_id=appliance_id))
