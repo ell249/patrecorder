@@ -1,8 +1,8 @@
-Test & Tag System (MVP Edition)  
-Installation Instructions  
+PAT Recorder
+Installation Instructions
 ---------------------------------------------
 
-This document describes how to install and run the Test & Tag System on a local machine or server. It includes system requirements, dependency installation, database setup, and application startup.
+This document describes how to install and run PAT Recorder on a local machine or server. It includes system requirements, dependency installation, database setup, and application startup.
 
 ---------------------------------------------
 1. System Requirements
@@ -39,13 +39,13 @@ Use WSL2 with Ubuntu for compatibility:
 
 Place the project folder anywhere on your system:
 
-    test_and_tag/
+    patrecorder/
 
 ---------------------------------------------
 4. Create Python Virtual Environment
 ---------------------------------------------
 
-    cd test_and_tag
+    cd patrecorder
     python3 -m venv venv
     source venv/bin/activate
     pip install -r requirements.txt
@@ -70,15 +70,20 @@ Run the SQL setup files:
     SOURCE sql/create_tables.sql;
     SOURCE sql/insert_default_retest_rules.sql;
 
-This creates the required tables:
-- appliances
-- tests
-- test_photos
-- retest_rules
+This creates the required base tables:
+- appliance
+- tester
+- test_record
+- test_photo
+- retest_rule
 
 ---------------------------------------------
 6. Configure Database Credentials
 ---------------------------------------------
+
+Copy the example config and edit it:
+
+    cp config.example.py config.py
 
 Edit config.py and update the database URI:
 
@@ -87,15 +92,31 @@ Edit config.py and update the database URI:
 Replace USERNAME and PASSWORD with your MySQL credentials.
 
 ---------------------------------------------
-7. Create Uploads Directory
+7. Run Database Migrations
 ---------------------------------------------
 
-Ensure the uploads folder exists:
+After the base tables are created, run Flask-Migrate to apply any
+additional schema changes (including the repair tables):
+
+    export FLASK_APP=app.py
+    flask db upgrade
+
+If this is a fresh install with no migrations folder yet:
+
+    flask db init
+    flask db upgrade
+
+---------------------------------------------
+8. Create Uploads Directories
+---------------------------------------------
+
+Ensure the uploads folders exist for test and repair photos:
 
     mkdir -p static/uploads/tests
+    mkdir -p static/uploads/repairs
 
 ---------------------------------------------
-8. Run the Application
+9. Run the Application
 ---------------------------------------------
 
     export FLASK_APP=app.py
@@ -106,7 +127,7 @@ The application will be available at:
     http://127.0.0.1:5000
 
 ---------------------------------------------
-9. Development Mode (Optional)
+10. Development Mode (Optional)
 ---------------------------------------------
 
     export FLASK_ENV=development
@@ -115,7 +136,7 @@ The application will be available at:
 This enables automatic reload on file changes.
 
 ---------------------------------------------
-10. Troubleshooting
+11. Troubleshooting
 ---------------------------------------------
 
 PDF generation errors:
@@ -133,23 +154,32 @@ MySQL connection refused:
 Permission denied on uploads:
     chmod -R 755 static/uploads
 
+Migration errors on fresh install:
+If Flask-Migrate reports "can't locate revision", delete the migrations/
+folder and re-run:
+    flask db init
+    flask db upgrade
+
 ---------------------------------------------
-11. Next Steps
+12. Next Steps
 ---------------------------------------------
 
 After installation you can:
 - Add appliances
-- Record tests under 3760, 5761, or 5762
-- Upload photos
-- Export PDF certificates
-- Use fuzzy search
-- View upcoming test reminders
+- Record tests under AS/NZS 3760, 5761, or 5762
+- Log repairs against appliances (with photos)
+- Upload photos for tests and repairs
+- Export PDF test certificates and repair history reports
+- Use the dashboard to track appliances due for testing,
+  including those repaired since their last test
+- Use fuzzy search across assets and tag numbers
 
 ---------------------------------------------
-12. Support
+13. Support
 ---------------------------------------------
 
-If you need help extending or deploying the system, additional documentation or modules can be generated on request.
+If you need help extending or deploying the system, additional
+documentation or modules can be generated on request.
 
 ---------------------------------------------
 END OF FILE

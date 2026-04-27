@@ -35,6 +35,7 @@ class Appliance(db.Model):
     disposed = db.Column(db.Boolean, default=False)
 
     tests = db.relationship("TestRecord", back_populates="appliance")
+    repairs = db.relationship("RepairRecord", back_populates="appliance", cascade="all, delete")
 
 
 # ---------------------------------------------------------
@@ -106,6 +107,39 @@ class TestPhoto(db.Model):
     filepath = db.Column(db.String(255), nullable=False)
 
     test = db.relationship("TestRecord", back_populates="photos")
+
+
+# ---------------------------------------------------------
+# Repair Record Table
+# ---------------------------------------------------------
+class RepairRecord(db.Model):
+    __tablename__ = "repair_record"
+
+    id = db.Column(db.Integer, primary_key=True)
+    appliance_id = db.Column(db.Integer, db.ForeignKey("appliance.id"), nullable=False)
+    repair_date = db.Column(db.Date, nullable=False)
+    repaired_by = db.Column(db.String(255))
+    description = db.Column(db.Text, nullable=False)
+    comments = db.Column(db.Text)
+    locked_by_test_date = db.Column(db.Date)
+    disposed = db.Column(db.Boolean, default=False)
+
+    appliance = db.relationship("Appliance", back_populates="repairs")
+    photos = db.relationship("RepairPhoto", back_populates="repair", cascade="all, delete")
+
+
+# ---------------------------------------------------------
+# Repair Photo Table
+# ---------------------------------------------------------
+class RepairPhoto(db.Model):
+    __tablename__ = "repair_photo"
+
+    id = db.Column(db.Integer, primary_key=True)
+    repair_id = db.Column(db.Integer, db.ForeignKey("repair_record.id"), nullable=False)
+    filename = db.Column(db.String(255), nullable=False)
+    filepath = db.Column(db.String(255), nullable=False)
+
+    repair = db.relationship("RepairRecord", back_populates="photos")
 
 
 # ---------------------------------------------------------

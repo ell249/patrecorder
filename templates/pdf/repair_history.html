@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+body { font-family: Arial, sans-serif; font-size: 12px; margin: 20px; }
+h2 { margin-bottom: 0; }
+h3 { margin-top: 25px; margin-bottom: 5px; }
+table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+th, td { border: 1px solid #444; padding: 6px; vertical-align: top; }
+th { background: #eee; }
+.qr { float: right; width: 120px; }
+.repair-block { margin-top: 18px; border-top: 2px solid #ccc; padding-top: 10px; }
+.badge-locked { background: #6c757d; color: #fff; padding: 2px 6px; border-radius: 3px; font-size: 10px; }
+.badge-open { background: #198754; color: #fff; padding: 2px 6px; border-radius: 3px; font-size: 10px; }
+.footer { margin-top: 30px; font-size: 10px; color: #888; border-top: 1px solid #ddd; padding-top: 8px; }
+pre { white-space: pre-wrap; font-family: Arial, sans-serif; font-size: 12px; margin: 0; }
+</style>
+</head>
+<body>
+
+<h2>Repair History Report</h2>
+<img src="data:image/png;base64,{{ qr_code }}" class="qr">
+
+<h3>Appliance Information</h3>
+<table>
+<tr><th>Asset Number</th><td>{{ appliance.asset_number }}</td></tr>
+<tr><th>Description</th><td>{{ appliance.description or '—' }}</td></tr>
+<tr><th>Make / Model</th><td>{{ appliance.make_model or '—' }}</td></tr>
+<tr><th>Location</th><td>{{ appliance.location or '—' }}</td></tr>
+<tr><th>Owner</th><td>{{ appliance.owner or '—' }}</td></tr>
+<tr><th>Class Type</th><td>{{ appliance.class_type or '—' }}</td></tr>
+<tr><th>Supply Type</th><td>{{ appliance.supply_type or '—' }}</td></tr>
+</table>
+
+<h3>Repair Records ({{ repairs | length }} total)</h3>
+
+{% if repairs %}
+<table>
+<tr>
+    <th style="width:90px">Date</th>
+    <th style="width:130px">Repaired By</th>
+    <th>Description</th>
+    <th>Comments</th>
+    <th style="width:90px">Status</th>
+</tr>
+{% for repair in repairs %}
+<tr>
+    <td>{{ repair.repair_date.strftime('%d/%m/%Y') }}</td>
+    <td>{{ repair.repaired_by or '—' }}</td>
+    <td><pre>{{ repair.description }}</pre></td>
+    <td><pre>{{ repair.comments or '—' }}</pre></td>
+    <td>
+        {% if repair.locked_by_test_date %}
+            <span class="badge-locked">Locked</span><br>
+            <small>Tested {{ repair.locked_by_test_date.strftime('%d/%m/%Y') }}</small>
+        {% else %}
+            <span class="badge-open">Open</span>
+        {% endif %}
+    </td>
+</tr>
+{% endfor %}
+</table>
+{% else %}
+<p>No repair records found for this appliance.</p>
+{% endif %}
+
+<div class="footer">
+    Generated on {{ now.strftime('%d/%m/%Y %H:%M') if now else '' }}
+</div>
+
+</body>
+</html>

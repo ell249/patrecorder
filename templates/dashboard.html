@@ -31,7 +31,7 @@
 
 <!-- Appliances Due or Never Tested -->
 <h4 class="mt-4">Appliances Due for Testing</h4>
-<p class="text-muted">Includes appliances never tested or with tests due within 30 days.</p>
+<p class="text-muted">Includes appliances never tested, with tests due within 30 days, or repaired since their last test.</p>
 
 <table class="table table-striped">
     <thead>
@@ -41,6 +41,7 @@
             <th>Location</th>
             <th>Last Test</th>
             <th>Next Due</th>
+            <th>Reason</th>
             <th></th>
         </tr>
     </thead>
@@ -65,6 +66,16 @@
                     <span class="text-danger">N/A</span>
                 {% endif %}
             </td>
+            <td>
+                {% set reason = reason_map.get(a.id, '') %}
+                {% if reason == 'Repaired – test required' %}
+                    <span class="badge bg-warning text-dark">Repaired – test required</span>
+                {% elif reason == 'Never tested' %}
+                    <span class="badge bg-danger">Never tested</span>
+                {% else %}
+                    <span class="badge bg-secondary">Overdue</span>
+                {% endif %}
+            </td>
             <td class="text-end">
                 <a href="{{ url_for('main.appliance_detail', appliance_id=a.id) }}"
                 class="btn btn-sm btn-primary">View</a>
@@ -80,6 +91,11 @@
                 <a href="{{ url_for('main.new_test', appliance_id=a.id) }}"
                 class="btn btn-sm btn-success ms-1">
                     Add Test
+                </a>
+
+                <a href="{{ url_for('main.new_repair', appliance_id=a.id) }}"
+                class="btn btn-sm btn-outline-success ms-1">
+                    Add Repair
                 </a>
             </td>
         </tr>
@@ -123,6 +139,11 @@
                 class="btn btn-sm btn-danger ms-1"
                 target="_blank">
                     PDF
+                </a>
+
+                <a href="{{ url_for('main.new_repair', appliance_id=test.appliance.id) }}"
+                class="btn btn-sm btn-outline-success ms-1">
+                    Add Repair
                 </a>
             </td>
         </tr>

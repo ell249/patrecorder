@@ -18,9 +18,6 @@
         <div>
             <a href="{{ url_for('main.edit_appliance', appliance_id=appliance.id) }}"
                class="btn btn-warning btn-sm">Edit Appliance</a>
-
-            <a href="{{ url_for('main.new_test', appliance_id=appliance.id) }}"
-               class="btn btn-success btn-sm">Add Test</a>
         </div>
     </div>
 
@@ -33,7 +30,11 @@
         <tr><th>Supply</th><td>{{ appliance.supply_type }}</td></tr>
     </table>
 
-    <h5 class="mt-4">Test History</h5>
+    <div class="d-flex justify-content-between align-items-center mt-4 mb-2">
+        <h5 class="mb-0">Test History</h5>
+        <a href="{{ url_for('main.new_test', appliance_id=appliance.id) }}"
+           class="btn btn-success btn-sm">Add Test</a>
+    </div>
 
     {% if appliance.tests|selectattr('disposed', 'equalto', False)|list %}
     <table class="table table-striped">
@@ -69,6 +70,62 @@
     </table>
     {% else %}
         <p class="text-danger">No tests recorded for this appliance.</p>
+    {% endif %}
+
+    <div class="d-flex justify-content-between align-items-center mt-4 mb-2">
+        <h5 class="mb-0">Repair History</h5>
+        <div>
+            <a href="{{ url_for('main.new_repair', appliance_id=appliance.id) }}"
+               class="btn btn-outline-success btn-sm">Add Repair</a>
+            <a href="{{ url_for('main.repair_history_pdf', appliance_id=appliance.id) }}"
+               class="btn btn-outline-dark btn-sm ms-1" target="_blank">Repair PDF</a>
+        </div>
+    </div>
+
+    {% set active_repairs = appliance.repairs|selectattr('disposed', 'equalto', False)|list %}
+    {% if active_repairs %}
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Repaired By</th>
+                <th>Description</th>
+                <th>Status</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for repair in active_repairs|sort(attribute='repair_date') %}
+            <tr>
+                <td>{{ repair.repair_date.strftime('%d/%m/%Y') }}</td>
+                <td>{{ repair.repaired_by or '—' }}</td>
+                <td>{{ repair.description[:80] }}{% if repair.description|length > 80 %}…{% endif %}</td>
+                <td>
+                    {% if repair.locked_by_test_date %}
+                        <span class="badge bg-secondary">Locked</span>
+                    {% else %}
+                        <span class="badge bg-success">Open</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="{{ url_for('main.repair_detail', repair_id=repair.id) }}"
+                       class="btn btn-sm btn-primary">View</a>
+                    {% if not repair.locked_by_test_date %}
+                    <a href="{{ url_for('main.edit_repair', repair_id=repair.id) }}"
+                       class="btn btn-sm btn-warning">Edit</a>
+                    <form method="post" action="{{ url_for('main.delete_repair', repair_id=repair.id) }}"
+                          class="d-inline"
+                          onsubmit="return confirm('Permanently delete this repair record?');">
+                        <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                    </form>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+        <p class="text-muted">No repairs recorded for this appliance.</p>
     {% endif %}
 
     <h5 class="mt-4">Photo Gallery</h5>

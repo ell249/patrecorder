@@ -4,13 +4,13 @@ from flask import (
     Blueprint, render_template, request, redirect,
     url_for, flash, make_response
 )
-from sqlalchemy import or_
+from sqlalchemy import or_, func
 from weasyprint import HTML
 from werkzeug.utils import secure_filename
 
 from app import db
 from config import Config
-from models import Appliance, TestRecord, TestPhoto, RetestRule, Tester
+from models import Appliance, TestRecord, TestPhoto, RetestRule, Tester, RepairRecord, RepairPhoto
 from utils import (
     fuzzy,
     get_suggested_interval,
@@ -48,7 +48,48 @@ def dashboard():
         .all()
     )
 
-    due_appliances = {a.id: a for a in (never_tested + due_tests)}.values()
+    # Subqueries for latest test/repair dates per appliance
+    subq_test = (
+        db.session.query(
+            TestRecord.appliance_id,
+            func.max(TestRecord.test_date).label("last_test")
+        )
+        .filter(TestRecord.disposed == False)
+        .group_by(TestRecord.appliance_id)
+        .subquery()
+    )
+    subq_repair = (
+        db.session.query(
+            RepairRecord.appliance_id,
+            func.max(RepairRecord.repair_date).label("last_repair")
+        )
+        .filter(RepairRecord.disposed == False)
+        .group_by(RepairRecord.appliance_id)
+        .subquery()
+    )
+    repaired_needs_test = (
+        Appliance.query
+        .filter(Appliance.disposed == False)
+        .join(subq_repair, subq_repair.c.appliance_id == Appliance.id)
+        .outerjoin(subq_test, subq_test.c.appliance_id == Appliance.id)
+        .filter(
+            (subq_test.c.last_test == None) |
+            (subq_repair.c.last_repair > subq_test.c.last_test)
+        )
+        .all()
+    )
+
+    # Build merged due list with reason labels; de-duplicate by appliance id
+    reason_map = {}
+    for a in never_tested:
+        reason_map[a.id] = "Never tested"
+    for a in due_tests:
+        reason_map.setdefault(a.id, "Overdue")
+    for a in repaired_needs_test:
+        reason_map[a.id] = "Repaired – test required"
+
+    due_appliances_map = {a.id: a for a in (never_tested + due_tests + repaired_needs_test)}
+    due_appliances = due_appliances_map.values()
 
     upcoming_count = (
         Appliance.query
@@ -78,7 +119,8 @@ def dashboard():
         recent_tests=recent_tests,
         appliance_count=appliance_count,
         due_appliances=due_appliances,
-        upcoming_count=upcoming_count
+        upcoming_count=upcoming_count,
+        reason_map=reason_map
     )
 
 # ---------------------------------------------------------
@@ -184,6 +226,8 @@ def dispose_appliance(appliance_id):
     appliance.disposed = True
     for test in appliance.tests:
         test.disposed = True
+    for repair in appliance.repairs:
+        repair.disposed = True
 
     db.session.commit()
 
@@ -201,6 +245,8 @@ def restore_appliance(appliance_id):
     appliance.disposed = False
     for test in appliance.tests:
         test.disposed = False
+    for repair in appliance.repairs:
+        repair.disposed = False
 
     db.session.commit()
 
@@ -319,6 +365,17 @@ def new_test(appliance_id):
         db.session.add(test)
         db.session.commit()
 
+        # Lock any open repair records that predate this test
+        pending_repairs = RepairRecord.query.filter(
+            RepairRecord.appliance_id == appliance.id,
+            RepairRecord.locked_by_test_date == None,
+            RepairRecord.repair_date <= test_date.date()
+        ).all()
+        for repair in pending_repairs:
+            repair.locked_by_test_date = test_date.date()
+        if pending_repairs:
+            db.session.commit()
+
         # Handle photos
         upload_dir = os.path.join(Config.UPLOAD_FOLDER, str(test.id))
         os.makedirs(upload_dir, exist_ok=True)
@@ -359,6 +416,157 @@ def new_test(appliance_id):
         rules=rules,
         suggested_rule=suggested_rule
     )
+
+# ---------------------------------------------------------
+# Add Repair
+# ---------------------------------------------------------
+
+@bp.route("/appliance/<int:appliance_id>/repairs/new", methods=["GET", "POST"])
+def new_repair(appliance_id):
+    appliance = Appliance.query.get_or_404(appliance_id)
+
+    if request.method == "POST":
+        form = request.form
+        files = request.files.getlist("photos")
+
+        repair_date = datetime.strptime(form["repair_date"], "%Y-%m-%d").date()
+
+        repair = RepairRecord(
+            appliance_id=appliance.id,
+            repair_date=repair_date,
+            repaired_by=form.get("repaired_by") or None,
+            description=form["description"],
+            comments=form.get("comments") or None,
+        )
+        db.session.add(repair)
+        db.session.commit()
+
+        upload_dir = os.path.join("static", "uploads", "repairs", str(repair.id))
+        os.makedirs(upload_dir, exist_ok=True)
+
+        for file in files:
+            if not file or file.filename == "":
+                continue
+            filename = secure_filename(file.filename)
+            file.save(os.path.join(upload_dir, filename))
+            rel_path = f"repairs/{repair.id}/{filename}"
+            db.session.add(RepairPhoto(repair_id=repair.id, filename=filename, filepath=rel_path))
+
+        db.session.commit()
+
+        flash("Repair record saved.", "success")
+        return redirect(url_for("main.appliance_detail", appliance_id=appliance.id))
+
+    return render_template("repair_form.html", appliance=appliance)
+
+
+# ---------------------------------------------------------
+# Repair Detail
+# ---------------------------------------------------------
+
+@bp.route("/repair/<int:repair_id>")
+def repair_detail(repair_id):
+    repair = RepairRecord.query.get_or_404(repair_id)
+    return render_template("repair_detail.html", repair=repair)
+
+
+# ---------------------------------------------------------
+# Edit Repair
+# ---------------------------------------------------------
+
+@bp.route("/repair/<int:repair_id>/edit", methods=["GET", "POST"])
+def edit_repair(repair_id):
+    repair = RepairRecord.query.get_or_404(repair_id)
+
+    if repair.locked_by_test_date:
+        flash(f"This repair is locked — a test was conducted on {repair.locked_by_test_date.strftime('%d/%m/%Y')}.", "warning")
+        return redirect(url_for("main.repair_detail", repair_id=repair.id))
+
+    if request.method == "POST":
+        form = request.form
+        files = request.files.getlist("photos")
+
+        repair.repair_date = datetime.strptime(form["repair_date"], "%Y-%m-%d").date()
+        repair.repaired_by = form.get("repaired_by") or None
+        repair.description = form["description"]
+        repair.comments = form.get("comments") or None
+        db.session.commit()
+
+        upload_dir = os.path.join("static", "uploads", "repairs", str(repair.id))
+        os.makedirs(upload_dir, exist_ok=True)
+
+        for file in files:
+            if not file or file.filename == "":
+                continue
+            filename = secure_filename(file.filename)
+            file.save(os.path.join(upload_dir, filename))
+            rel_path = f"repairs/{repair.id}/{filename}"
+            db.session.add(RepairPhoto(repair_id=repair.id, filename=filename, filepath=rel_path))
+
+        db.session.commit()
+
+        flash("Repair record updated.", "success")
+        return redirect(url_for("main.repair_detail", repair_id=repair.id))
+
+    return render_template("repair_form.html", appliance=repair.appliance, repair=repair)
+
+
+# ---------------------------------------------------------
+# Delete Repair
+# ---------------------------------------------------------
+
+@bp.route("/repair/<int:repair_id>/delete", methods=["POST"])
+def delete_repair(repair_id):
+    repair = RepairRecord.query.get_or_404(repair_id)
+    appliance_id = repair.appliance_id
+
+    if repair.locked_by_test_date:
+        flash("Locked repair records cannot be deleted.", "danger")
+        return redirect(url_for("main.repair_detail", repair_id=repair.id))
+
+    upload_dir = os.path.join("static", "uploads", "repairs", str(repair.id))
+    if os.path.isdir(upload_dir):
+        import shutil
+        shutil.rmtree(upload_dir)
+
+    db.session.delete(repair)
+    db.session.commit()
+
+    flash("Repair record deleted.", "success")
+    return redirect(url_for("main.appliance_detail", appliance_id=appliance_id))
+
+
+# ---------------------------------------------------------
+# Repair History PDF
+# ---------------------------------------------------------
+
+@bp.route("/appliance/<int:appliance_id>/repairs/pdf")
+def repair_history_pdf(appliance_id):
+    appliance = Appliance.query.get_or_404(appliance_id)
+    repairs = (
+        RepairRecord.query
+        .filter_by(appliance_id=appliance_id, disposed=False)
+        .order_by(RepairRecord.repair_date)
+        .all()
+    )
+
+    appliance_url = url_for("main.appliance_detail", appliance_id=appliance.id, _external=True)
+    qr_code = generate_qr_code(appliance_url)
+
+    html = render_template(
+        "pdf/repair_history.html",
+        appliance=appliance,
+        repairs=repairs,
+        qr_code=qr_code,
+        now=datetime.today()
+    )
+
+    pdf = HTML(string=html).write_pdf()
+    response = make_response(pdf)
+    response.headers["Content-Type"] = "application/pdf"
+    response.headers["Content-Disposition"] = f"inline; filename=repairs_{appliance_id}.pdf"
+    return response
+
 
 # ---------------------------------------------------------
 # Search

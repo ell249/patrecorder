@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}Repair – {{ repair.appliance.asset_number }}{% endblock %}
+
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3>Repair Record – <a href="{{ url_for('main.appliance_detail', appliance_id=repair.appliance.id) }}">{{ repair.appliance.asset_number }}</a></h3>
+    <div>
+        {% if repair.locked_by_test_date %}
+            <a href="{{ url_for('main.test_pdf', test_id=0) }}" style="display:none"></a>
+        {% else %}
+            <a href="{{ url_for('main.edit_repair', repair_id=repair.id) }}" class="btn btn-warning me-2">Edit</a>
+            <form method="post" action="{{ url_for('main.delete_repair', repair_id=repair.id) }}" class="d-inline"
+                  onsubmit="return confirm('Permanently delete this repair record?');">
+                <button type="submit" class="btn btn-danger">Delete</button>
+            </form>
+        {% endif %}
+    </div>
+</div>
+
+{% if repair.locked_by_test_date %}
+<div class="alert alert-secondary d-flex align-items-center" role="alert">
+    <i class="mdi mdi-lock me-2"></i>
+    <span>Locked — verified by test conducted on <strong>{{ repair.locked_by_test_date.strftime('%d/%m/%Y') }}</strong>. This record is read-only.</span>
+</div>
+{% endif %}
+
+<div class="card mb-4">
+    <div class="card-body">
+        <table class="table table-borderless mb-0">
+            <tbody>
+                <tr>
+                    <th style="width:180px">Appliance</th>
+                    <td>
+                        <a href="{{ url_for('main.appliance_detail', appliance_id=repair.appliance.id) }}">
+                            {{ repair.appliance.asset_number }}
+                        </a>
+                        {% if repair.appliance.description %}— {{ repair.appliance.description }}{% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <th>Repair Date</th>
+                    <td>{{ repair.repair_date.strftime('%d/%m/%Y') }}</td>
+                </tr>
+                <tr>
+                    <th>Repaired By</th>
+                    <td>{{ repair.repaired_by or '—' }}</td>
+                </tr>
+                <tr>
+                    <th>Status</th>
+                    <td>
+                        {% if repair.locked_by_test_date %}
+                            <span class="badge bg-secondary">Locked</span>
+                        {% else %}
+                            <span class="badge bg-success">Open</span>
+                        {% endif %}
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header"><strong>Description</strong></div>
+    <div class="card-body">
+        <p class="mb-0" style="white-space: pre-wrap;">{{ repair.description }}</p>
+    </div>
+</div>
+
+{% if repair.comments %}
+<div class="card mb-4">
+    <div class="card-header"><strong>Additional Comments</strong></div>
+    <div class="card-body">
+        <p class="mb-0" style="white-space: pre-wrap;">{{ repair.comments }}</p>
+    </div>
+</div>
+{% endif %}
+
+{% if repair.photos %}
+<div class="card mb-4">
+    <div class="card-header"><strong>Photos</strong></div>
+    <div class="card-body">
+        <div class="row g-2">
+            {% for photo in repair.photos %}
+            <div class="col-6 col-md-3">
+                <a href="{{ url_for('static', filename='uploads/' + photo.filepath) }}" target="_blank">
+                    <img src="{{ url_for('static', filename='uploads/' + photo.filepath) }}"
+                         class="img-fluid rounded" style="object-fit: cover; height: 150px; width: 100%;"
+                         alt="{{ photo.filename }}">
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<a href="{{ url_for('main.appliance_detail', appliance_id=repair.appliance.id) }}" class="btn btn-secondary">
+    &larr; Back to Appliance
+</a>
+
+{% endblock %}

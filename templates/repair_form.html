@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}{% if repair %}Edit Repair{% else %}New Repair{% endif %}{% endblock %}
+
+{% block content %}
+
+<h3 class="mb-4">
+    {% if repair %}Edit Repair{% else %}Log Repair{% endif %}
+    for {{ appliance.asset_number }}
+</h3>
+
+<form method="post" enctype="multipart/form-data" class="row g-3">
+
+    <!-- Repair Date -->
+    <div class="col-md-3">
+        <label class="form-label">Repair Date</label>
+        <input type="date" name="repair_date" id="repair_date" class="form-control" required
+               value="{{ repair.repair_date.strftime('%Y-%m-%d') if repair else '' }}">
+    </div>
+
+    <!-- Repaired By -->
+    <div class="col-md-5">
+        <label class="form-label">Repaired By</label>
+        <input type="text" name="repaired_by" class="form-control"
+               placeholder="Name of repairer or company"
+               value="{{ repair.repaired_by or '' if repair else '' }}">
+    </div>
+
+    <hr class="mt-4">
+
+    <!-- Description -->
+    <div class="col-12">
+        <label class="form-label">Repair Description <span class="text-danger">*</span></label>
+        <textarea name="description" class="form-control" rows="3" required
+                  placeholder="Describe what was repaired or replaced">{{ repair.description if repair else '' }}</textarea>
+    </div>
+
+    <!-- Comments -->
+    <div class="col-12">
+        <label class="form-label">Additional Comments</label>
+        <textarea name="comments" class="form-control" rows="8"
+                  placeholder="Any additional notes, observations or follow-up actions">{{ repair.comments if repair else '' }}</textarea>
+    </div>
+
+    <!-- Photos -->
+    <div class="col-12">
+        <label class="form-label">Upload Photos</label>
+        {% if repair and repair.photos %}
+            <div class="mb-2">
+                <small class="text-muted">Existing photos: {{ repair.photos | length }}. Upload new files to add more.</small>
+            </div>
+        {% endif %}
+        <input type="file" name="photos" class="form-control" multiple>
+    </div>
+
+    <div class="col-12 mt-4">
+        <button type="submit" class="btn btn-success">
+            {% if repair %}Save Changes{% else %}Save Repair{% endif %}
+        </button>
+        <a href="{{ url_for('main.appliance_detail', appliance_id=appliance.id) }}" class="btn btn-secondary">Cancel</a>
+    </div>
+
+</form>
+
+<!-- Auto-populate today's date -->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const dateField = document.getElementById("repair_date");
+    if (dateField && !dateField.value) {
+        dateField.value = new Date().toISOString().split("T")[0];
+    }
+});
+</script>
+
+{% endblock %}
