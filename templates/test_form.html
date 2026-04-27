@@ -346,6 +346,28 @@ AS/NZS 5762: Testing of electrical equipment after repair.">
 
 </form>
 
+<!-- If it's a Lead + RCD -->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const testType = document.querySelector("select[name='test_type']");
+    const comments = document.querySelector("textarea[name='comments']");
+
+    function updateCommentsPrompt() {
+        if (testType.value === "Lead+RCD") {
+            comments.placeholder = "Include comment for RCD Trip Time <300ms for Type II 30mA or <40ms for Type I 10mA";
+        } else {
+            comments.placeholder = "";
+        }
+    }
+
+    // Run on load (in case of form re-render)
+    updateCommentsPrompt();
+
+    // Run whenever the user changes the test type
+    testType.addEventListener("change", updateCommentsPrompt);
+});
+</script>
+
 <!-- Auto selet today's date -->
 <script>
 document.addEventListener("DOMContentLoaded", function () {
