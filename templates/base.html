@@ -58,6 +58,16 @@
 
             </ul>
 
+            <form class="d-flex ms-auto" action="{{ url_for('main.search') }}" method="get" role="search">
+                <input class="form-control form-control-sm me-2" type="search" name="q"
+                       placeholder="Search appliances, tests, repairs…"
+                       value="{{ request.args.get('q', '') }}"
+                       style="min-width:260px">
+                <button class="btn btn-outline-light btn-sm" type="submit">
+                    <i class="mdi mdi-magnify"></i>
+                </button>
+            </form>
+
         </div>
     </div>
 </nav>

@@ -27,6 +27,19 @@
         </div>
     </div>
 
+    <!-- Tests Required -->
+    <div class="col-md-4">
+        <div class="card mb-3" style="background-color:#f8d7da; border-color:#f5c2c7; color:#842029;">
+            <div class="card-body">
+                <h5 class="card-title">Tests Required
+                    <span data-bs-toggle="tooltip"
+                          title="Includes appliances overdue for testing, never tested, or repaired since their last test.">ⓘ</span>
+                </h5>
+                <p class="card-text display-6">{{ required_count }}</p>
+            </div>
+        </div>
+    </div>
+
 </div>
 
 <!-- Appliances Due or Never Tested -->
@@ -49,7 +62,7 @@
         {% for a in due_appliances %}
         {% set last_test = a.tests|selectattr('disposed', 'equalto', False)|sort(attribute='test_date')|last %}
         <tr>
-            <td>{{ a.asset_number }}</td>
+            <td><a href="{{ url_for('main.appliance_detail', appliance_id=a.id) }}">{{ a.asset_number }}</a></td>
             <td>{{ a.description }}</td>
             <td>{{ a.location }}</td>
             <td>

@@ -65,7 +65,7 @@
     <tbody>
         {% for appliance in appliances %}
         <tr class="{% if appliance.disposed %}table-warning{% endif %}">
-            <td>{{ appliance.asset_number }}</td>
+            <td><a href="{{ url_for('main.appliance_detail', appliance_id=appliance.id) }}">{{ appliance.asset_number }}</a></td>
             <td>{{ appliance.description }}</td>
             <td>{{ appliance.make_model }}</td>
             <td>

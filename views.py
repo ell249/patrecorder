@@ -12,6 +12,7 @@ from app import db
 from config import Config
 from models import Appliance, TestRecord, TestPhoto, RetestRule, Tester, RepairRecord, RepairPhoto
 from utils import (
+    make_snippet,
     fuzzy,
     get_suggested_interval,
     summarize_test_types,
@@ -114,12 +115,15 @@ def dashboard():
 
     appliance_count = Appliance.query.filter_by(disposed=False).count()
 
+    required_count = len(due_appliances_map)
+
     return render_template(
         "dashboard.html",
         recent_tests=recent_tests,
         appliance_count=appliance_count,
         due_appliances=due_appliances,
         upcoming_count=upcoming_count,
+        required_count=required_count,
         reason_map=reason_map
     )
 
@@ -680,30 +684,73 @@ def repair_history_pdf(appliance_id):
 def search():
     q = request.args.get("q", "").strip()
     if not q:
-        flash("Please enter a search term.", "warning")
         return redirect(url_for("main.appliance_list"))
 
     fq = fuzzy(q)
 
     appliances = Appliance.query.filter(
+        Appliance.disposed == False,
         or_(
             Appliance.asset_number.ilike(fq),
             Appliance.description.ilike(fq),
             Appliance.make_model.ilike(fq),
+            Appliance.serial_number.ilike(fq),
             Appliance.location.ilike(fq),
             Appliance.owner.ilike(fq),
         )
-    ).all()
+    ).order_by(Appliance.asset_number).all()
 
-    tests = TestRecord.query.filter(
-        TestRecord.tag_number.ilike(fq)
-    ).all()
+    raw_tests = TestRecord.query.filter(
+        TestRecord.disposed == False,
+        or_(
+            TestRecord.tag_number.ilike(fq),
+            TestRecord.comments.ilike(fq),
+            TestRecord.repair_description.ilike(fq),
+            TestRecord.repaired_by.ilike(fq),
+        )
+    ).order_by(TestRecord.test_date.desc()).all()
+
+    raw_repairs = RepairRecord.query.filter(
+        RepairRecord.disposed == False,
+        or_(
+            RepairRecord.description.ilike(fq),
+            RepairRecord.comments.ilike(fq),
+            RepairRecord.repaired_by.ilike(fq),
+        )
+    ).order_by(RepairRecord.repair_date.desc()).all()
+
+    def first_match(record, fields):
+        for label, attr in fields:
+            val = getattr(record, attr, None) or ''
+            if q.lower() in val.lower():
+                return label, make_snippet(val, q)
+        return '', ''
+
+    test_results = [
+        {'test': t, **dict(zip(('field', 'snippet'), first_match(t, [
+            ('Comment', 'comments'),
+            ('Repair description', 'repair_description'),
+            ('Repaired by', 'repaired_by'),
+            ('Tag', 'tag_number'),
+        ])))}
+        for t in raw_tests
+    ]
+
+    repair_results = [
+        {'repair': r, **dict(zip(('field', 'snippet'), first_match(r, [
+            ('Description', 'description'),
+            ('Comment', 'comments'),
+            ('Repaired by', 'repaired_by'),
+        ])))}
+        for r in raw_repairs
+    ]
 
     return render_template(
         "search_results.html",
         q=q,
         appliances=appliances,
-        tests=tests
+        test_results=test_results,
+        repair_results=repair_results,
     )
 
 # ---------------------------------------------------------

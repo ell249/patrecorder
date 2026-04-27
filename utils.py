@@ -25,6 +25,22 @@ def fuzzy(q: str) -> str:
     return f"%{q}%"
 
 
+def make_snippet(text: str, q: str, context: int = 80) -> str:
+    if not text:
+        return '—'
+    idx = text.lower().find(q.lower())
+    if idx == -1:
+        return (text[:100] + '…') if len(text) > 100 else text
+    start = max(0, idx - context // 2)
+    end = min(len(text), idx + len(q) + context // 2)
+    result = text[start:end]
+    if start > 0:
+        result = '…' + result
+    if end < len(text):
+        result = result + '…'
+    return result
+
+
 # ---------------------------------------------------------
 # Suggested retest interval lookup
 # ---------------------------------------------------------

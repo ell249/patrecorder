@@ -21,7 +21,7 @@
       {% for a in appliances %}
       {% set next_due = a.tests | sort(attribute='next_test_due') | first %}
       <tr>
-        <td>{{ a.asset_number }}</td>
+        <td><a href="{{ url_for('main.appliance_detail', appliance_id=a.id) }}">{{ a.asset_number }}</a></td>
         <td>{{ a.description }}</td>
         <td>{{ a.location }}</td>
         <td class="text-danger fw-bold">

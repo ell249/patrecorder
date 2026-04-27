@@ -3,62 +3,63 @@
 
 {% block content %}
 
-<h3 class="mb-4">Search Results for "{{ q }}"</h3>
+<h3 class="mb-1">Search Results</h3>
+<p class="text-muted mb-4">{{ appliances|length + test_results|length + repair_results|length }} result(s) for "<strong>{{ q }}</strong>"</p>
 
-<!-- Appliances -->
-<h4>Matching Appliances</h4>
+{# ── Appliances ──────────────────────────────────────────── #}
+<h5>Appliances <span class="badge bg-secondary">{{ appliances|length }}</span></h5>
 
 {% if appliances %}
-<table class="table table-striped">
+<table class="table table-striped table-sm mb-5">
     <thead>
         <tr>
             <th>Asset</th>
             <th>Description</th>
+            <th>Make / Model</th>
             <th>Location</th>
+            <th>Owner</th>
             <th></th>
         </tr>
     </thead>
     <tbody>
         {% for a in appliances %}
         <tr>
-            <td>{{ a.asset_number }}</td>
-            <td>{{ a.description }}</td>
-            <td>{{ a.location }}</td>
-            <td>
-                <a href="{{ url_for('main.appliance_detail', appliance_id=a.id) }}"
-                   class="btn btn-sm btn-primary">View</a>
-            </td>
+            <td><a href="{{ url_for('main.appliance_detail', appliance_id=a.id) }}">{{ a.asset_number }}</a></td>
+            <td>{{ a.description or '—' }}</td>
+            <td>{{ a.make_model or '—' }}</td>
+            <td>{{ a.location or '—' }}</td>
+            <td>{{ a.owner or '—' }}</td>
+            <td><a href="{{ url_for('main.appliance_detail', appliance_id=a.id) }}" class="btn btn-sm btn-primary">View</a></td>
         </tr>
         {% endfor %}
     </tbody>
 </table>
 {% else %}
-<p class="text-muted">No appliances matched your search.</p>
+<p class="text-muted mb-5">No appliances matched.</p>
 {% endif %}
 
-<hr class="my-4">
+{# ── Tests ───────────────────────────────────────────────── #}
+<h5>Tests <span class="badge bg-secondary">{{ test_results|length }}</span></h5>
 
-<!-- Tests -->
-<h4>Matching Tests</h4>
-
-{% if tests %}
-<table class="table table-striped">
+{% if test_results %}
+<table class="table table-striped table-sm mb-5">
     <thead>
         <tr>
             <th>Date</th>
             <th>Asset</th>
-            <th>Standard</th>
-            <th>Result</th>
             <th>Tag</th>
+            <th>Result</th>
+            <th>Matched content</th>
             <th></th>
         </tr>
     </thead>
     <tbody>
-        {% for t in tests %}
+        {% for row in test_results %}
+        {% set t = row.test %}
         <tr>
             <td>{{ t.test_date }}</td>
-            <td>{{ t.appliance.asset_number }}</td>
-            <td>{{ t.test_standard | std }}</td>
+            <td><a href="{{ url_for('main.appliance_detail', appliance_id=t.appliance.id) }}">{{ t.appliance.asset_number }}</a></td>
+            <td>{{ t.tag_number }}</td>
             <td>
                 {% if t.overall_result == "PASS" %}
                     <span class="badge bg-success">PASS</span>
@@ -66,17 +67,49 @@
                     <span class="badge bg-danger">FAIL</span>
                 {% endif %}
             </td>
-            <td>{{ t.tag_number }}</td>
-            <td>
-                <a href="{{ url_for('main.test_detail', test_id=t.id) }}"
-                   class="btn btn-sm btn-primary">View</a>
+            <td class="text-muted small">
+                {% if row.field %}<em>{{ row.field }}:</em> {% endif %}{{ row.snippet }}
             </td>
+            <td><a href="{{ url_for('main.test_detail', test_id=t.id) }}" class="btn btn-sm btn-primary">View</a></td>
         </tr>
         {% endfor %}
     </tbody>
 </table>
 {% else %}
-<p class="text-muted">No tests matched your search.</p>
+<p class="text-muted mb-5">No tests matched.</p>
+{% endif %}
+
+{# ── Repairs ─────────────────────────────────────────────── #}
+<h5>Repairs <span class="badge bg-secondary">{{ repair_results|length }}</span></h5>
+
+{% if repair_results %}
+<table class="table table-striped table-sm mb-5">
+    <thead>
+        <tr>
+            <th>Date</th>
+            <th>Asset</th>
+            <th>Repaired By</th>
+            <th>Matched content</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for row in repair_results %}
+        {% set r = row.repair %}
+        <tr>
+            <td>{{ r.repair_date.strftime('%d/%m/%Y') }}</td>
+            <td><a href="{{ url_for('main.appliance_detail', appliance_id=r.appliance.id) }}">{{ r.appliance.asset_number }}</a></td>
+            <td>{{ r.repaired_by or '—' }}</td>
+            <td class="text-muted small">
+                {% if row.field %}<em>{{ row.field }}:</em> {% endif %}{{ row.snippet }}
+            </td>
+            <td><a href="{{ url_for('main.repair_detail', repair_id=r.id) }}" class="btn btn-sm btn-primary">View</a></td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p class="text-muted mb-5">No repairs matched.</p>
 {% endif %}
 
 {% endblock %}
