@@ -1,10 +1,10 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
 from config import Config
 from utils import format_standard
 
 db = SQLAlchemy()
-
 
 def create_app():
     app = Flask(__name__)
@@ -14,6 +14,7 @@ def create_app():
     # Database init
     # ---------------------------------------------------------
     db.init_app(app)
+    migrate = Migrate(app, db)
 
     # ---------------------------------------------------------
     # Register Jinja Filters

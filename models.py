@@ -7,12 +7,15 @@ class Tester(db.Model):
     __tablename__ = "tester"
 
     id = db.Column(db.Integer, primary_key=True)
-    full_name = db.Column(db.String(255), nullable=False)
-    certificate_number = db.Column(db.String(255), nullable=False)
+    full_name = db.Column(db.String(120), nullable=False)
+    certificate_number = db.Column(db.String(50), nullable=False)
     phone_number = db.Column(db.String(50))
 
-    # Relationship: one tester → many test records
-    tests = db.relationship("TestRecord", back_populates="tester")
+    # Relationship to TestRecord (tester_id foreign key)
+    tests = db.relationship("TestRecord", backref="tester", lazy=True)
+
+    def __repr__(self):
+        return f"<Tester {self.full_name} (Cert {self.certificate_number})>"
 
 
 # ---------------------------------------------------------
