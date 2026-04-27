@@ -167,6 +167,9 @@ def new_appliance():
                     break
                 suffix += 1
 
+        purchase_date_str = form.get("purchase_date")
+        purchase_price_str = form.get("purchase_price")
+
         appliance = Appliance(
             asset_number=asset_number,
             description=form.get("description"),
@@ -175,10 +178,22 @@ def new_appliance():
             owner=form.get("owner"),
             class_type=form.get("class_type"),
             supply_type=form.get("supply_type"),
+            serial_number=form.get("serial_number") or None,
+            purchase_date=datetime.strptime(purchase_date_str, "%Y-%m-%d").date() if purchase_date_str else None,
+            purchase_price=float(purchase_price_str) if purchase_price_str else None,
         )
 
         db.session.add(appliance)
         db.session.commit()
+
+        receipt = request.files.get("receipt")
+        if receipt and receipt.filename:
+            filename = secure_filename(receipt.filename)
+            receipt_dir = os.path.join("static", "uploads", "receipts", str(appliance.id))
+            os.makedirs(receipt_dir, exist_ok=True)
+            receipt.save(os.path.join(receipt_dir, filename))
+            appliance.receipt_filepath = f"receipts/{appliance.id}/{filename}"
+            db.session.commit()
 
         flash("Appliance added successfully.", "success")
         return redirect(url_for("main.appliance_detail", appliance_id=appliance.id))
@@ -196,6 +211,9 @@ def edit_appliance(appliance_id):
     if request.method == "POST":
         form = request.form
 
+        purchase_date_str = form.get("purchase_date")
+        purchase_price_str = form.get("purchase_price")
+
         appliance.asset_number = form["asset_number"]
         appliance.description = form.get("description")
         appliance.make_model = form.get("make_model")
@@ -203,6 +221,22 @@ def edit_appliance(appliance_id):
         appliance.owner = form.get("owner")
         appliance.class_type = form.get("class_type")
         appliance.supply_type = form.get("supply_type")
+        appliance.serial_number = form.get("serial_number") or None
+        appliance.purchase_date = datetime.strptime(purchase_date_str, "%Y-%m-%d").date() if purchase_date_str else None
+        appliance.purchase_price = float(purchase_price_str) if purchase_price_str else None
+
+        receipt = request.files.get("receipt")
+        if receipt and receipt.filename:
+            # Remove old receipt file if one exists
+            if appliance.receipt_filepath:
+                old_path = os.path.join("static", "uploads", appliance.receipt_filepath)
+                if os.path.isfile(old_path):
+                    os.remove(old_path)
+            filename = secure_filename(receipt.filename)
+            receipt_dir = os.path.join("static", "uploads", "receipts", str(appliance.id))
+            os.makedirs(receipt_dir, exist_ok=True)
+            receipt.save(os.path.join(receipt_dir, filename))
+            appliance.receipt_filepath = f"receipts/{appliance.id}/{filename}"
 
         db.session.commit()
 
@@ -223,7 +257,14 @@ def edit_appliance(appliance_id):
 def dispose_appliance(appliance_id):
     appliance = Appliance.query.get_or_404(appliance_id)
 
+    disposal_date_str = request.form.get("disposal_date")
+    disposal_price_str = request.form.get("disposal_price")
+
     appliance.disposed = True
+    appliance.disposal_date = datetime.strptime(disposal_date_str, "%Y-%m-%d").date() if disposal_date_str else None
+    appliance.disposal_price = float(disposal_price_str) if disposal_price_str else None
+    appliance.disposal_comment = request.form.get("disposal_comment") or None
+
     for test in appliance.tests:
         test.disposed = True
     for repair in appliance.repairs:
@@ -274,6 +315,11 @@ def delete_appliance(appliance_id):
         repair_dir = os.path.join("static", "uploads", "repairs", str(repair.id))
         if os.path.isdir(repair_dir):
             shutil.rmtree(repair_dir)
+
+    if appliance.receipt_filepath:
+        receipt_dir = os.path.join("static", "uploads", "receipts", str(appliance.id))
+        if os.path.isdir(receipt_dir):
+            shutil.rmtree(receipt_dir)
 
     db.session.delete(appliance)
     db.session.commit()

@@ -7,7 +7,21 @@
 
 {% if appliance.disposed %}
 <div class="alert alert-danger">
-    <strong>Disposed Appliance:</strong> This appliance has been marked as disposed and should not be used.
+    <strong>Disposed Appliance</strong> — this appliance has been marked as disposed and should not be used.
+    {% if appliance.disposal_date or appliance.disposal_price or appliance.disposal_comment %}
+    <hr class="my-2">
+    <table class="table table-sm table-borderless mb-0">
+        {% if appliance.disposal_date %}
+        <tr><th style="width:140px">Disposal Date</th><td>{{ appliance.disposal_date.strftime('%d/%m/%Y') }}</td></tr>
+        {% endif %}
+        {% if appliance.disposal_price %}
+        <tr><th>Disposal Price</th><td>${{ '%.2f' % appliance.disposal_price }}</td></tr>
+        {% endif %}
+        {% if appliance.disposal_comment %}
+        <tr><th>Comment</th><td style="white-space:pre-wrap;">{{ appliance.disposal_comment }}</td></tr>
+        {% endif %}
+    </table>
+    {% endif %}
 </div>
 {% endif %}
 
@@ -24,10 +38,24 @@
     <table class="table table-bordered">
         <tr><th>Description</th><td>{{ appliance.description }}</td></tr>
         <tr><th>Make / Model</th><td>{{ appliance.make_model }}</td></tr>
+        <tr><th>Serial Number</th><td>{{ appliance.serial_number or '—' }}</td></tr>
         <tr><th>Location</th><td>{{ appliance.location }}</td></tr>
         <tr><th>Owner</th><td>{{ appliance.owner }}</td></tr>
         <tr><th>Class</th><td>{{ appliance.class_type }}</td></tr>
         <tr><th>Supply</th><td>{{ appliance.supply_type }}</td></tr>
+        <tr><th>Purchase Date</th><td>{{ appliance.purchase_date.strftime('%d/%m/%Y') if appliance.purchase_date else '—' }}</td></tr>
+        <tr><th>Purchase Price</th><td>{{ '$%.2f' % appliance.purchase_price if appliance.purchase_price else '—' }}</td></tr>
+        <tr>
+            <th>Receipt</th>
+            <td>
+                {% if appliance.receipt_filepath %}
+                    <a href="{{ url_for('static', filename='uploads/' + appliance.receipt_filepath) }}"
+                       target="_blank" class="btn btn-sm btn-outline-secondary">View Receipt</a>
+                {% else %}
+                    —
+                {% endif %}
+            </td>
+        </tr>
     </table>
 
     <div class="d-flex justify-content-between align-items-center mt-4 mb-2">

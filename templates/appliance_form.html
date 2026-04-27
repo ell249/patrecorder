@@ -6,7 +6,7 @@
   {% if edit_mode %}Edit Appliance{% else %}Add New Appliance{% endif %}
 </h3>
 
-<form method="post" class="row g-3">
+<form method="post" enctype="multipart/form-data" class="row g-3">
 
   <!-- Asset Number -->
   <div class="col-md-4">
@@ -44,6 +44,46 @@
            value="{{ appliance.owner if edit_mode else '' }}">
   </div>
 
+  <!-- Serial Number -->
+  <div class="col-md-6">
+    <label class="form-label">Serial Number</label>
+    <input type="text" name="serial_number" class="form-control"
+           value="{{ appliance.serial_number or '' if edit_mode else '' }}">
+  </div>
+
+  <!-- Purchase Date -->
+  <div class="col-md-3">
+    <label class="form-label">Purchase Date</label>
+    <input type="date" name="purchase_date" class="form-control"
+           value="{{ appliance.purchase_date.strftime('%Y-%m-%d') if edit_mode and appliance.purchase_date else '' }}">
+  </div>
+
+  <!-- Purchase Price -->
+  <div class="col-md-3">
+    <label class="form-label">Purchase Price ($)</label>
+    <div class="input-group">
+      <span class="input-group-text">$</span>
+      <input type="number" name="purchase_price" class="form-control" min="0" step="0.01"
+             value="{{ '%.2f' % appliance.purchase_price if edit_mode and appliance.purchase_price else '' }}">
+    </div>
+  </div>
+
+  <!-- Receipt Upload -->
+  <div class="col-12">
+    <label class="form-label">Purchase Receipt</label>
+    {% if edit_mode and appliance.receipt_filepath %}
+    <div class="mb-2">
+      <a href="{{ url_for('static', filename='uploads/' + appliance.receipt_filepath) }}"
+         target="_blank" class="btn btn-sm btn-outline-secondary">View Current Receipt</a>
+      <small class="text-muted ms-2">Upload a new file to replace it.</small>
+    </div>
+    {% endif %}
+    <input type="file" name="receipt" class="form-control"
+           accept="image/*,application/pdf">
+  </div>
+
+  <hr class="mt-2 mb-1">
+
   <!-- Class Type -->
   <div class="col-md-3">
     <label class="form-label">Class Type</label>
@@ -79,13 +119,63 @@
 <hr class="my-4">
 
 {% if not appliance.disposed %}
-<!-- Dispose Appliance -->
-<form method="post" action="{{ url_for('main.dispose_appliance', appliance_id=appliance.id) }}"
-      onsubmit="return confirm('Mark this appliance as disposed? It will be hidden unless filters are used.');">
-  <button type="submit" class="btn btn-warning mb-3">
-    Dispose Appliance
-  </button>
-</form>
+<!-- Dispose Appliance — triggers modal -->
+<button type="button" class="btn btn-warning mb-3"
+        data-bs-toggle="modal" data-bs-target="#disposeModal">
+  Dispose Appliance
+</button>
+
+<!-- Dispose Modal -->
+<div class="modal fade" id="disposeModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="post" action="{{ url_for('main.dispose_appliance', appliance_id=appliance.id) }}">
+        <div class="modal-header">
+          <h5 class="modal-title">Dispose Appliance</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body row g-3">
+
+          <div class="col-md-6">
+            <label class="form-label">Disposal Date <span class="text-danger">*</span></label>
+            <input type="date" name="disposal_date" id="disposal_date"
+                   class="form-control" required>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Disposal Price ($)</label>
+            <div class="input-group">
+              <span class="input-group-text">$</span>
+              <input type="number" name="disposal_price" class="form-control"
+                     min="0" step="0.01" placeholder="0.00">
+            </div>
+          </div>
+
+          <div class="col-12">
+            <label class="form-label">Disposal Comment</label>
+            <textarea name="disposal_comment" class="form-control" rows="4"
+                      placeholder="Describe how it was disposed, e.g. 'Sold via Facebook Marketplace to John Smith for $50' or 'Scrapped — electrical fault beyond economical repair'"></textarea>
+          </div>
+
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-warning">Confirm Disposal</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const dateField = document.getElementById("disposal_date");
+  if (dateField && !dateField.value) {
+    dateField.value = new Date().toISOString().split("T")[0];
+  }
+});
+</script>
+
 {% else %}
 <!-- Restore Appliance -->
 <form method="post" action="{{ url_for('main.restore_appliance', appliance_id=appliance.id) }}"
