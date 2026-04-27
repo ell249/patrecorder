@@ -156,6 +156,38 @@
         <p class="text-muted">No repairs recorded for this appliance.</p>
     {% endif %}
 
+    {% if active_repairs %}
+    {% set ns = namespace(total_cost=0, total_minutes=0, has_cost=false, has_time=false) %}
+    {% for repair in active_repairs %}
+        {% if repair.parts_cost is not none %}
+            {% set ns.total_cost = ns.total_cost + repair.parts_cost %}
+            {% set ns.has_cost = true %}
+        {% endif %}
+        {% if repair.labour_minutes is not none %}
+            {% set ns.total_minutes = ns.total_minutes + repair.labour_minutes %}
+            {% set ns.has_time = true %}
+        {% endif %}
+    {% endfor %}
+    {% if ns.has_cost or ns.has_time %}
+    <table class="table table-sm" style="max-width:400px">
+        <tbody>
+            {% if ns.has_cost %}
+            <tr>
+                <th>Total Parts Cost</th>
+                <td>${{ '%.2f' % ns.total_cost }}</td>
+            </tr>
+            {% endif %}
+            {% if ns.has_time %}
+            <tr>
+                <th>Total Labour Time</th>
+                <td>{{ ns.total_minutes // 60 }}:{{ '%02d' % (ns.total_minutes % 60) }}</td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+    {% endif %}
+    {% endif %}
+
     <h5 class="mt-4">Photo Gallery</h5>
     <div class="row">
         {% for test in appliance.tests if not test.disposed %}

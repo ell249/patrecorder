@@ -30,6 +30,13 @@
            value="{{ appliance.make_model if edit_mode else '' }}">
   </div>
 
+  <!-- Serial Number -->
+  <div class="col-md-6">
+    <label class="form-label">Serial Number</label>
+    <input type="text" name="serial_number" class="form-control"
+           value="{{ appliance.serial_number or '' if edit_mode else '' }}">
+  </div>
+
   <!-- Location -->
   <div class="col-md-6">
     <label class="form-label">Location</label>
@@ -42,13 +49,6 @@
     <label class="form-label">Owner</label>
     <input type="text" name="owner" class="form-control"
            value="{{ appliance.owner if edit_mode else '' }}">
-  </div>
-
-  <!-- Serial Number -->
-  <div class="col-md-6">
-    <label class="form-label">Serial Number</label>
-    <input type="text" name="serial_number" class="form-control"
-           value="{{ appliance.serial_number or '' if edit_mode else '' }}">
   </div>
 
   <!-- Purchase Date -->

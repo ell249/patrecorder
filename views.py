@@ -374,7 +374,11 @@ def new_test(appliance_id):
         tester = Tester.query.get(tester_id)
 
         def bool_from_dropdown(value):
-            return value == "PASS"
+            if value == "PASS":
+                return True
+            elif value == "FAIL":
+                return False
+            return None  # N/A or not answered
 
         test = TestRecord(
             appliance_id=appliance.id,
@@ -390,9 +394,9 @@ def new_test(appliance_id):
             # Visual inspection
             vi_plug=bool_from_dropdown(form.get("vi_plug")),
             vi_cord=bool_from_dropdown(form.get("vi_cord")),
-            vi_casing=bool_from_dropdown(form.get("vi_casing")),
+            vi_casing=form.get("vi_casing") or None,
             vi_overheat=bool_from_dropdown(form.get("vi_overheat")),
-            vi_label=bool_from_dropdown(form.get("vi_label")),
+            vi_label=form.get("vi_label") or None,
             vi_exposed=bool_from_dropdown(form.get("vi_exposed")),
 
             vi_repairs=form.get("vi_repairs"),
@@ -400,10 +404,10 @@ def new_test(appliance_id):
             vi_guards=form.get("vi_guards"),
 
             # Electrical tests
-            earth_continuity_ohms=form.get("earth_continuity_ohms") or None,
+            earth_continuity_ohms="N/A" if appliance.class_type == "CLASS I" else (form.get("earth_continuity_ohms") or None),
             insulation_mohms=form.get("insulation_mohms") or None,
             leakage_mA=form.get("leakage_mA") or None,
-            polarity_pass=("polarity_pass" in form),
+            polarity_pass=form.get("polarity_pass") or None,
 
             # 5761 / 5762
             condition_assessment=form.get("condition_assessment"),
@@ -486,12 +490,23 @@ def new_repair(appliance_id):
 
         repair_date = datetime.strptime(form["repair_date"], "%Y-%m-%d").date()
 
+        parts_cost_raw = form.get("parts_cost", "").strip()
+        parts_cost = float(parts_cost_raw) if parts_cost_raw else None
+
+        labour_time_raw = form.get("labour_time", "").strip()
+        labour_minutes = None
+        if labour_time_raw:
+            parts = labour_time_raw.split(":")
+            labour_minutes = int(parts[0]) * 60 + int(parts[1]) if len(parts) == 2 else None
+
         repair = RepairRecord(
             appliance_id=appliance.id,
             repair_date=repair_date,
             repaired_by=form.get("repaired_by") or None,
             description=form["description"],
             comments=form.get("comments") or None,
+            parts_cost=parts_cost,
+            labour_minutes=labour_minutes,
         )
         db.session.add(repair)
         db.session.commit()
@@ -545,6 +560,17 @@ def edit_repair(repair_id):
         repair.repaired_by = form.get("repaired_by") or None
         repair.description = form["description"]
         repair.comments = form.get("comments") or None
+
+        parts_cost_raw = form.get("parts_cost", "").strip()
+        repair.parts_cost = float(parts_cost_raw) if parts_cost_raw else None
+
+        labour_time_raw = form.get("labour_time", "").strip()
+        if labour_time_raw:
+            parts = labour_time_raw.split(":")
+            repair.labour_minutes = int(parts[0]) * 60 + int(parts[1]) if len(parts) == 2 else None
+        else:
+            repair.labour_minutes = None
+
         db.session.commit()
 
         upload_dir = os.path.join("static", "uploads", "repairs", str(repair.id))

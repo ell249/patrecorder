@@ -31,9 +31,9 @@
     <table class="table table-bordered">
         <tr><th>Plug Condition</th><td>{{ 'PASS' if test.vi_plug else 'FAIL' }}</td></tr>
         <tr><th>Cord Condition</th><td>{{ 'PASS' if test.vi_cord else 'FAIL' }}</td></tr>
-        <tr><th>Casing Condition</th><td>{{ 'PASS' if test.vi_casing else 'FAIL' }}</td></tr>
+        <tr><th>Casing Condition</th><td>{{ test.vi_casing or '—' }}</td></tr>
         <tr><th>Overheating</th><td>{{ 'PASS' if test.vi_overheat else 'FAIL' }}</td></tr>
-        <tr><th>Rating Label</th><td>{{ 'PASS' if test.vi_label else 'FAIL' }}</td></tr>
+        <tr><th>Rating Label</th><td>{{ test.vi_label or '—' }}</td></tr>
         <tr><th>Exposed Conductors</th><td>{{ 'PASS' if test.vi_exposed else 'FAIL' }}</td></tr>
 
         <tr><th>Unsafe Repairs</th><td>{{ test.vi_repairs }}</td></tr>
@@ -46,7 +46,7 @@
         <tr><th>Earth Continuity (Ω)</th><td>{{ test.earth_continuity_ohms or 'N/A' }}</td></tr>
         <tr><th>Insulation Resistance (MΩ)</th><td>{{ test.insulation_mohms or 'N/A' }}</td></tr>
         <tr><th>Leakage Current (mA)</th><td>{{ test.leakage_mA or 'N/A' }}</td></tr>
-        <tr><th>Polarity</th><td>{{ 'PASS' if test.polarity_pass else 'FAIL' }}</td></tr>
+        <tr><th>Polarity</th><td>{{ test.polarity_pass or '—' }}</td></tr>
     </table>
 
     {% if test.test_standard == "5761" %}

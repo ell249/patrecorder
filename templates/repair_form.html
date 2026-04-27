@@ -25,6 +25,26 @@
                value="{{ repair.repaired_by or '' if repair else '' }}">
     </div>
 
+    <!-- Parts Cost -->
+    <div class="col-md-2">
+        <label class="form-label">Parts Cost ($)</label>
+        <div class="input-group">
+            <span class="input-group-text">$</span>
+            <input type="number" name="parts_cost" class="form-control" min="0" step="0.01"
+                   placeholder="0.00"
+                   value="{{ '%.2f' % repair.parts_cost if repair and repair.parts_cost else '' }}">
+        </div>
+    </div>
+
+    <!-- Labour Time -->
+    <div class="col-md-2">
+        <label class="form-label">Labour Time (HH:MM)</label>
+        <input type="text" name="labour_time" class="form-control"
+               placeholder="e.g. 1:30"
+               pattern="^\d+:\d{2}$"
+               value="{{ '%d:%02d' % (repair.labour_minutes // 60, repair.labour_minutes % 60) if repair and repair.labour_minutes is not none else '' }}">
+    </div>
+
     <hr class="mt-4">
 
     <!-- Description -->

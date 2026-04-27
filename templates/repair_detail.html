@@ -54,6 +54,18 @@
                         {% endif %}
                     </td>
                 </tr>
+                {% if repair.parts_cost is not none %}
+                <tr>
+                    <th>Parts Cost</th>
+                    <td>${{ '%.2f' % repair.parts_cost }}</td>
+                </tr>
+                {% endif %}
+                {% if repair.labour_minutes is not none %}
+                <tr>
+                    <th>Labour Time</th>
+                    <td>{{ repair.labour_minutes // 60 }}:{{ '%02d' % (repair.labour_minutes % 60) }}</td>
+                </tr>
+                {% endif %}
             </tbody>
         </table>
     </div>

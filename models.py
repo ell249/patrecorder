@@ -66,15 +66,15 @@ class TestRecord(db.Model):
     comments = db.Column(db.Text)
     disposed = db.Column(db.Boolean, default=False)
 
-    # Visual inspection (booleans)
+    # Visual inspection — PASS/FAIL booleans
     vi_plug = db.Column(db.Boolean)
     vi_cord = db.Column(db.Boolean)
-    vi_casing = db.Column(db.Boolean)
     vi_overheat = db.Column(db.Boolean)
-    vi_label = db.Column(db.Boolean)
     vi_exposed = db.Column(db.Boolean)
 
-    # PASS / FAIL / N/A fields
+    # Visual inspection — explicit PASS / FAIL / N/A strings
+    vi_casing = db.Column(db.String(50))
+    vi_label = db.Column(db.String(50))
     vi_repairs = db.Column(db.String(10))
     vi_strain = db.Column(db.String(10))
     vi_guards = db.Column(db.String(10))
@@ -83,7 +83,7 @@ class TestRecord(db.Model):
     earth_continuity_ohms = db.Column(db.String(50))
     insulation_mohms = db.Column(db.String(50))
     leakage_mA = db.Column(db.String(50))
-    polarity_pass = db.Column(db.Boolean)
+    polarity_pass = db.Column(db.String(50))
 
     # 5761 / 5762 fields
     condition_assessment = db.Column(db.String(255))
@@ -130,6 +130,8 @@ class RepairRecord(db.Model):
     comments = db.Column(db.Text)
     locked_by_test_date = db.Column(db.Date)
     disposed = db.Column(db.Boolean, default=False)
+    parts_cost = db.Column(db.Numeric(10, 2))
+    labour_minutes = db.Column(db.Integer)
 
     appliance = db.relationship("Appliance", back_populates="repairs")
     photos = db.relationship("RepairPhoto", back_populates="repair", cascade="all, delete")

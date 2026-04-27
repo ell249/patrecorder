@@ -149,6 +149,7 @@ AS/NZS 5762: Testing of electrical equipment after repair.">
                 <option value="" selected disabled>Select...</option>
                 <option value="PASS">PASS</option>
                 <option value="FAIL">FAIL</option>
+                <option value="N/A">N/A</option>
             </select>
         </div>
 
@@ -183,6 +184,7 @@ AS/NZS 5762: Testing of electrical equipment after repair.">
                 <option value="" selected disabled>Select...</option>
                 <option value="PASS">PASS</option>
                 <option value="FAIL">FAIL</option>
+                <option value="N/A">N/A</option>
             </select>
         </div>
 
@@ -264,8 +266,14 @@ AS/NZS 5762: Testing of electrical equipment after repair.">
                 ⓘ
             </span>
         </label>
+        {% if appliance.class_type == "CLASS I" %}
+        <input type="text" name="earth_continuity_ohms" class="form-control"
+               value="N/A" readonly>
+        <small class="text-muted">Not applicable for Class I appliances (no protective earth).</small>
+        {% else %}
         <input type="text" name="earth_continuity_ohms" class="form-control">
         <small class="text-muted">PASS: ≤ 1.0 Ω including test lead resistance.</small>
+        {% endif %}
     </div>
 
     <div class="col-md-6 mb-3">
@@ -306,8 +314,13 @@ AS/NZS 5762: Testing of electrical equipment after repair.">
                 ⓘ
             </span>
         </label><br>
-        <input type="checkbox" name="polarity_pass" class="form-check-input">
-        <small class="text-muted ms-2">PASS: Correct polarity.</small>
+        <select name="polarity_pass" class="form-select">
+            <option value="" selected disabled>Select...</option>
+            <option value="PASS">PASS</option>
+            <option value="FAIL">FAIL</option>
+            <option value="N/A">N/A</option>
+        </select>
+        <small class="text-muted">Ensures active, neutral and earth conductors are correctly wired.</small>
     </div>
 
     <hr class="mt-4">

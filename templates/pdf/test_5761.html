@@ -48,9 +48,9 @@ th { background: #eee; }
 <tr><th>Inspection Item</th><th>Result</th></tr>
 <tr><td>Plug condition OK</td><td>{{ 'PASS' if test.vi_plug else 'FAIL' }}</td></tr>
 <tr><td>Cord condition OK</td><td>{{ 'PASS' if test.vi_cord else 'FAIL' }}</td></tr>
-<tr><td>No damage to casing</td><td>{{ 'PASS' if test.vi_casing else 'FAIL' }}</td></tr>
+<tr><td>No damage to casing</td><td>{{ test.vi_casing or '—' }}</td></tr>
 <tr><td>No signs of overheating</td><td>{{ 'PASS' if test.vi_overheat else 'FAIL' }}</td></tr>
-<tr><td>Rating label intact</td><td>{{ 'PASS' if test.vi_label else 'FAIL' }}</td></tr>
+<tr><td>Rating label intact</td><td>{{ test.vi_label or '—' }}</td></tr>
 <tr><td>No exposed conductors</td><td>{{ 'PASS' if test.vi_exposed else 'FAIL' }}</td></tr>
 <tr><td>Unsafe previous repairs</td><td>{{ test.vi_repairs }}</td></tr>
 <tr><td>Cable strain relief</td><td>{{ test.vi_strain }}</td></tr>
