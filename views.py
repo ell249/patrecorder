@@ -259,17 +259,26 @@ def restore_appliance(appliance_id):
 
 @bp.route("/appliance/<int:appliance_id>/delete", methods=["POST"])
 def delete_appliance(appliance_id):
+    import shutil
     appliance = Appliance.query.get_or_404(appliance_id)
 
     for test in appliance.tests:
+        test_dir = os.path.join(Config.UPLOAD_FOLDER, str(test.id))
+        if os.path.isdir(test_dir):
+            shutil.rmtree(test_dir)
         for photo in test.photos:
             db.session.delete(photo)
         db.session.delete(test)
 
+    for repair in appliance.repairs:
+        repair_dir = os.path.join("static", "uploads", "repairs", str(repair.id))
+        if os.path.isdir(repair_dir):
+            shutil.rmtree(repair_dir)
+
     db.session.delete(appliance)
     db.session.commit()
 
-    flash("Appliance and all associated tests have been permanently deleted.", "success")
+    flash("Appliance and all associated records have been permanently deleted.", "success")
     return redirect(url_for("main.appliance_list"))
 
 # ---------------------------------------------------------

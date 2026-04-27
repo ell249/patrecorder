@@ -6,9 +6,7 @@
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h3>Repair Record – <a href="{{ url_for('main.appliance_detail', appliance_id=repair.appliance.id) }}">{{ repair.appliance.asset_number }}</a></h3>
     <div>
-        {% if repair.locked_by_test_date %}
-            <a href="{{ url_for('main.test_pdf', test_id=0) }}" style="display:none"></a>
-        {% else %}
+        {% if not repair.locked_by_test_date %}
             <a href="{{ url_for('main.edit_repair', repair_id=repair.id) }}" class="btn btn-warning me-2">Edit</a>
             <form method="post" action="{{ url_for('main.delete_repair', repair_id=repair.id) }}" class="d-inline"
                   onsubmit="return confirm('Permanently delete this repair record?');">
