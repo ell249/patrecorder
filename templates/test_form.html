@@ -10,7 +10,7 @@
     <!-- Test Date -->
     <div class="col-md-3">
         <label class="form-label">Test Date</label>
-        <input type="date" name="test_date" class="form-control" required>
+        <input type="date" name="test_date" id="test_date" class="form-control" required>
     </div>
 
     <!-- Tester Dropdown -->
@@ -345,6 +345,17 @@ AS/NZS 5762: Testing of electrical equipment after repair.">
     </div>
 
 </form>
+
+<!-- Auto selet today's date -->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const dateField = document.getElementById("test_date");
+    if (dateField && !dateField.value) {
+        const today = new Date().toISOString().split("T")[0];
+        dateField.value = today;
+    }
+});
+</script>
 
 <!-- Tooltip Activation -->
 <script>
