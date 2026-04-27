@@ -12,7 +12,7 @@ class Tester(db.Model):
     phone_number = db.Column(db.String(50))
 
     # Relationship to TestRecord (tester_id foreign key)
-    tests = db.relationship("TestRecord", backref="tester", lazy=True)
+    tests = db.relationship("TestRecord", back_populates="tester", lazy=True)
 
     def __repr__(self):
         return f"<Tester {self.full_name} (Cert {self.certificate_number})>"
