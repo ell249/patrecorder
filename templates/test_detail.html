@@ -3,7 +3,7 @@
 
 {% block content %}
 
-<h3 class="mb-3">Test Record — {{ test.appliance.asset_number }}</h3>
+<h3 class="mb-3">Test Record — <a href="{{ url_for('main.appliance_detail', appliance_id=test.appliance.id) }}">{{ test.appliance.asset_number }}</a></h3>
 
 <div class="card p-3">
 

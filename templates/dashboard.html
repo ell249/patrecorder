@@ -42,7 +42,7 @@
             <th>Last Test</th>
             <th>Next Due</th>
             <th>Reason</th>
-            <th></th>
+            <th class="text-end">Actions</th>
         </tr>
     </thead>
     <tbody>
@@ -114,14 +114,14 @@
             <th>Description</th>   <!-- NEW COLUMN -->
             <th>Standard</th>
             <th>Result</th>
-            <th></th>
+            <th class="text-end">Actions</th>
         </tr>
     </thead>
     <tbody>
         {% for test in recent_tests %}
         <tr>
             <td>{{ test.test_date }}</td>
-            <td>{{ test.appliance.asset_number }}</td>
+            <td><a href="{{ url_for('main.appliance_detail', appliance_id=test.appliance.id) }}">{{ test.appliance.asset_number }}</a></td>
             <td>{{ test.appliance.description }}</td>   <!-- NEW COLUMN -->
             <td>{{ test.test_standard | std }}</td>
             <td>

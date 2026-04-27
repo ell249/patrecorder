@@ -477,6 +477,26 @@ def new_test(appliance_id):
     )
 
 # ---------------------------------------------------------
+# Repair helpers
+# ---------------------------------------------------------
+
+def _auto_lock_repair(repair):
+    """Lock a repair if an existing test already post-dates it."""
+    covering_test = (
+        TestRecord.query
+        .filter(
+            TestRecord.appliance_id == repair.appliance_id,
+            TestRecord.disposed == False,
+            TestRecord.test_date >= repair.repair_date,
+        )
+        .order_by(TestRecord.test_date)
+        .first()
+    )
+    if covering_test:
+        repair.locked_by_test_date = covering_test.test_date
+
+
+# ---------------------------------------------------------
 # Add Repair
 # ---------------------------------------------------------
 
@@ -510,6 +530,8 @@ def new_repair(appliance_id):
         )
         db.session.add(repair)
         db.session.commit()
+
+        _auto_lock_repair(repair)
 
         upload_dir = os.path.join("static", "uploads", "repairs", str(repair.id))
         os.makedirs(upload_dir, exist_ok=True)
@@ -571,6 +593,7 @@ def edit_repair(repair_id):
         else:
             repair.labour_minutes = None
 
+        _auto_lock_repair(repair)
         db.session.commit()
 
         upload_dir = os.path.join("static", "uploads", "repairs", str(repair.id))
