@@ -8,6 +8,18 @@
     for {{ appliance.asset_number }}
 </h3>
 
+<div class="alert alert-warning d-flex align-items-center gap-3 mb-4" role="alert">
+    <span style="font-size:1.6rem;">⚠️</span>
+    <div>
+        <strong>Before you begin:</strong> Repair work on electrical appliances must be performed by a
+        licensed or competent person in accordance with WHS legislation and AS/NZS 5762. A post-repair
+        safety test is required before returning the appliance to service.
+        <a href="{{ url_for('static', filename='swms_repair.html') }}" target="_blank" class="alert-link ms-1">
+            Read the Safe Work Method Statement (SWMS) &rarr;
+        </a>
+    </div>
+</div>
+
 <form method="post" enctype="multipart/form-data" class="row g-3">
 
     <!-- Repair Date -->

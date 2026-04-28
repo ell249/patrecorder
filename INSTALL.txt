@@ -2,42 +2,51 @@ PAT Recorder
 Installation Instructions
 ---------------------------------------------
 
-This document describes how to install and run PAT Recorder on a local machine or server. It includes system requirements, dependency installation, database setup, and application startup.
+This document describes how to install and run PAT Recorder on a local machine or
+server. It covers system requirements, dependency installation, database setup, and
+application startup.
 
 ---------------------------------------------
 1. System Requirements
 ---------------------------------------------
 
 Operating System:
-- Ubuntu or Debian (recommended)
-- macOS
-- Windows (via WSL2 for full PDF support)
+  - Ubuntu 22.04+ or Debian 12+ (recommended)
+  - macOS 13+
+  - Windows (via WSL2 — required for full WeasyPrint/PDF support)
 
 Required Software:
-- Python 3.9 or newer
-- MySQL 5.7+ or MariaDB 10.4+
-- WeasyPrint dependencies (Cairo, Pango, GObject)
+  - Python 3.9 or newer
+  - MySQL 5.7+ or MariaDB 10.4+
+  - WeasyPrint system dependencies (Cairo, Pango, GObject)
 
 ---------------------------------------------
 2. Install System Dependencies
 ---------------------------------------------
 
 Ubuntu / Debian:
+
     sudo apt update
-    sudo apt install -y python3 python3-venv python3-pip libffi-dev libcairo2 libpango-1.0-0 libpangocairo-1.0-0 gobject-introspection libgirepository1.0-dev
+    sudo apt install -y \
+        python3 python3-venv python3-pip \
+        libffi-dev libcairo2 libpango-1.0-0 \
+        libpangocairo-1.0-0 gobject-introspection \
+        libgirepository1.0-dev
 
 macOS (Homebrew):
+
     brew install python3 cairo pango gobject-introspection
 
 Windows:
-Use WSL2 with Ubuntu for compatibility:
+  Use WSL2 with Ubuntu for full compatibility:
+
     wsl --install
 
 ---------------------------------------------
 3. Prepare the Project
 ---------------------------------------------
 
-Place the project folder anywhere on your system:
+Place (or clone) the project folder anywhere on your system:
 
     patrecorder/
 
@@ -46,8 +55,8 @@ Place the project folder anywhere on your system:
 ---------------------------------------------
 
     cd patrecorder
-    python3 -m venv venv
-    source venv/bin/activate
+    python3 -m venv env
+    source env/bin/activate          # Windows WSL: same command
     pip install -r requirements.txt
 
 ---------------------------------------------
@@ -55,27 +64,41 @@ Place the project folder anywhere on your system:
 ---------------------------------------------
 
 Ubuntu:
+
     sudo apt install mysql-server
+    sudo service mysql start
 
 macOS:
+
     brew install mysql
     brew services start mysql
 
-Log into MySQL:
+Log into MySQL as root:
+
     mysql -u root -p
 
-Run the SQL setup files:
+Run the three SQL setup files in order:
 
     SOURCE sql/create_database.sql;
     SOURCE sql/create_tables.sql;
     SOURCE sql/insert_default_retest_rules.sql;
 
-This creates the required base tables:
-- appliance
-- tester
-- test_record
-- test_photo
-- retest_rule
+This creates the database and all required tables:
+
+  Core tables:
+    - tester              Certified testers (name, certificate number, phone)
+    - appliance           Appliance register (asset details, class, disposal info)
+    - retest_rule         Recommended retest intervals by class/supply type
+
+  Test tables:
+    - test_record         Test results per AS/NZS 3760, 5761, and 5762
+                          (visual inspection, electrical measurements, overall result)
+    - test_photo          Photos attached to test records
+
+  Repair tables:
+    - repair_record       Ad-hoc repair events (description, cost, labour time,
+                          lock status, disposal flag)
+    - repair_photo        Photos attached to repair records
 
 ---------------------------------------------
 6. Configure Database Credentials
@@ -85,7 +108,7 @@ Copy the example config and edit it:
 
     cp config.example.py config.py
 
-Edit config.py and update the database URI:
+Open config.py and update the database URI:
 
     SQLALCHEMY_DATABASE_URI = "mysql+pymysql://USERNAME:PASSWORD@localhost/test_and_tag"
 
@@ -95,22 +118,27 @@ Replace USERNAME and PASSWORD with your MySQL credentials.
 7. Run Database Migrations
 ---------------------------------------------
 
-After the base tables are created, run Flask-Migrate to apply any
-additional schema changes (including the repair tables):
+Flask-Migrate (Alembic) is used to manage schema changes after the initial install.
+After the base tables are created, apply any outstanding migrations:
 
     export FLASK_APP=app.py
     flask db upgrade
 
-If this is a fresh install with no migrations folder yet:
+For a completely fresh install with no existing migrations folder:
 
     flask db init
+    flask db migrate -m "initial schema"
     flask db upgrade
+
+NOTE: If you initialised the database using the SQL files above you do not need to
+run "flask db migrate" — the schema is already current. Only run "flask db upgrade"
+to apply future migrations distributed with the project.
 
 ---------------------------------------------
 8. Create Uploads Directories
 ---------------------------------------------
 
-Ensure the uploads folders exist for test and repair photos:
+Ensure the photo upload folders exist:
 
     mkdir -p static/uploads/tests
     mkdir -p static/uploads/repairs
@@ -133,53 +161,139 @@ The application will be available at:
     export FLASK_ENV=development
     flask run
 
-This enables automatic reload on file changes.
+Enables automatic reload on file changes and full debug output.
 
 ---------------------------------------------
-11. Troubleshooting
+11. Safe Work Method Statements (SWMS)
 ---------------------------------------------
 
-PDF generation errors:
-Install missing libraries:
+Two SWMS documents are included as printable static HTML pages:
 
-Ubuntu:
+    static/swms.html         PAT testing — AS/NZS 3760, 5761, 5762
+    static/swms_repair.html  Appliance repair — WHS Act 2011, AS/NZS 5762
+
+Links to these documents appear automatically at the top of the Test and Repair
+forms within the application. They can also be printed directly from a browser
+(File → Print → Save as PDF) to satisfy on-site WHS documentation requirements.
+
+IMPORTANT — Review and customise before use:
+  The included SWMS documents are provided as a starting-point template only.
+  They reference Commonwealth model WHS legislation and Australian Standards
+  current at the time of writing, but WHS laws vary between states and territories
+  and are updated periodically. Before allowing workers to rely on these documents
+  you must:
+
+    1. Verify that all legislative references (Acts, Regulations, Standards) are
+       correct and current for your jurisdiction and the date of use.
+
+    2. Update the document header fields — SWMS Reference, Revision, Prepared By,
+       Approved By, and Date — to reflect your organisation's details.
+
+    3. Review the hazard register and control measures against the specific
+       conditions, equipment, and work environment at your site. Add, remove, or
+       modify entries as required.
+
+    4. Confirm that PPE specifications and test-pass criteria match your
+       organisation's procedures and any applicable site rules.
+
+    5. Have the finalised SWMS reviewed and signed off by a competent person
+       (e.g., WHS officer, site manager, or licensed electrician) before use.
+
+    6. Ensure all workers performing testing or repair work read, understand, and
+       sign the SWMS acknowledgement table prior to commencing work.
+
+    7. Review the SWMS after any incident, near miss, or change to the work
+       process, and at least annually.
+
+  The authors of PAT Recorder accept no liability for the completeness or
+  suitability of these documents for any specific workplace. Compliance with
+  WHS legislation is the responsibility of the PCBU.
+
+---------------------------------------------
+12. Troubleshooting
+---------------------------------------------
+
+PDF generation errors (WeasyPrint):
+  Install missing system libraries:
+
+  Ubuntu:
     sudo apt install libcairo2 libpango-1.0-0 libpangocairo-1.0-0
 
-macOS:
+  macOS:
     brew install cairo pango
 
 MySQL connection refused:
     sudo service mysql status
+    sudo service mysql start
 
-Permission denied on uploads:
+Permission denied on uploads folder:
     chmod -R 755 static/uploads
 
-Migration errors on fresh install:
-If Flask-Migrate reports "can't locate revision", delete the migrations/
-folder and re-run:
+Migration errors — "can't locate revision":
+  Delete the migrations/ folder and re-initialise:
+    rm -rf migrations/
     flask db init
+    flask db migrate -m "initial schema"
     flask db upgrade
 
----------------------------------------------
-12. Next Steps
----------------------------------------------
-
-After installation you can:
-- Add appliances
-- Record tests under AS/NZS 3760, 5761, or 5762
-- Log repairs against appliances (with photos)
-- Upload photos for tests and repairs
-- Export PDF test certificates and repair history reports
-- Use the dashboard to track appliances due for testing,
-  including those repaired since their last test
-- Use fuzzy search across assets and tag numbers
+Migration detects false drift (collation / FK name noise):
+  This is normal when Alembic compares SQLAlchemy models against a MySQL schema.
+  Review the generated migration and remove any operations that only rename
+  constraints or change collation without changing column types or sizes.
 
 ---------------------------------------------
-13. Support
+13. Feature Summary
 ---------------------------------------------
 
-If you need help extending or deploying the system, additional
-documentation or modules can be generated on request.
+After installation the application supports:
+
+  Appliance register
+    - Add, edit, and dispose of appliances
+    - Track asset number, description, make/model, location, owner,
+      class type (Class I / II), appliance type, serial number,
+      purchase date/price, and receipt image
+    - Record and display creation timestamp
+
+  Test records (AS/NZS 3760, 5761, 5762)
+    - Full visual inspection checklist (PASS / FAIL / N/A per field)
+    - Electrical measurements: earth continuity, insulation resistance,
+      leakage current, polarity test, RCD trip time
+    - Class-aware defaults (earth continuity N/A for Class I enforced server-side)
+    - AS/NZS 5761 fields: condition assessment, functional check, safe-for-resale
+    - AS/NZS 5762 fields: repair description, repaired by, parts replaced,
+      post-repair functional test
+    - PDF certificate export (WeasyPrint) per standard
+
+  Repair records
+    - Log ad-hoc repairs against any appliance
+    - Fields: repair date, repaired by, description, comments,
+      parts cost ($), labour time (HH:MM), photos
+    - Repairs automatically locked (read-only) when a subsequent test
+      post-dating the repair is recorded
+    - Backdate support: repairs created/edited with a date prior to an
+      existing test are locked immediately
+    - PDF repair history export per appliance
+
+  Dashboard
+    - Counts: Active Appliances, Upcoming Tests (next 30 days),
+      Tests Required (overdue + never tested + repaired since last test)
+    - "Tests Required" tooltip explains all three categories
+    - Due-for-testing table with reason badges and quick-action buttons
+
+  Global search
+    - Searches appliances, test comments/tags, and repair comments/descriptions
+    - Results grouped by type with matched-field snippets
+
+  Safe Work Method Statements
+    - Printable SWMS for PAT testing and for appliance repair
+    - Linked from the top of each respective form
+
+---------------------------------------------
+14. Support
+---------------------------------------------
+
+For help extending or deploying the system, raise an issue or contact the
+project maintainer.
 
 ---------------------------------------------
 END OF FILE

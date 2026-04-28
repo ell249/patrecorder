@@ -1,9 +1,13 @@
 USE test_and_tag;
 
-INSERT INTO retest_rules (class_type, supply_type, interval_days, description, priority) VALUES
-('CLASS I', 'PORTABLE', 180, '6 months — Portable Class I equipment, moderate-risk areas', 20),
-('CLASS I', 'ANY',      365, '12 months — Class I equipment in low-risk areas', 10),
-('CLASS II', 'PORTABLE',365, '12 months — Portable Class II equipment', 15),
-('CLASS II', 'ANY',     730, '24 months — Fixed Class II equipment in controlled environments', 10),
-('ANY', 'CONSTRUCTION', 90,  '3 months — High-risk environments (construction, workshops, factories)', 30),
-('ANY', 'ANY',          365, '12 months — Default interval', 1);
+-- Default retest interval rules per AS/NZS 3760:2022 guidance.
+-- The application selects the most specific matching rule (class_type + supply_type).
+-- The 'ANY' wildcard rows act as fallbacks.
+
+INSERT INTO retest_rule (class_type, supply_type, interval_days) VALUES
+('ANY',      'ANY',          365),   -- Default: 12 months
+('CLASS I',  'ANY',          365),   -- Class I, general: 12 months
+('CLASS I',  'PORTABLE',     180),   -- Class I, portable: 6 months
+('CLASS II', 'ANY',          730),   -- Class II, general: 24 months
+('CLASS II', 'PORTABLE',     365),   -- Class II, portable: 12 months
+('ANY',      'CONSTRUCTION',  90);   -- High-risk environments: 3 months

@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SWMS – PAT Testing (AS/NZS 3760 / 5761 / 5762)</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { font-size: 0.93rem; }
+        h1 { font-size: 1.4rem; }
+        h2 { font-size: 1.1rem; background: #212529; color: #fff; padding: 6px 10px; margin-top: 1.6rem; }
+        h3 { font-size: 0.95rem; font-weight: 700; margin-top: 1rem; }
+        table { font-size: 0.87rem; }
+        thead { background-color: #495057; color: #fff; }
+        .risk-low    { background-color: #d1e7dd; }
+        .risk-medium { background-color: #fff3cd; }
+        .risk-high   { background-color: #f8d7da; }
+        .doc-meta td { width: 50%; vertical-align: top; }
+        @media print {
+            h2 { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            thead { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .risk-low, .risk-medium, .risk-high { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .no-print { display: none; }
+            a[href]::after { content: none; }
+        }
+    </style>
+</head>
+<body class="container py-4">
+
+<div class="no-print mb-3">
+    <a href="javascript:history.back()" class="btn btn-sm btn-secondary">&larr; Back to Test Form</a>
+    <button onclick="window.print()" class="btn btn-sm btn-outline-dark ms-2">Print / Save PDF</button>
+</div>
+
+<!-- ── Document Header ──────────────────────────────────────────────── -->
+<div class="text-center mb-4">
+    <h1 class="fw-bold">SAFE WORK METHOD STATEMENT</h1>
+    <h2 class="d-inline-block px-4 py-1 rounded" style="background:#212529; color:#fff; font-size:1rem;">
+        In-Service Electrical Safety Testing of Portable Appliances
+    </h2>
+</div>
+
+<table class="table table-bordered doc-meta mb-4">
+    <tbody>
+        <tr>
+            <td><strong>SWMS Reference:</strong> PAT-SWMS-001</td>
+            <td><strong>Revision:</strong> 1.0</td>
+        </tr>
+        <tr>
+            <td><strong>Standards:</strong> AS/NZS 3760:2022, AS/NZS 5761:2011, AS/NZS 5762:2011</td>
+            <td><strong>Review Date:</strong> Annually or after an incident</td>
+        </tr>
+        <tr>
+            <td><strong>Prepared by:</strong> ______________________________</td>
+            <td><strong>Approved by:</strong> ______________________________</td>
+        </tr>
+        <tr>
+            <td><strong>Date:</strong> ______________________________</td>
+            <td><strong>Signature:</strong> ______________________________</td>
+        </tr>
+    </tbody>
+</table>
+
+<!-- ── 1. Scope ──────────────────────────────────────────────────────── -->
+<h2>1. Scope and Purpose</h2>
+<p>
+    This Safe Work Method Statement (SWMS) describes the safe work procedures for conducting in-service safety
+    inspection and testing of portable electrical appliances in accordance with:
+</p>
+<ul>
+    <li><strong>AS/NZS 3760:2022</strong> – In-service safety inspection and testing of electrical equipment</li>
+    <li><strong>AS/NZS 5761:2011</strong> – In-service safety inspection and testing of second-hand electrical equipment prior to sale</li>
+    <li><strong>AS/NZS 5762:2011</strong> – In-service safety inspection and testing of electrical equipment after repair</li>
+</ul>
+<p>
+    This SWMS applies to all testing activities carried out by competent persons in workplace, commercial, industrial,
+    and residential environments covered by the above standards.
+</p>
+
+<!-- ── 2. Legislative References ────────────────────────────────────── -->
+<h2>2. Legislative and Regulatory References</h2>
+<table class="table table-bordered">
+    <thead>
+        <tr><th style="width:35%">Instrument</th><th>Relevance</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Work Health and Safety Act 2011 (Cth/State)</td>
+            <td>Primary duty of care for persons conducting a business or undertaking (PCBU) to ensure work is carried out safely. Sections 17–19 impose duties on PCBUs, designers, manufacturers, suppliers, and workers.</td>
+        </tr>
+        <tr>
+            <td>Work Health and Safety Regulation 2017</td>
+            <td>Specifies management of risks from electrical hazards (Part 4.7) and the maintenance of electrical equipment and installations.</td>
+        </tr>
+        <tr>
+            <td>AS/NZS 3760:2022</td>
+            <td>Sets out inspection and test procedures, pass/fail criteria, tagging requirements, and recommended retest intervals for in-service portable appliances.</td>
+        </tr>
+        <tr>
+            <td>AS/NZS 5761:2011</td>
+            <td>Additional requirements when testing second-hand equipment before resale, including condition assessment and safe-for-resale determination.</td>
+        </tr>
+        <tr>
+            <td>AS/NZS 5762:2011</td>
+            <td>Additional requirements when testing equipment that has been repaired, including documentation of repair work and post-repair functional testing.</td>
+        </tr>
+        <tr>
+            <td>AS/NZS 3000:2018 (Wiring Rules)</td>
+            <td>Referenced for correct wiring, polarity, and earthing standards where equipment is examined internally.</td>
+        </tr>
+        <tr>
+            <td>Electrical Safety Acts (state/territory)</td>
+            <td>State and territory electrical safety legislation may impose additional licensing requirements on the tester. Check your jurisdiction (e.g., <em>Electrical Safety Act 2002</em> (Qld), <em>Electricity Safety Act 1998</em> (Vic)).</td>
+        </tr>
+    </tbody>
+</table>
+
+<!-- ── 3. Personnel Competency ───────────────────────────────────────── -->
+<h2>3. Personnel Competency and Authorisation</h2>
+<p>Testing must only be performed by a <strong>competent person</strong> as defined by AS/NZS 3760:2022. A competent person:</p>
+<ul>
+    <li>Has knowledge and skills appropriate to the nature of the work (electrical theory, test equipment operation, applicable standards).</li>
+    <li>Holds current relevant qualifications (e.g., Certificate IV in Electrical Instrumentation, or equivalent trade qualification recognised by the relevant state authority).</li>
+    <li>Holds a valid <strong>testing and tagging certificate</strong> from a registered training organisation (RTO) accredited to deliver the applicable units of competency.</li>
+    <li>Is familiar with this SWMS and the specific hazards of the site.</li>
+</ul>
+<p class="fw-bold text-danger">Persons who are not competent must not perform PAT testing.</p>
+
+<!-- ── 4. PPE ────────────────────────────────────────────────────────── -->
+<h2>4. Personal Protective Equipment (PPE)</h2>
+<table class="table table-bordered">
+    <thead>
+        <tr><th>PPE Item</th><th>Requirement</th><th>Standard / Notes</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Safety footwear</td>
+            <td>Mandatory</td>
+            <td>AS/NZS 2210.3 – closed-toe, slip-resistant. Insulating sole preferred.</td>
+        </tr>
+        <tr>
+            <td>Safety glasses / face shield</td>
+            <td>Mandatory when working near energised equipment or during plug inspection</td>
+            <td>AS/NZS 1337.1 – protection against arc flash and particle ejection.</td>
+        </tr>
+        <tr>
+            <td>Insulating gloves</td>
+            <td>Required when handling damaged or suspect equipment prior to isolation</td>
+            <td>AS/NZS 2225 – rated for voltage in use.</td>
+        </tr>
+        <tr>
+            <td>Hi-visibility vest</td>
+            <td>Required in industrial or outdoor environments</td>
+            <td>AS/NZS 4602.1 Day/Night garments.</td>
+        </tr>
+        <tr>
+            <td>Cotton or low-static clothing</td>
+            <td>Recommended</td>
+            <td>Avoid synthetic fabrics that increase arc-flash burn severity.</td>
+        </tr>
+    </tbody>
+</table>
+
+<!-- ── 5. Plant and Equipment ────────────────────────────────────────── -->
+<h2>5. Plant and Test Equipment Required</h2>
+<table class="table table-bordered">
+    <thead>
+        <tr><th>Item</th><th>Specification / Notes</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>PAT tester (combined analyser)</td>
+            <td>Capable of earth continuity, insulation resistance, and leakage current tests per AS/NZS 3760. Calibration must be current and certificate available on site.</td>
+        </tr>
+        <tr>
+            <td>Earth continuity test leads</td>
+            <td>Low-resistance Kelvin leads. Resistance of the test lead set must be measured and subtracted from results.</td>
+        </tr>
+        <tr>
+            <td>Insulation resistance meter (where separate)</td>
+            <td>500 V DC test voltage. Calibrated.</td>
+        </tr>
+        <tr>
+            <td>RCD tester</td>
+            <td>Required where Lead+RCD tests are performed. Verifies trip time within the limits specified by AS/NZS 3760 (≤300 ms for Type II 30 mA; ≤40 ms for Type I 10 mA).</td>
+        </tr>
+        <tr>
+            <td>Pass/fail tags and label printer</td>
+            <td>Colour-coded durable tags per AS/NZS 3760 Appendix C requirements.</td>
+        </tr>
+        <tr>
+            <td>Test record book / software</td>
+            <td>Permanent record of test results required. This system (PAT Recorder) constitutes the electronic register.</td>
+        </tr>
+        <tr>
+            <td>Torch / inspection light</td>
+            <td>For visual inspection in poorly lit areas.</td>
+        </tr>
+        <tr>
+            <td>Screwdrivers (insulated)</td>
+            <td>Only if internal inspection is required under AS/NZS 5762.</td>
+        </tr>
+    </tbody>
+</table>
+
+<!-- ── 6. Pre-Task Requirements ─────────────────────────────────────── -->
+<h2>6. Pre-Task Requirements</h2>
+<ul>
+    <li>Obtain authorisation from the site manager / PCBU to conduct testing in the work area.</li>
+    <li>Conduct a site-specific hazard assessment and review any site safety inductions required.</li>
+    <li>Ensure all test equipment calibration certificates are current.</li>
+    <li>Brief all workers in the area that electrical testing will be taking place and may require temporary disconnection of equipment.</li>
+    <li>Identify and segregate any equipment that is energised and cannot be de-energised. Do not test energised equipment.</li>
+    <li>Verify that the work area is dry. <strong>Do not conduct testing in wet conditions or near water without additional controls.</strong></li>
+    <li>Ensure an emergency plan and first aid kit are accessible.</li>
+    <li>Complete all relevant site permits to work (hot work, electrical isolation) if required by site rules.</li>
+</ul>
+
+<!-- ── 7. Hazard Register ─────────────────────────────────────────────── -->
+<h2>7. Hazard Identification and Risk Assessment</h2>
+
+<h3>Risk Rating Key</h3>
+<table class="table table-bordered mb-3" style="width:auto">
+    <thead><tr><th>Rating</th><th>Likelihood × Consequence</th></tr></thead>
+    <tbody>
+        <tr class="risk-low"><td>Low</td><td>Unlikely / Minor – proceed with standard controls</td></tr>
+        <tr class="risk-medium"><td>Medium</td><td>Possible / Moderate – additional controls required</td></tr>
+        <tr class="risk-high"><td>High</td><td>Likely / Severe – eliminate or substitute before proceeding</td></tr>
+    </tbody>
+</table>
+
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>#</th>
+            <th>Hazard</th>
+            <th>Who is at risk</th>
+            <th>Risk (before controls)</th>
+            <th>Control Measures (Hierarchy of Controls)</th>
+            <th>Risk (after controls)</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>1</td>
+            <td>Electric shock from live conductors or damaged insulation</td>
+            <td>Tester, bystanders</td>
+            <td class="risk-high">High</td>
+            <td>
+                <ul class="mb-0 ps-3">
+                    <li><em>Eliminate:</em> Disconnect equipment from supply before visual inspection of plug, cord and casing.</li>
+                    <li><em>Substitute:</em> Use only calibrated PAT tester with safety-rated probes.</li>
+                    <li><em>Engineering:</em> Test leads fitted with shrouded connectors and current-limiting protection.</li>
+                    <li><em>Admin:</em> Never open plug tops or appliance casings while energised. Follow lock-out/tag-out if isolation is required.</li>
+                    <li><em>PPE:</em> Insulating gloves for handling damaged equipment.</li>
+                </ul>
+            </td>
+            <td class="risk-low">Low</td>
+        </tr>
+        <tr>
+            <td>2</td>
+            <td>Arc flash / electrical explosion from faulty or damaged equipment</td>
+            <td>Tester</td>
+            <td class="risk-high">High</td>
+            <td>
+                <ul class="mb-0 ps-3">
+                    <li>Visually inspect for obvious damage before connecting to PAT tester.</li>
+                    <li>Do not test appliances with exposed conductors, cracked plugs, or evidence of burning — quarantine immediately.</li>
+                    <li>Wear safety glasses during plug and cord inspection.</li>
+                    <li>Ensure test area is clear of bystanders.</li>
+                </ul>
+            </td>
+            <td class="risk-low">Low</td>
+        </tr>
+        <tr>
+            <td>3</td>
+            <td>Manual handling injury when moving heavy appliances</td>
+            <td>Tester</td>
+            <td class="risk-medium">Medium</td>
+            <td>
+                <ul class="mb-0 ps-3">
+                    <li>Test appliances in situ where possible to minimise handling.</li>
+                    <li>Use team lifts or trolleys for items exceeding 16 kg.</li>
+                    <li>Maintain neutral spine posture; do not twist when lifting.</li>
+                </ul>
+            </td>
+            <td class="risk-low">Low</td>
+        </tr>
+        <tr>
+            <td>4</td>
+            <td>Slip, trip or fall — trailing test leads or cables on floor</td>
+            <td>Tester, bystanders, public</td>
+            <td class="risk-medium">Medium</td>
+            <td>
+                <ul class="mb-0 ps-3">
+                    <li>Use cable covers or route leads around perimeter of traffic areas.</li>
+                    <li>Place safety cones or barrier tape around test area if in a public space.</li>
+                    <li>Keep test kit bag/case positioned out of walkways.</li>
+                </ul>
+            </td>
+            <td class="risk-low">Low</td>
+        </tr>
+        <tr>
+            <td>5</td>
+            <td>Working at height (testing appliances mounted on benches, racks, or elevated positions)</td>
+            <td>Tester</td>
+            <td class="risk-medium">Medium</td>
+            <td>
+                <ul class="mb-0 ps-3">
+                    <li>Use an appropriate step platform or ladder rated to AS/NZS 1892.</li>
+                    <li>Do not overreach — reposition the platform as needed.</li>
+                    <li>Three points of contact on ladder at all times.</li>
+                </ul>
+            </td>
+            <td class="risk-low">Low</td>
+        </tr>
+        <tr>
+            <td>6</td>
+            <td>Disruption to business operations — equipment taken offline</td>
+            <td>Other workers, business</td>
+            <td class="risk-medium">Medium</td>
+            <td>
+                <ul class="mb-0 ps-3">
+                    <li>Schedule testing with the site manager to minimise operational impact.</li>
+                    <li>Tag failed or quarantined equipment clearly and advise the site manager immediately.</li>
+                    <li>Reconnect and return equipment promptly after testing where it has passed.</li>
+                </ul>
+            </td>
+            <td class="risk-low">Low</td>
+        </tr>
+        <tr>
+            <td>7</td>
+            <td>Inhalation of dust, mould or fibres during inspection (older or dirty equipment)</td>
+            <td>Tester</td>
+            <td class="risk-low">Low</td>
+            <td>
+                <ul class="mb-0 ps-3">
+                    <li>Wear a P2 dust mask when inspecting heavily soiled or aged equipment.</li>
+                    <li>Ensure adequate ventilation in the work area.</li>
+                </ul>
+            </td>
+            <td class="risk-low">Low</td>
+        </tr>
+        <tr>
+            <td>8</td>
+            <td>Sun exposure / heat stress (outdoor or unventilated environments)</td>
+            <td>Tester</td>
+            <td class="risk-medium">Medium</td>
+            <td>
+                <ul class="mb-0 ps-3">
+                    <li>Schedule outdoor work for cooler parts of the day (before 10 am or after 2 pm).</li>
+                    <li>Apply SPF 50+ sunscreen; wear long sleeves and a hat where possible.</li>
+                    <li>Maintain adequate hydration.</li>
+                </ul>
+            </td>
+            <td class="risk-low">Low</td>
+        </tr>
+    </tbody>
+</table>
+
+<!-- ── 8. Work Procedure ──────────────────────────────────────────────── -->
+<h2>8. Step-by-Step Work Procedure</h2>
+
+<h3>Step 1 — Site Induction and Setup</h3>
+<ol>
+    <li>Sign in at site reception or notify the site manager of your presence and intended work area.</li>
+    <li>Complete any required site-specific induction.</li>
+    <li>Inspect the work area for hazards (wet floors, overhead hazards, traffic). Apply controls before proceeding.</li>
+    <li>Set up test equipment on a stable, dry surface. Confirm calibration is current.</li>
+    <li>Put on required PPE.</li>
+</ol>
+
+<h3>Step 2 — Equipment Identification</h3>
+<ol>
+    <li>Identify the appliance by asset number, description, and location. Record in PAT Recorder.</li>
+    <li>Confirm the applicable test standard (AS/NZS 3760, 5761, or 5762) based on the nature of the equipment and reason for testing.</li>
+    <li>Note the appliance class type (Class I — earthed; Class II — double insulated) as this determines which tests apply.</li>
+</ol>
+
+<h3>Step 3 — Disconnect and Visual Inspection</h3>
+<ol>
+    <li><strong>Disconnect the appliance from the mains supply before inspection.</strong></li>
+    <li>Inspect the plug: check for cracks, burns, missing insulation, or damaged pins. Record PASS/FAIL.</li>
+    <li>Inspect the supply cord along its full length: look for cuts, abrasions, kinks, exposed conductors, or taped repairs. Record PASS/FAIL.</li>
+    <li>Inspect the appliance casing/enclosure: check for cracks, missing covers, loose screws, or damaged guards. Record PASS/FAIL/N/A as appropriate.</li>
+    <li>Check for signs of overheating: discolouration, scorch marks, deformed plastic, or burning odour. Record PASS/FAIL.</li>
+    <li>Check the rating label: confirm it is present, legible, and that the rated voltage/frequency matches site supply. Record PASS/FAIL/N/A as appropriate.</li>
+    <li>Check for exposed conductors — no live, neutral, or earth conductors should be accessible. Record PASS/FAIL.</li>
+    <li>Check for evidence of unsafe previous repairs (taped joints, non-approved connectors). Record PASS/FAIL/N/A.</li>
+    <li>Verify cable strain relief / cord grip is correctly fitted. Record PASS/FAIL/N/A.</li>
+    <li>Verify safety functions and guards operate correctly. Record PASS/FAIL/N/A.</li>
+    <li>If any visual inspection item FAILS, <strong>quarantine the appliance immediately</strong> using a red DANGER tag. Do not proceed to electrical testing — a failed visual inspection is an automatic overall FAIL.</li>
+</ol>
+
+<h3>Step 4 — Electrical Testing</h3>
+<p>Only conduct electrical testing if the visual inspection has passed in all required areas.</p>
+<ol>
+    <li>
+        <strong>Earth Continuity (Class I appliances only):</strong><br>
+        Connect the PAT tester to the appliance plug and the accessible metal parts.
+        Measure earth path resistance using DC test current per AS/NZS 3760 Table 2.<br>
+        <strong>PASS criterion: ≤ 1.0 Ω</strong> (including test lead resistance — subtract lead resistance from reading).<br>
+        Class II appliances: record as N/A.
+    </li>
+    <li>
+        <strong>Insulation Resistance:</strong><br>
+        Apply 500 V DC between live conductors (Active + Neutral bonded together) and the appliance earth or accessible metal.<br>
+        <strong>PASS criterion: ≥ 1 MΩ</strong> per AS/NZS 3760 Table 3.<br>
+        Ensure the appliance is switched ON during the insulation test so that the internal wiring is included.
+    </li>
+    <li>
+        <strong>Leakage Current (if applicable):</strong><br>
+        Conduct a substitute/touch current test where required by the test type.<br>
+        <strong>PASS criterion: ≤ 5 mA (Class I)</strong> or <strong>≤ 1 mA (Class II)</strong> per AS/NZS 3760 Table 4.
+    </li>
+    <li>
+        <strong>Polarity Test (if applicable):</strong><br>
+        Confirm Active, Neutral, and Earth are correctly wired using the PAT tester polarity function or a dedicated polarity tester.<br>
+        <strong>PASS: all conductors correctly connected.</strong>
+    </li>
+    <li>
+        <strong>RCD Test (Lead+RCD test type):</strong><br>
+        Test RCD using a dedicated RCD tester at rated trip current.<br>
+        <strong>PASS criterion: trip time ≤ 300 ms (Type II, 30 mA) or ≤ 40 ms (Type I, 10 mA)</strong>.
+    </li>
+</ol>
+
+<h3>Step 5 — Additional Requirements by Standard</h3>
+<h4 style="font-size:0.9rem; font-weight:600;">AS/NZS 5761 (Second-hand equipment)</h4>
+<ul>
+    <li>Complete a <strong>condition assessment</strong>: document the physical condition beyond the VI checklist.</li>
+    <li>Perform a <strong>functional check</strong>: operate the appliance under normal conditions and confirm it functions as intended.</li>
+    <li>List any accessories included.</li>
+    <li>Record a <strong>safe-for-resale determination</strong> (YES or NO).</li>
+</ul>
+
+<h4 style="font-size:0.9rem; font-weight:600;">AS/NZS 5762 (Equipment after repair)</h4>
+<ul>
+    <li>Document the <strong>repair description</strong> in detail — what was replaced or repaired.</li>
+    <li>Record the name of the repairer (<em>Repaired By</em>).</li>
+    <li>List all <strong>parts replaced</strong>.</li>
+    <li>Conduct and document a <strong>post-repair functional test</strong>: operate the appliance and confirm correct operation after repair.</li>
+</ul>
+
+<h3>Step 6 — Overall Assessment and Tagging</h3>
+<ol>
+    <li>Determine the overall result (PASS or FAIL) based on all visual inspection and electrical test results.</li>
+    <li>
+        If <strong>PASS</strong>:
+        <ul>
+            <li>Apply a colour-coded PASS tag in accordance with AS/NZS 3760 Appendix C (colour corresponds to the retest period).</li>
+            <li>Tag must include: tester name, test date, next test due date, and test standard.</li>
+        </ul>
+    </li>
+    <li>
+        If <strong>FAIL</strong>:
+        <ul>
+            <li>Apply a red DANGER / OUT OF SERVICE tag clearly identifying the equipment as unsafe.</li>
+            <li>Remove the equipment from service immediately. Advise the site manager in writing.</li>
+            <li>Do not return failed equipment to service until it has been repaired and re-tested.</li>
+        </ul>
+    </li>
+    <li>Record all test results in PAT Recorder, including tester name, certificate number, date, and all individual measurements.</li>
+</ol>
+
+<h3>Step 7 — Pack Up and Site Handover</h3>
+<ol>
+    <li>Remove all test equipment, leads, and personal equipment from the work area.</li>
+    <li>Restore any furniture or equipment moved during testing.</li>
+    <li>Advise the site manager that testing is complete and provide a verbal summary of any failed or quarantined equipment.</li>
+    <li>Ensure the electronic test register (PAT Recorder) is saved and backed up before leaving site.</li>
+    <li>Sign out at site reception if required.</li>
+</ol>
+
+<!-- ── 9. Emergency Procedures ───────────────────────────────────────── -->
+<h2>9. Emergency Procedures</h2>
+
+<h3>Electric Shock</h3>
+<ol>
+    <li><strong>Do not touch the person</strong> if they are still in contact with the electrical source.</li>
+    <li>Isolate the power at the nearest switch or circuit breaker.</li>
+    <li>Once safe, call <strong>000</strong> immediately.</li>
+    <li>Commence CPR if the person is unresponsive and not breathing. Use the AED if available.</li>
+    <li>Keep the person warm and still until emergency services arrive.</li>
+    <li>Do not allow the person to return to work — all electric shock incidents must be assessed by a medical professional.</li>
+</ol>
+
+<h3>Fire</h3>
+<ol>
+    <li>Activate the nearest fire alarm.</li>
+    <li>Call <strong>000</strong>.</li>
+    <li>Evacuate the area using the designated emergency exits.</li>
+    <li>Only use a fire extinguisher (CO₂ or dry chemical for electrical fires) if the fire is small, you are trained to do so, and you have a clear exit behind you.</li>
+    <li>Assemble at the designated muster point and report to the fire warden.</li>
+</ol>
+
+<h3>Injury</h3>
+<ol>
+    <li>For serious injury, call <strong>000</strong> and do not move the injured person unless there is immediate danger.</li>
+    <li>For minor injury, use the first aid kit and advise the site first aid officer.</li>
+    <li>All incidents and near misses must be reported to the site manager and recorded in the incident register.</li>
+    <li>Notify your employer of any notifiable incidents per WHS Act s. 35–38.</li>
+</ol>
+
+<!-- ── 10. Incident Reporting ──────────────────────────────────────── -->
+<h2>10. Incident Reporting and Review</h2>
+<p>
+    All incidents, near misses, and hazards identified during testing must be reported to the site manager and your
+    employer. Notifiable incidents (death, serious injury, or dangerous incident) must be reported to the relevant
+    state/territory WHS regulator immediately — do not disturb the scene except to assist injured persons or make
+    the area safe.
+</p>
+<p>
+    This SWMS must be reviewed after any incident and at minimum annually. Amendments must be authorised and all
+    personnel re-briefed.
+</p>
+
+<!-- ── 11. Worker Acknowledgement ──────────────────────────────────── -->
+<h2>11. Worker Acknowledgement</h2>
+<p>
+    By signing below, each worker confirms they have read and understood this SWMS, have had the opportunity to
+    ask questions, and agree to work in accordance with the controls described.
+</p>
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th style="width:28%">Full Name</th>
+            <th style="width:28%">Signature</th>
+            <th style="width:22%">Date</th>
+            <th>Role</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+        <tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+        <tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+        <tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+        <tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+        <tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+    </tbody>
+</table>
+
+<hr>
+<p class="text-muted small text-center">
+    PAT Recorder SWMS – PAT-SWMS-001 Rev 1.0 &nbsp;|&nbsp;
+    Generated for use with AS/NZS 3760:2022, AS/NZS 5761:2011, AS/NZS 5762:2011 &nbsp;|&nbsp;
+    Review annually or after any incident or change in work conditions.
+</p>
+
+<div class="no-print mt-4">
+    <a href="javascript:history.back()" class="btn btn-secondary">&larr; Back to Test Form</a>
+    <button onclick="window.print()" class="btn btn-outline-dark ms-2">Print / Save PDF</button>
+</div>
+
+</body>
+</html>
