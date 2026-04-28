@@ -28,6 +28,10 @@ config.local.py
 static/uploads/
 static/uploads/tests/
 
+#--- MIGRATIONS ---
+migrations/*
+migrations.old/*
+
 # --- OS / Editor Files ---
 .DS_Store
 Thumbs.db
