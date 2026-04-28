@@ -73,17 +73,24 @@ macOS:
     brew install mysql
     brew services start mysql
 
-Log into MySQL as root:
+Create a MySQL user for the application (example):
 
     mysql -u root -p
+    CREATE USER 'pat_user'@'localhost' IDENTIFIED BY 'yourpassword';
+    GRANT ALL PRIVILEGES ON test_and_tag.* TO 'pat_user'@'localhost';
+    FLUSH PRIVILEGES;
+    EXIT;
 
-Run the three SQL setup files in order:
+The database and all tables are created automatically by the first-run setup
+wizard the first time you start the application (see Section 9).
 
-    SOURCE sql/create_database.sql;
-    SOURCE sql/create_tables.sql;
-    SOURCE sql/insert_default_retest_rules.sql;
+The SQL files in sql/ are provided as reference material only:
 
-This creates the database and all required tables:
+    sql/create_database.sql          — CREATE DATABASE statement
+    sql/create_tables.sql            — all table definitions
+    sql/insert_default_retest_rules.sql — default retest interval seed data
+
+Tables created by the wizard:
 
   Core tables:
     - tester              Certified testers (name, certificate number, phone)
@@ -104,35 +111,35 @@ This creates the database and all required tables:
 6. Configure Database Credentials
 ---------------------------------------------
 
-Copy the example config and edit it:
+Copy the example config:
 
     cp config.example.py config.py
 
-Open config.py and update the database URI:
+You do not need to edit config.py manually. The first-run setup wizard (Section 9)
+will write the correct database URI into config.py automatically when you submit
+the setup form.
+
+If you prefer to configure it manually, open config.py and update:
 
     SQLALCHEMY_DATABASE_URI = "mysql+pymysql://USERNAME:PASSWORD@localhost/test_and_tag"
 
-Replace USERNAME and PASSWORD with your MySQL credentials.
-
 ---------------------------------------------
-7. Run Database Migrations
+7. Database Migrations
 ---------------------------------------------
 
-Flask-Migrate (Alembic) is used to manage schema changes after the initial install.
-After the base tables are created, apply any outstanding migrations:
+Database migrations are run automatically by the first-run setup wizard.
+You do not need to run any migration commands manually on a fresh install.
+
+For subsequent application updates that include schema changes, apply migrations with:
 
     export FLASK_APP=app.py
     flask db upgrade
 
-For a completely fresh install with no existing migrations folder:
+If Flask-Migrate reports "can't locate revision", re-initialise the migrations folder:
 
     flask db init
     flask db migrate -m "initial schema"
     flask db upgrade
-
-NOTE: If you initialised the database using the SQL files above you do not need to
-run "flask db migrate" — the schema is already current. Only run "flask db upgrade"
-to apply future migrations distributed with the project.
 
 ---------------------------------------------
 8. Create Uploads Directories
@@ -153,6 +160,20 @@ Ensure the photo upload folders exist:
 The application will be available at:
 
     http://127.0.0.1:5000
+
+On a fresh install (or when the database is not reachable), all requests are
+automatically redirected to the setup wizard at:
+
+    http://127.0.0.1:5000/setup
+
+Enter your MySQL credentials and click "Set Up Database". The wizard will:
+  1. Test the connection
+  2. Create the database if it does not exist
+  3. Create all tables and run all migrations
+  4. Seed default retest interval rules
+  5. Redirect you to the dashboard
+
+No CLI commands are required beyond starting the application.
 
 ---------------------------------------------
 10. Development Mode (Optional)
@@ -283,6 +304,11 @@ After installation the application supports:
   Global search
     - Searches appliances, test comments/tags, and repair comments/descriptions
     - Results grouped by type with matched-field snippets
+
+  First-run setup wizard
+    - Browser-based database configuration (no CLI required)
+    - Automatically creates database, runs all migrations, and seeds default data
+    - Activated automatically when the database is not configured or unreachable
 
   Safe Work Method Statements
     - Printable SWMS for PAT testing and for appliance repair

@@ -17,13 +17,22 @@ def create_app():
     migrate = Migrate(app, db)
 
     # ---------------------------------------------------------
+    # Check whether DB is reachable; flag setup wizard if not
+    # ---------------------------------------------------------
+    from setup import _check_db
+    app.config['SETUP_REQUIRED'] = not _check_db(app)
+
+    # ---------------------------------------------------------
     # Register Jinja Filters
     # ---------------------------------------------------------
     app.jinja_env.filters["std"] = format_standard
 
     # ---------------------------------------------------------
-    # Register Blueprints
+    # Register Blueprints (setup first so its before_app_request fires)
     # ---------------------------------------------------------
+    from setup import bp as setup_bp
+    app.register_blueprint(setup_bp)
+
     from views import bp as main_bp
     app.register_blueprint(main_bp)
 
