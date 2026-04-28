@@ -47,8 +47,17 @@ def _check_db(app):
 
 @bp.before_app_request
 def require_setup():
+    # Lazy evaluation: determine on the first request whether setup is needed.
+    # This avoids a startup-time DB check in create_app(), which would bake the
+    # result into the process at launch and require a restart after setup completes.
+    if current_app.config.get('SETUP_REQUIRED') is None:
+        current_app.config['SETUP_REQUIRED'] = not _check_db(
+            current_app._get_current_object()
+        )
+
     if not current_app.config.get('SETUP_REQUIRED'):
         return
+
     # Only the initial setup form and static files are allowed
     # through when the DB is not yet configured.
     ALLOWED = {'setup.index', 'setup.run_setup', 'static'}
@@ -110,32 +119,35 @@ def run_setup():
         return render_template('setup.html', prefill=prefill,
                                error=f"Could not create database '{db_name}': {e}")
 
-    # Step 3 — Write config.py
     new_uri = f"mysql+pymysql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
-    try:
-        _write_config(new_uri)
-    except Exception as e:
-        return render_template('setup.html', prefill=prefill,
-                               error=f"Could not write config.py: {e}")
 
-    # Step 4 — Reconfigure SQLAlchemy engine in-process
+    # Step 3 — Reconfigure SQLAlchemy engine in-process with the new URI
     current_app.config['SQLALCHEMY_DATABASE_URI'] = new_uri
     db.engine.dispose()
 
-    # Step 5 — Run all Alembic migrations (creates all tables)
+    # Step 4 — Run all Alembic migrations (creates all tables)
     try:
         upgrade()
     except Exception as e:
         return render_template('setup.html', prefill=prefill,
                                error=f"Migration failed: {e}")
 
-    # Step 6 — Seed default retest rules if table is empty
+    # Step 5 — Seed default retest rules if table is empty
     try:
         _seed_retest_rules()
     except Exception as e:
         current_app.logger.warning(f"Could not seed retest rules: {e}")
 
-    # Step 7 — Clear the setup flag
+    # Step 6 — Write config.py last so the dev reloader (if active) only fires
+    # after the database is fully set up. On restart, _check_db will pass and
+    # SETUP_REQUIRED will be set to False without needing manual intervention.
+    try:
+        _write_config(new_uri)
+    except Exception as e:
+        # Non-fatal for the current session — credentials are already in memory.
+        current_app.logger.warning(f"Could not write config.py: {e}")
+
+    # Step 7 — Clear the setup flag for the current running process
     current_app.config['SETUP_REQUIRED'] = False
 
     flash('Database initialised successfully. Welcome to PAT Recorder!', 'success')

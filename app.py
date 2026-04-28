@@ -17,10 +17,11 @@ def create_app():
     migrate = Migrate(app, db)
 
     # ---------------------------------------------------------
-    # Check whether DB is reachable; flag setup wizard if not
+    # SETUP_REQUIRED is determined lazily on the first request
+    # by the require_setup before_app_request hook in setup.py.
+    # Setting None here signals "not yet evaluated".
     # ---------------------------------------------------------
-    from setup import _check_db
-    app.config['SETUP_REQUIRED'] = not _check_db(app)
+    app.config['SETUP_REQUIRED'] = None
 
     # ---------------------------------------------------------
     # Register Jinja Filters
