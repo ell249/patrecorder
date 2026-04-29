@@ -4,7 +4,7 @@ import pymysql
 from urllib.parse import urlparse
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
-from flask_migrate import upgrade
+from flask_migrate import upgrade, stamp
 
 from app import db
 
@@ -125,12 +125,25 @@ def run_setup():
     current_app.config['SQLALCHEMY_DATABASE_URI'] = new_uri
     db.engine.dispose()
 
-    # Step 4 — Run all Alembic migrations (creates all tables)
+    # Step 4 — Create schema
+    # On a truly empty database the incremental migrations fail because they
+    # assume the base tables (appliance, tester, test_record, etc.) already
+    # exist. Detect this and use create_all() + stamp() instead so that
+    # Alembic knows the schema is current without running each migration step.
+    # On an existing database (tables present), run upgrade() as normal.
     try:
-        upgrade()
+        from sqlalchemy import inspect as sa_inspect
+        existing_tables = sa_inspect(db.engine).get_table_names()
+        if 'appliance' not in existing_tables:
+            # Fresh empty database: create full schema from models in one shot
+            db.create_all()
+            stamp(revision='head')
+        else:
+            # Existing database: apply any pending incremental migrations
+            upgrade()
     except Exception as e:
         return render_template('setup.html', prefill=prefill,
-                               error=f"Migration failed: {e}")
+                               error=f"Schema setup failed: {e}")
 
     # Step 5 — Seed default retest rules if table is empty
     try:
@@ -175,6 +188,21 @@ def status():
 @bp.route('/setup/upgrade', methods=['POST'])
 def run_upgrade():
     try:
+        from sqlalchemy import text
+        # If the database was initialised via SQL files rather than the setup
+        # wizard, alembic_version won't exist. Stamp at head first so Alembic
+        # knows the base schema is already in place, then apply any real deltas.
+        try:
+            with db.engine.connect() as conn:
+                current_rev = conn.execute(
+                    text("SELECT version_num FROM alembic_version")
+                ).scalar()
+        except Exception:
+            current_rev = None
+
+        if current_rev is None:
+            stamp(revision='head')
+
         upgrade()
         flash('Database upgraded successfully.', 'success')
     except Exception as e:
