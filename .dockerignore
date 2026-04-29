@@ -1,0 +1,14 @@
+.git/
+env/
+__pycache__/
+*.pyc
+*.pyo
+migrations.old/
+static/uploads/
+config.py
+.db_settings
+*.sh
+sql/
+INSTALL.txt
+LICENCE
+README.md

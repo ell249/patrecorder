@@ -176,7 +176,113 @@ Enter your MySQL credentials and click "Set Up Database". The wizard will:
 No CLI commands are required beyond starting the application.
 
 ---------------------------------------------
-10. Development Mode (Optional)
+10. Docker Deployment (Optional)
+---------------------------------------------
+
+Docker lets you run PAT Recorder without installing Python or any system
+dependencies directly on the host. MySQL must run separately (another container
+or an existing managed server) — PAT Recorder does not bundle a database.
+
+Prerequisites:
+  - Docker Engine installed on the host
+  - An accessible MySQL 5.7+ or MariaDB 10.4+ server
+
+--- Build the image ---
+
+Copy the example Dockerfile and build the image:
+
+    cp Dockerfile.example Dockerfile
+    docker build -t patrecorder .
+
+The image bakes in the application code but NOT the database credentials or
+uploaded photos. Both are supplied at runtime via bind mounts (see below).
+
+Repeat the build step after any code change. The Python dependency layer is
+cached, so incremental rebuilds are fast.
+
+--- Prepare host-side files ---
+
+Create the upload directories before starting the container. Docker would
+create them as root-owned directories otherwise, causing permission errors:
+
+    mkdir -p static/uploads/tests static/uploads/repairs
+
+Copy the example config so the container has a placeholder on first start:
+
+    cp config.example.py config.py
+
+--- Start the container ---
+
+Copy the example start script and run it:
+
+    cp start.example.sh start.sh
+    chmod +x start.sh
+    ./start.sh
+
+The script runs:
+
+    docker run -d \
+      -p 5090:5090 \
+      --restart unless-stopped \
+      --name patrecorder \
+      -v "$PWD/config.py:/app/config.py" \
+      -v "$PWD/static/uploads:/app/static/uploads" \
+      patrecorder
+
+Two bind mounts are used:
+
+  config.py            Database credentials. Mounted writable so the in-browser
+                       setup wizard can persist the credentials after first run.
+
+  static/uploads/      User-uploaded photos. Mounted writable so photos survive
+                       container restarts and image upgrades.
+
+The application will be available at:
+
+    http://<host-ip>:5090
+
+--- First-run setup inside Docker ---
+
+On the first visit, all requests redirect to the setup wizard at:
+
+    http://<host-ip>:5090/setup
+
+Enter the MySQL credentials for your external database server and click
+"Set Up Database". The wizard will:
+  1. Test the connection
+  2. Create the database if it does not exist
+  3. Create all tables
+  4. Seed default retest interval rules
+  5. Write the credentials into config.py on the host (via the volume mount)
+  6. Redirect you to the dashboard
+
+No CLI access to the container is required.
+
+--- Applying future migrations ---
+
+After upgrading the image to a newer version, any pending database schema
+changes can be applied without CLI access. Navigate to:
+
+    http://<host-ip>:5090/setup/status
+
+The page shows the current migration revision and lists any pending updates.
+Click "Apply Pending Migrations" to apply them.
+
+--- Useful container management commands ---
+
+View logs:
+    docker logs patrecorder
+
+Restart after a code update (rebuild first):
+    docker build -t patrecorder .
+    docker stop patrecorder && docker rm patrecorder
+    ./start.sh
+
+Stop the container:
+    docker stop patrecorder
+
+---------------------------------------------
+11. Development Mode (Optional)
 ---------------------------------------------
 
     export FLASK_ENV=development
@@ -185,7 +291,7 @@ No CLI commands are required beyond starting the application.
 Enables automatic reload on file changes and full debug output.
 
 ---------------------------------------------
-11. Safe Work Method Statements (SWMS)
+12. Safe Work Method Statements (SWMS)
 ---------------------------------------------
 
 Two SWMS documents are included as printable static HTML pages:
@@ -231,7 +337,7 @@ IMPORTANT — Review and customise before use:
   WHS legislation is the responsibility of the PCBU.
 
 ---------------------------------------------
-12. Troubleshooting
+13. Troubleshooting
 ---------------------------------------------
 
 PDF generation errors (WeasyPrint):
@@ -263,7 +369,7 @@ Migration detects false drift (collation / FK name noise):
   constraints or change collation without changing column types or sizes.
 
 ---------------------------------------------
-13. Feature Summary
+14. Feature Summary
 ---------------------------------------------
 
 After installation the application supports:
@@ -315,7 +421,7 @@ After installation the application supports:
     - Linked from the top of each respective form
 
 ---------------------------------------------
-14. Support
+15. Support
 ---------------------------------------------
 
 For help extending or deploying the system, raise an issue or contact the
