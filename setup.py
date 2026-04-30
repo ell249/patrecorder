@@ -176,9 +176,15 @@ def status():
     uri = current_app.config.get('SQLALCHEMY_DATABASE_URI', '')
     conn_info = _parse_uri(uri)
     migration_status = _get_migration_status()
+    permissions = _check_permissions()
+    db_ok = _check_db(current_app._get_current_object())
+    uploads = _check_uploads()
     return render_template('setup_status.html',
                            conn_info=conn_info,
-                           migration=migration_status)
+                           migration=migration_status,
+                           permissions=permissions,
+                           db_ok=db_ok,
+                           uploads=uploads)
 
 
 # ---------------------------------------------------------
@@ -207,6 +213,43 @@ def run_upgrade():
         flash('Database upgraded successfully.', 'success')
     except Exception as e:
         flash(f'Upgrade failed: {e}', 'danger')
+    return redirect(url_for('setup.status'))
+
+
+# ---------------------------------------------------------
+# POST /setup/cleanup  — delete orphaned upload files
+# ---------------------------------------------------------
+
+@bp.route('/setup/cleanup', methods=['POST'])
+def run_cleanup():
+    uploads = _check_uploads()
+    if uploads['error']:
+        flash(f'Cleanup aborted: {uploads["error"]}', 'danger')
+        return redirect(url_for('setup.status'))
+
+    base = os.path.dirname(os.path.abspath(__file__))
+    uploads_root = os.path.join(base, 'static', 'uploads')
+    deleted, errors = 0, []
+
+    for rel_path in uploads['orphaned']:
+        abs_path = os.path.normpath(os.path.join(uploads_root, rel_path))
+        # Safety: only delete files inside the uploads root
+        if not abs_path.startswith(uploads_root + os.sep):
+            continue
+        try:
+            os.remove(abs_path)
+            deleted += 1
+            # Remove the containing directory if now empty
+            parent = os.path.dirname(abs_path)
+            if parent != uploads_root and not os.listdir(parent):
+                os.rmdir(parent)
+        except Exception as e:
+            errors.append(f'{rel_path}: {e}')
+
+    if errors:
+        flash(f'Deleted {deleted} file(s); {len(errors)} error(s): ' + '; '.join(errors), 'warning')
+    else:
+        flash(f'Deleted {deleted} orphaned file(s).', 'success')
     return redirect(url_for('setup.status'))
 
 
@@ -267,6 +310,104 @@ def _seed_retest_rules():
         ]
         db.session.add_all(rules)
         db.session.commit()
+
+
+def _check_permissions():
+    """
+    Checks that config.py and the upload directories are readable/writable.
+    Returns a list of dicts: {name, ok, issue, fix}
+    """
+    base = os.path.dirname(os.path.abspath(__file__))
+    results = []
+
+    items = [
+        {'name': 'config.py',               'path': os.path.join(base, 'config.py'),                    'type': 'file'},
+        {'name': 'static/uploads/tests/',   'path': os.path.join(base, 'static', 'uploads', 'tests'),   'type': 'dir'},
+        {'name': 'static/uploads/repairs/', 'path': os.path.join(base, 'static', 'uploads', 'repairs'), 'type': 'dir'},
+    ]
+
+    for item in items:
+        p = item['path']
+        entry = {'name': item['name'], 'ok': False, 'issue': None, 'fix': None}
+
+        if item['type'] == 'file':
+            if not os.path.exists(p):
+                entry['issue'] = 'File does not exist'
+                entry['fix'] = 'cp config.example.py config.py'
+            elif not os.access(p, os.R_OK):
+                entry['issue'] = 'File is not readable'
+                entry['fix'] = 'chmod 644 config.py'
+            elif not os.access(p, os.W_OK):
+                entry['issue'] = 'File is not writable — the setup wizard cannot save credentials'
+                entry['fix'] = 'chmod 664 config.py'
+            else:
+                entry['ok'] = True
+        else:
+            rel = os.path.relpath(p, base)
+            if not os.path.exists(p):
+                entry['issue'] = 'Directory does not exist'
+                entry['fix'] = f'mkdir -p {rel}'
+            elif not os.path.isdir(p):
+                entry['issue'] = 'Path exists but is not a directory'
+                entry['fix'] = f'rm {rel} && mkdir -p {rel}'
+            elif not os.access(p, os.W_OK):
+                entry['issue'] = 'Directory is not writable — photo uploads will fail'
+                entry['fix'] = f'chmod 775 {rel}'
+            else:
+                entry['ok'] = True
+
+        results.append(entry)
+
+    return results
+
+
+def _check_uploads():
+    """
+    Compares files on disk under static/uploads/ against filepaths stored in
+    the database (TestPhoto, RepairPhoto, Appliance.receipt_filepath).
+    Returns {'orphaned': [rel_paths], 'total_files': N, 'orphaned_size': bytes, 'error': str|None}
+    """
+    base = os.path.dirname(os.path.abspath(__file__))
+    uploads_root = os.path.join(base, 'static', 'uploads')
+
+    result = {'orphaned': [], 'total_files': 0, 'orphaned_size': 0, 'error': None}
+
+    # Collect every file on disk, as paths relative to uploads_root
+    disk_files = set()
+    if os.path.isdir(uploads_root):
+        for dirpath, _, filenames in os.walk(uploads_root):
+            for fname in filenames:
+                abs_path = os.path.join(dirpath, fname)
+                rel = os.path.relpath(abs_path, uploads_root)
+                disk_files.add(rel.replace(os.sep, '/'))
+
+    result['total_files'] = len(disk_files)
+
+    # Collect all referenced filepaths from the database
+    try:
+        from models import TestPhoto, RepairPhoto, Appliance
+        referenced = set()
+        for row in db.session.query(TestPhoto.filepath).all():
+            if row.filepath:
+                referenced.add(row.filepath.replace(os.sep, '/'))
+        for row in db.session.query(RepairPhoto.filepath).all():
+            if row.filepath:
+                referenced.add(row.filepath.replace(os.sep, '/'))
+        for row in db.session.query(Appliance.receipt_filepath).all():
+            if row.receipt_filepath:
+                referenced.add(row.receipt_filepath.replace(os.sep, '/'))
+    except Exception as e:
+        result['error'] = f'Could not query database: {e}'
+        return result
+
+    orphaned_paths = sorted(disk_files - referenced)
+    result['orphaned'] = orphaned_paths
+    result['orphaned_size'] = sum(
+        os.path.getsize(os.path.join(uploads_root, p))
+        for p in orphaned_paths
+        if os.path.exists(os.path.join(uploads_root, p))
+    )
+    return result
 
 
 def _get_migration_status():

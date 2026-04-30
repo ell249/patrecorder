@@ -12,7 +12,14 @@
 
 {# ── Connection info ──────────────────────────────────────── #}
 <div class="card mb-4">
-    <div class="card-header fw-semibold">Connection</div>
+    <div class="card-header fw-semibold d-flex align-items-center gap-2">
+        Connection
+        {% if db_ok %}
+        <span class="badge bg-success ms-auto">All OK</span>
+        {% else %}
+        <span class="badge bg-danger ms-auto">Unreachable</span>
+        {% endif %}
+    </div>
     <div class="card-body">
         <table class="table table-sm mb-0">
             <tr>
@@ -36,9 +43,159 @@
     </div>
 </div>
 
+{# ── File & directory permissions ─────────────────────────── #}
+{% set perm_failures = permissions | selectattr('ok', 'equalto', false) | list %}
+<div class="card mb-4">
+    <div class="card-header fw-semibold d-flex align-items-center gap-2">
+        File &amp; Directory Permissions
+        {% if perm_failures %}
+        <span class="badge bg-danger ms-auto">{{ perm_failures | length }} issue{{ 's' if perm_failures | length != 1 else '' }}</span>
+        {% else %}
+        <span class="badge bg-success ms-auto">All OK</span>
+        {% endif %}
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-sm mb-0">
+            <thead>
+                <tr>
+                    <th class="ps-3" style="width:220px">Path</th>
+                    <th style="width:80px">Status</th>
+                    <th>Details</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in permissions %}
+                <tr class="{{ 'table-danger' if not p.ok else '' }}">
+                    <td class="ps-3"><code>{{ p.name }}</code></td>
+                    <td>
+                        {% if p.ok %}
+                        <span class="badge bg-success">OK</span>
+                        {% else %}
+                        <span class="badge bg-danger">Fail</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if p.ok %}
+                        <span class="text-muted small">Readable and writable</span>
+                        {% else %}
+                        <span class="text-danger small">{{ p.issue }}</span>
+                        {% if p.fix %}
+                        <div class="mt-1">
+                            <span class="text-muted small">Fix:</span>
+                            <code class="small">{{ p.fix }}</code>
+                        </div>
+                        <div class="text-muted small mt-1">
+                            If running in Docker, run this command on the <strong>host</strong> then restart the container.
+                        </div>
+                        {% endif %}
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{# ── Upload storage ───────────────────────────────────────── #}
+<div class="card mb-4">
+    <div class="card-header fw-semibold d-flex align-items-center gap-2">
+        Upload Storage
+        {% if uploads.error %}
+        <span class="badge bg-secondary ms-auto">Unknown</span>
+        {% elif uploads.orphaned %}
+        <span class="badge bg-warning text-dark ms-auto">
+            {{ uploads.orphaned | length }} orphaned file{{ 's' if uploads.orphaned | length != 1 else '' }}
+        </span>
+        {% else %}
+        <span class="badge bg-success ms-auto">All OK</span>
+        {% endif %}
+    </div>
+    <div class="card-body">
+
+        {% if uploads.error %}
+        <div class="alert alert-warning mb-0">
+            <strong>Could not check uploads:</strong> {{ uploads.error }}
+            <div class="text-muted small mt-1">
+                The database may not be configured yet. Complete setup first.
+            </div>
+        </div>
+
+        {% elif not uploads.orphaned %}
+        <p class="text-muted mb-0">
+            All {{ uploads.total_files }} file{{ 's' if uploads.total_files != 1 else '' }}
+            on disk are referenced in the database.
+        </p>
+
+        {% else %}
+        <p class="mb-3">
+            Found <strong>{{ uploads.orphaned | length }}</strong> file{{ 's' if uploads.orphaned | length != 1 else '' }}
+            on disk with no matching database record
+            ({{ (uploads.orphaned_size / 1024) | round(1) }}&nbsp;KB).
+            These are safe to delete.
+        </p>
+
+        {% if uploads.orphaned | length <= 20 %}
+        <div class="mb-3">
+            <table class="table table-sm table-bordered mb-0">
+                <thead>
+                    <tr><th>File</th></tr>
+                </thead>
+                <tbody>
+                    {% for f in uploads.orphaned %}
+                    <tr><td><code class="small">{{ f }}</code></td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="mb-3">
+            <table class="table table-sm table-bordered mb-0">
+                <thead>
+                    <tr><th>File (first 20 of {{ uploads.orphaned | length }})</th></tr>
+                </thead>
+                <tbody>
+                    {% for f in uploads.orphaned[:20] %}
+                    <tr><td><code class="small">{{ f }}</code></td></tr>
+                    {% endfor %}
+                    <tr>
+                        <td class="text-muted small">
+                            … and {{ uploads.orphaned | length - 20 }} more
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+
+        <form method="post" action="{{ url_for('setup.run_cleanup') }}"
+              onsubmit="return confirm('Delete {{ uploads.orphaned | length }} orphaned file(s)? This cannot be undone.');"
+              class="d-inline">
+            <button type="submit" class="btn btn-danger btn-sm">
+                Delete Orphaned Files
+            </button>
+        </form>
+        {% endif %}
+
+    </div>
+</div>
+
 {# ── Migration status ─────────────────────────────────────── #}
 <div class="card mb-4">
-    <div class="card-header fw-semibold">Schema Migrations</div>
+    <div class="card-header fw-semibold d-flex align-items-center gap-2">
+        Schema Migrations
+        {% if migration.error %}
+        <span class="badge bg-danger ms-auto">Error</span>
+        {% elif migration.is_up_to_date %}
+        <span class="badge bg-success ms-auto">All OK</span>
+        {% elif migration.never_migrated %}
+        <span class="badge bg-danger ms-auto">Not initialised</span>
+        {% else %}
+        <span class="badge bg-warning text-dark ms-auto">
+            {{ migration.pending | length }} pending
+        </span>
+        {% endif %}
+    </div>
     <div class="card-body">
 
         {% if migration.error %}
