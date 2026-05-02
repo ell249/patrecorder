@@ -1,14 +1,30 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
+from werkzeug.middleware.proxy_fix import ProxyFix
 from config import Config
 from utils import format_standard
 
 db = SQLAlchemy()
 
+
+class _IngressFix:
+    """Copy HA's X-Ingress-Path header into WSGI SCRIPT_NAME so url_for() generates correct prefixed URLs."""
+    def __init__(self, app):
+        self.app = app
+
+    def __call__(self, environ, start_response):
+        ingress = environ.get('HTTP_X_INGRESS_PATH', '')
+        if ingress:
+            environ['SCRIPT_NAME'] = ingress
+        return self.app(environ, start_response)
+
+
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
+    app.wsgi_app = _IngressFix(app.wsgi_app)
 
     # ---------------------------------------------------------
     # Database init
