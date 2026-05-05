@@ -1,156 +1,71 @@
-# PAT Recorder — Portable Appliance Testing System
+# PAT Recorder
 
-A lightweight, technician‑friendly web application for recording, managing, and exporting Portable Appliance Testing (PAT) results in compliance with **AS/NZS 3760**, **AS/NZS 5761**, and **AS/NZS 5762**.
-
-Built with **Flask**, **Bootstrap 5**, **WeasyPrint**, and **DataTables**, the system provides a clean workflow for technicians performing electrical safety testing on appliances.
-
----
+A web application for recording, managing, and exporting Portable Appliance Testing (PAT) results in compliance with **AS/NZS 3760**, **AS/NZS 5761**, and **AS/NZS 5762**. Manage an appliance register, log test and repair records, generate PDF certificates, and track what's due for testing — all from a browser.
 
 ## Features
 
-### 🔌 Modern, Branded Interface
-- Streamlined navigation:
-  - Dashboard  
-  - Appliances  
-  - Add Appliance  
+- **Appliance register** — add, edit, and soft-delete appliances; track asset number, description, make/model, location, owner, class type, supply type, serial number, and purchase details
+- **Test records** — full visual inspection checklist, electrical measurements (earth continuity, insulation resistance, leakage current, polarity, RCD trip time), PASS/FAIL logic, auto-calculated next test due date; covers AS/NZS 3760, 5761, and 5762
+- **Repair records** — log ad-hoc repairs against any appliance with date, technician, description, parts cost, labour time, and photos; automatically locked once a subsequent test is recorded, preserving a tamper-evident history
+- **PDF certificate export** — professional A4 certificates per test standard, including appliance details, measurements, technician info, timestamp, and embedded QR code; separate repair history PDF per appliance
+- **Dashboard** — counts of active appliances, tests due in the next 30 days, and tests required (overdue, never tested, or repaired since last test); due-for-testing table with reason badges and quick-action buttons
+- **Global search** — searches appliance details, test comments, and repair descriptions; results grouped by type with matched-field snippets
+- **First-run setup wizard** — browser-based database configuration; automatically creates the database, runs all migrations, and seeds default retest rules; activates automatically when the database is not configured or unreachable
+- **Migration status page** — shows current schema revision and pending migrations; apply them with one click without CLI access
+- **Safe Work Method Statements** — printable SWMS for PAT testing and appliance repair; linked from the top of each respective form
 
----
+## Support
 
-## 🧰 Appliance Management
-- Add, edit, and view appliances
-- Appliance fields:
-  - Asset Number  
-  - Description  
-  - **Make / Model**  
-  - Location  
-  - Owner  
-  - Class Type / Supply Type  
-- Appliance detail page includes:
-  - Full test history  
-  - Full repair history  
-  - Quick actions (Add Test, Add Repair, View PDFs)
-- Soft-delete (dispose/restore) and hard-delete support
-- Disposed appliances and their records are hidden from normal views
+<a href="https://www.buymeacoffee.com/ell249" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
 
----
+If you find PAT Recorder useful, consider [buying me a coffee](https://buymeacoffee.com/ell249) — it's always appreciated!
 
-## 🧪 Test Recording
-Supports all major Australian/New Zealand PAT standards:
+## Tech Stack
 
-- **AS/NZS 3760** — In‑service safety inspection & testing  
-- **AS/NZS 5761** — Repaired electrical equipment  
-- **AS/NZS 5762** — Re‑testing of repaired equipment  
+| Layer | Technology |
+|---|---|
+| Language | Python 3.11+ |
+| Framework | Flask |
+| ORM | SQLAlchemy + Flask-Migrate (Alembic) |
+| Database | MySQL 5.7+ / MariaDB 10.4+ |
+| Templates | Jinja2 + Bootstrap 5 |
+| PDF generation | WeasyPrint |
+| QR codes | qrcode[pil] |
+| Deployment | Docker / Gunicorn |
 
-Includes:
-- Visual inspection checklist  
-- Electrical test results  
-- PASS / FAIL logic  
-- Technician dropdown (from database)  
-- Auto‑calculated next test due date  
-- QR code linking back to the test record
+## Quick Start
 
----
+See [INSTALL.md](INSTALL.md) for full installation instructions.
 
-## 🔧 Repair Logging
-Log ad‑hoc repair events against any appliance, independently of formal test records.
+```bash
+cp Dockerfile.example Dockerfile
+cp config.example.py config.py
+docker build -t patrecorder .
+./start.sh
+```
 
-Repair records include:
-- Repair date  
-- Repaired by (free text — supports external contractors)  
-- Description of work performed  
-- Extended comments (multi‑line)  
-- Photo attachments  
+Open `http://<host-ip>:5090` — the app will redirect you to the **Setup** page on first run. Enter your MySQL credentials and click **Set Up Database**.
 
-### Locking behaviour
-When a new test is recorded for an appliance, all preceding open repair records are automatically **locked** with the test date. Locked records are read‑only and cannot be edited or deleted, preserving a tamper‑evident maintenance history.
+## Usage
 
-### Dashboard integration
-The dashboard flags appliances as **"Repaired – test required"** whenever a repair has been logged more recently than the appliance's last test, prompting a post‑repair compliance test.
+1. **Setup** — on first run the app redirects to `/setup`; enter MySQL credentials and click *Set Up Database* to create the schema and seed defaults
+2. **Add a tester** — go to *Testers* and register each certified technician before recording tests
+3. **Add an appliance** — click *Add Appliance*, fill in the asset details, and save
+4. **Record a test** — open the appliance, click *Add Test*, select the standard, complete the checklist and measurements, and save
+5. **Record a repair** — click *Add Repair* on any appliance; the repair is automatically locked once a subsequent test is saved
+6. **Export PDF** — from any test or repair record, click *Export PDF* to download a formatted certificate
+7. **Check the dashboard** — the dashboard surfaces everything overdue or due within 30 days, and flags appliances that have been repaired since their last test
 
----
+## Project Structure
 
-## 📄 PDF Generation
-Each test record can be exported as a **professional PDF**, including:
-
-- Appliance details  
-- Test results  
-- PASS/FAIL summary  
-- Technician details  
-- Timestamp  
-- **Embedded QR code** linking to the online record  
-- Clean layout optimised for A4 printing  
-
-A separate **Repair History PDF** is available per appliance, listing all repair records chronologically with lock status.
-
-Powered by **WeasyPrint**.
-
----
-
-## 📱 QR Code Integration
-Every PDF includes a QR code that links directly to the test record.
-
-QR codes are generated using:
-- `qrcode` Python library  
-- Base64‑embedded PNG images  
-- No temporary files required  
-
----
-
-## 📊 Appliance List Enhancements
-The appliance list now includes:
-
-### ✔ DataTables Sorting
-Sort by:
-- Asset  
-- Description  
-- Make/Model  
-- Location  
-- Owner  
-
-### ✔ Global Search
-Instant search across all columns.
-
-### ✔ Column Filters
-- Text filters for:
-  - Asset  
-  - Description  
-  - Make/Model  
-- Dropdown filters for:
-  - Location  
-  - Owner  
-
-### ✔ Responsive Layout
-Action buttons remain aligned and consistent:
-- **View**
-- **Add Test**
-- **Add Repair**
-
----
-
-## Technology Stack
-
-### Backend
-- Python 3.x  
-- Flask  
-- SQLAlchemy  
-- WeasyPrint  
-- qrcode  
-
-### Frontend
-- Bootstrap 5  
-- jQuery  
-- DataTables 1.13.x  
-- Material Design Icons  
-
----
-
-## 📁 Project Structure
-`test_and_tag/
-├── app.py
-├── config.py
-├── models.py
-├── utils.py
-├── views.py
+```
+patrecorder/
+├── app.py               # Flask app factory + first-run redirect
+├── config.py            # Database URI and app config
+├── models.py            # ORM models (Appliance, Tester, TestRecord, RepairRecord, …)
+├── views.py             # Route handlers
+├── utils.py             # PDF generation, QR codes, helper functions
+├── setup.py             # First-run setup wizard routes
 ├── requirements.txt
 │
 ├── sql/
@@ -159,37 +74,37 @@ Action buttons remain aligned and consistent:
 │   └── insert_default_retest_rules.sql
 │
 ├── static/
-│   ├── css/custom.css
-│   ├── uploads/tests/
-│   └── uploads/repairs/
+│   ├── css/
+│   ├── swms.html            # SWMS — PAT testing
+│   ├── swms_repair.html     # SWMS — appliance repair
+│   └── uploads/
+│       ├── tests/
+│       └── repairs/
 │
 └── templates/
-├── base.html
-├── dashboard.html
-├── appliance_list.html
-├── appliance_detail.html
-├── appliance_due.html
-├── search_results.html
-├── test_form.html
-├── test_detail.html
-├── repair_form.html
-├── repair_detail.html
-│
-└── pdf/
-├── test_3760.html
-├── test_5761.html
-├── test_5762.html
-└── repair_history.html`
+    ├── base.html
+    ├── dashboard.html
+    ├── appliance_list.html
+    ├── appliance_detail.html
+    ├── appliance_form.html
+    ├── test_form.html
+    ├── test_detail.html
+    ├── repair_form.html
+    ├── repair_detail.html
+    ├── search_results.html
+    ├── setup.html
+    ├── setup_status.html
+    └── pdf/
+        ├── test_3760.html
+        ├── test_5761.html
+        ├── test_5762.html
+        └── repair_history.html
+```
 
----
+## Licence
 
-## 🛠 Installation
+MIT — see [LICENCE](LICENCE).
 
-See **INSTALL.txt** for full installation instructions.
+## Use of AI
 
----
-
-## 🔧 Note
-
-AI (Claude) used in the generation of this code
-
+Please note that AI (Claude) was used in the creation of this code.
