@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
@@ -38,6 +39,13 @@ def create_app():
     # Setting None here signals "not yet evaluated".
     # ---------------------------------------------------------
     app.config['SETUP_REQUIRED'] = None
+
+    # ---------------------------------------------------------
+    # Template context
+    # ---------------------------------------------------------
+    @app.context_processor
+    def inject_now():
+        return {"now": datetime.now(timezone.utc)}
 
     # ---------------------------------------------------------
     # Register Jinja Filters
