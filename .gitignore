@@ -29,8 +29,7 @@ static/uploads/
 static/uploads/tests/
 
 #--- MIGRATIONS ---
-migrations/*
-migrations.old/*
+migrations.old/
 
 # --- OS / Editor Files ---
 .DS_Store
