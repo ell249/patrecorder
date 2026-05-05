@@ -84,7 +84,17 @@
         {% endfor %}
     </div>
 
-    <a href="{{ url_for('main.test_pdf', test_id=test.id) }}" class="btn btn-primary mt-3">Download PDF</a>
+    <div class="d-flex gap-2 mt-3 flex-wrap">
+        <a href="{{ url_for('main.test_pdf', test_id=test.id) }}" class="btn btn-primary">
+            <i class="mdi mdi-file-pdf-box me-1"></i>Download PDF
+        </a>
+        <a href="{{ url_for('main.test_label', test_id=test.id) }}" class="btn btn-outline-secondary">
+            <i class="mdi mdi-printer me-1"></i>Print Label
+        </a>
+        <a href="{{ url_for('main.test_label_preview', test_id=test.id) }}" class="btn btn-outline-secondary" target="_blank">
+            <i class="mdi mdi-eye me-1"></i>Preview Label
+        </a>
+    </div>
 
 </div>
 

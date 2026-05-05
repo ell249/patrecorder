@@ -95,6 +95,16 @@
                 <td>
                     <a href="{{ url_for('main.test_detail', test_id=test.id) }}"
                        class="btn btn-sm btn-primary">View</a>
+                    <a href="{{ url_for('main.test_label_preview', test_id=test.id) }}"
+                       class="btn btn-sm btn-outline-secondary" target="_blank"
+                       title="Preview label">
+                        <i class="mdi mdi-eye"></i>
+                    </a>
+                    <a href="{{ url_for('main.test_label', test_id=test.id) }}"
+                       class="btn btn-sm btn-outline-secondary"
+                       title="Print label">
+                        <i class="mdi mdi-printer"></i>
+                    </a>
                 </td>
             </tr>
             {% endfor %}

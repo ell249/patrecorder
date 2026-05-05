@@ -3,6 +3,9 @@ Flask-SQLAlchemy
 Flask-Migrate
 PyMySQL
 WeasyPrint
+Pillow
 qrcode[pil]
 cryptography
 gunicorn
+brother_ql
+zeroconf

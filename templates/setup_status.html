@@ -43,6 +43,110 @@
     </div>
 </div>
 
+{# ── Label printer ────────────────────────────────────────── #}
+<div class="card mb-4">
+    <div class="card-header fw-semibold d-flex align-items-center gap-2">
+        Label Printer
+        {% if printer.reachable %}
+        <span class="badge bg-success ms-auto">Reachable</span>
+        {% elif printer.address %}
+        <span class="badge bg-danger ms-auto">Unreachable</span>
+        {% else %}
+        <span class="badge bg-secondary ms-auto">Not configured</span>
+        {% endif %}
+    </div>
+    <div class="card-body">
+
+        {% if printer.error and printer.address %}
+        <div class="alert alert-warning py-2 mb-3">{{ printer.error }}</div>
+        {% endif %}
+
+        <form method="post" action="{{ url_for('printer.save') }}">
+            <div class="row g-3 mb-3">
+
+                <div class="col-12">
+                    <label class="form-label fw-semibold">Printer Address</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" name="brother_printer"
+                               id="printerAddress"
+                               placeholder="tcp://192.168.1.50"
+                               value="{{ printer_settings.brother_printer }}">
+                        <button type="button" class="btn btn-outline-secondary" onclick="discoverPrinters()">
+                            <span id="discoverSpinner" class="spinner-border spinner-border-sm d-none me-1" role="status"></span>
+                            <i class="mdi mdi-magnify me-1" id="discoverIcon"></i>Discover
+                        </button>
+                    </div>
+                    <div id="discoverResults" class="mt-2"></div>
+                    <div class="form-text">e.g. <code>tcp://192.168.1.50</code></div>
+                </div>
+
+                <div class="col-sm-6">
+                    <label class="form-label fw-semibold">Model</label>
+                    <select class="form-select" name="brother_model">
+                        {% set models = [
+                            "QL-500","QL-550","QL-560","QL-570","QL-580N","QL-600",
+                            "QL-650TD","QL-700","QL-710W","QL-720NW","QL-800","QL-810W",
+                            "QL-820NWB","QL-1050","QL-1060N","QL-1100","QL-1110NWB","QL-1115NWB"
+                        ] %}
+                        <option value="">— select —</option>
+                        {% for m in models %}
+                            <option value="{{ m }}" {% if printer_settings.brother_model == m %}selected{% endif %}>{{ m }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-sm-6">
+                    <label class="form-label fw-semibold">Label Size</label>
+                    <select class="form-select" name="brother_label">
+                        {% set labels = [
+                            ("12","12 mm"),("29","29 mm"),("38","38 mm"),
+                            ("50","50 mm"),("54","54 mm"),("62","62 mm"),("102","102 mm"),
+                            ("17x54","17×54 mm"),("17x87","17×87 mm"),("23x23","23×23 mm"),
+                            ("29x42","29×42 mm"),("29x90","29×90 mm"),("39x90","39×90 mm"),
+                            ("62x29","62×29 mm"),("62x100","62×100 mm"),
+                        ] %}
+                        {% for value, label in labels %}
+                            <option value="{{ value }}" {% if printer_settings.brother_label == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-sm-6">
+                    <label class="form-label fw-semibold">Print Colours</label>
+                    <div class="mt-1">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="brother_red"
+                                   id="colorBlack" value="false"
+                                   {% if printer_settings.brother_red != "true" %}checked{% endif %}>
+                            <label class="form-check-label" for="colorBlack">Black only</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="brother_red"
+                                   id="colorRed" value="true"
+                                   {% if printer_settings.brother_red == "true" %}checked{% endif %}>
+                            <label class="form-check-label" for="colorRed">Black and red <span class="text-muted small">(QL-800/810W/820NWB)</span></label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-sm-6">
+                    <label class="form-label fw-semibold">Base URL</label>
+                    <input type="text" class="form-control" name="base_url"
+                           placeholder="http://192.168.1.10:5090"
+                           value="{{ printer_settings.base_url }}">
+                    <div class="form-text">Used to generate QR codes on labels.</div>
+                </div>
+
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-sm">
+                <i class="mdi mdi-content-save me-1"></i>Save Printer Settings
+            </button>
+        </form>
+
+    </div>
+</div>
+
 {# ── File & directory permissions ─────────────────────────── #}
 {% set perm_failures = permissions | selectattr('ok', 'equalto', false) | list %}
 <div class="card mb-4">
@@ -265,5 +369,50 @@
 
     </div>
 </div>
+
+<script>
+function discoverPrinters() {
+    const spinner = document.getElementById("discoverSpinner");
+    const icon    = document.getElementById("discoverIcon");
+    const results = document.getElementById("discoverResults");
+
+    spinner.classList.remove("d-none");
+    icon.classList.add("d-none");
+    results.innerHTML = '<span class="text-muted small">Scanning for printers&hellip;</span>';
+
+    fetch("{{ url_for('printer.discover') }}", { method: "POST" })
+        .then(r => r.json())
+        .then(data => {
+            spinner.classList.add("d-none");
+            icon.classList.remove("d-none");
+            if (data.error) {
+                results.innerHTML = `<span class="text-danger small">${data.error}</span>`;
+                return;
+            }
+            if (!data.length) {
+                results.innerHTML = '<span class="text-muted small">No printers found on the network.</span>';
+                return;
+            }
+            results.innerHTML = data.map(p =>
+                `<button type="button" class="btn btn-sm btn-outline-secondary me-2 mb-1"
+                         onclick="selectPrinter('${p.address}')">
+                    <i class="mdi mdi-printer me-1"></i>${p.name}
+                    <span class="text-muted">${p.address}</span>
+                </button>`
+            ).join("");
+        })
+        .catch(() => {
+            spinner.classList.add("d-none");
+            icon.classList.remove("d-none");
+            results.innerHTML = '<span class="text-danger small">Discovery failed.</span>';
+        });
+}
+
+function selectPrinter(address) {
+    document.getElementById("printerAddress").value = address;
+    document.getElementById("discoverResults").innerHTML =
+        `<span class="text-success small"><i class="mdi mdi-check me-1"></i>${address} selected</span>`;
+}
+</script>
 
 {% endblock %}

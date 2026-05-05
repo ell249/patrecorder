@@ -61,6 +61,9 @@ def create_app():
     from views import bp as main_bp
     app.register_blueprint(main_bp)
 
+    from printer import bp as printer_bp
+    app.register_blueprint(printer_bp)
+
     return app
 
 

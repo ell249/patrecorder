@@ -789,6 +789,55 @@ def test_pdf(test_id):
     return response
 
 # ---------------------------------------------------------
+# Label Print / Preview
+# ---------------------------------------------------------
+
+@bp.route("/test/<int:test_id>/label")
+def test_label(test_id):
+    from flask import current_app
+    from label import build_label_image, print_label
+
+    test = TestRecord.query.get_or_404(test_id)
+    config = {
+        "BASE_URL":        current_app.config.get("BASE_URL", ""),
+        "BROTHER_PRINTER": current_app.config.get("BROTHER_PRINTER", ""),
+        "BROTHER_MODEL":   current_app.config.get("BROTHER_MODEL", "QL-810W"),
+        "BROTHER_LABEL":   current_app.config.get("BROTHER_LABEL", "62"),
+        "BROTHER_RED":     current_app.config.get("BROTHER_RED", "false"),
+    }
+
+    if not config["BROTHER_PRINTER"]:
+        flash("No printer configured. Set a printer address in Printer Settings.", "warning")
+        return redirect(url_for("main.test_detail", test_id=test_id))
+
+    try:
+        img_bytes = build_label_image(test, config)
+        print_label(img_bytes, config)
+        flash("Label sent to printer.", "success")
+    except Exception as exc:
+        flash(f"Print failed: {exc}", "danger")
+
+    return redirect(url_for("main.test_detail", test_id=test_id))
+
+
+@bp.route("/test/<int:test_id>/label/preview")
+def test_label_preview(test_id):
+    from flask import current_app
+    from label import build_label_image
+
+    test = TestRecord.query.get_or_404(test_id)
+    config = {
+        "BASE_URL":    current_app.config.get("BASE_URL", ""),
+        "BROTHER_RED": current_app.config.get("BROTHER_RED", "false"),
+    }
+    img_bytes = build_label_image(test, config)
+    response = make_response(img_bytes)
+    response.headers["Content-Type"] = "image/png"
+    response.headers["Cache-Control"] = "no-store"
+    return response
+
+
+# ---------------------------------------------------------
 # Add Tester
 # ---------------------------------------------------------
 

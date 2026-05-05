@@ -173,18 +173,29 @@ def run_setup():
 
 @bp.route('/setup/status', methods=['GET'])
 def status():
+    from printer import check_printer
     uri = current_app.config.get('SQLALCHEMY_DATABASE_URI', '')
     conn_info = _parse_uri(uri)
     migration_status = _get_migration_status()
     permissions = _check_permissions()
     db_ok = _check_db(current_app._get_current_object())
     uploads = _check_uploads()
+    printer = check_printer(current_app._get_current_object())
+    printer_settings = {
+        'brother_printer': current_app.config.get('BROTHER_PRINTER', ''),
+        'brother_model':   current_app.config.get('BROTHER_MODEL', ''),
+        'brother_label':   current_app.config.get('BROTHER_LABEL', '62'),
+        'brother_red':     current_app.config.get('BROTHER_RED', 'false'),
+        'base_url':        current_app.config.get('BASE_URL', ''),
+    }
     return render_template('setup_status.html',
                            conn_info=conn_info,
                            migration=migration_status,
                            permissions=permissions,
                            db_ok=db_ok,
-                           uploads=uploads)
+                           uploads=uploads,
+                           printer=printer,
+                           printer_settings=printer_settings)
 
 
 # ---------------------------------------------------------
