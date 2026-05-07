@@ -4,7 +4,7 @@ from flask import (
     Blueprint, render_template, request, redirect,
     url_for, flash, make_response
 )
-from sqlalchemy import or_, func
+from sqlalchemy import or_
 from weasyprint import HTML
 from werkzeug.utils import secure_filename
 
@@ -74,34 +74,14 @@ def dashboard():
         .all()
     )
 
-    # Subqueries for latest test/repair dates per appliance
-    subq_test = (
-        db.session.query(
-            TestRecord.appliance_id,
-            func.max(TestRecord.test_date).label("last_test")
-        )
-        .filter(TestRecord.disposed == False)
-        .group_by(TestRecord.appliance_id)
-        .subquery()
-    )
-    subq_repair = (
-        db.session.query(
-            RepairRecord.appliance_id,
-            func.max(RepairRecord.repair_date).label("last_repair")
-        )
-        .filter(RepairRecord.disposed == False)
-        .group_by(RepairRecord.appliance_id)
-        .subquery()
-    )
+    # Appliances with open (unlinked/unlocked) repair records
     repaired_needs_test = (
         Appliance.query
         .filter(Appliance.disposed == False)
-        .join(subq_repair, subq_repair.c.appliance_id == Appliance.id)
-        .outerjoin(subq_test, subq_test.c.appliance_id == Appliance.id)
-        .filter(
-            (subq_test.c.last_test == None) |
-            (subq_repair.c.last_repair > subq_test.c.last_test)
-        )
+        .filter(Appliance.repairs.any(
+            (RepairRecord.disposed == False) &
+            (RepairRecord.locked_by_test_date == None)
+        ))
         .all()
     )
 
@@ -495,18 +475,10 @@ def new_test(appliance_id):
                 RepairRecord.id.in_(selected_repair_ids)
             ).all()
 
-        db.session.commit()
-
-        # Lock any open repair records that predate this test
-        pending_repairs = RepairRecord.query.filter(
-            RepairRecord.appliance_id == appliance.id,
-            RepairRecord.locked_by_test_date == None,
-            RepairRecord.repair_date <= test_date.date()
-        ).all()
-        for repair in pending_repairs:
+        # Lock any repair records explicitly linked to this test
+        for repair in test.linked_repairs:
             repair.locked_by_test_date = test_date.date()
-        if pending_repairs:
-            db.session.commit()
+        db.session.commit()
 
         # Handle photos
         upload_dir = os.path.join(Config.UPLOAD_FOLDER, str(test.id))
@@ -561,22 +533,6 @@ def new_test(appliance_id):
 # Repair helpers
 # ---------------------------------------------------------
 
-def _auto_lock_repair(repair):
-    """Lock a repair if an existing test already post-dates it."""
-    covering_test = (
-        TestRecord.query
-        .filter(
-            TestRecord.appliance_id == repair.appliance_id,
-            TestRecord.disposed == False,
-            TestRecord.test_date >= repair.repair_date,
-        )
-        .order_by(TestRecord.test_date)
-        .first()
-    )
-    if covering_test:
-        repair.locked_by_test_date = covering_test.test_date
-
-
 # ---------------------------------------------------------
 # Add Repair
 # ---------------------------------------------------------
@@ -611,8 +567,6 @@ def new_repair(appliance_id):
         )
         db.session.add(repair)
         db.session.commit()
-
-        _auto_lock_repair(repair)
 
         upload_dir = os.path.join("static", "uploads", "repairs", str(repair.id))
         os.makedirs(upload_dir, exist_ok=True)
@@ -674,7 +628,6 @@ def edit_repair(repair_id):
         else:
             repair.labour_minutes = None
 
-        _auto_lock_repair(repair)
         db.session.commit()
 
         upload_dir = os.path.join("static", "uploads", "repairs", str(repair.id))

@@ -25,239 +25,261 @@
 </div>
 {% endif %}
 
-<div class="card p-3">
-
-    <div class="d-flex justify-content-between mb-3">
-        <h5>Details</h5>
-        <div class="d-flex gap-2 flex-wrap justify-content-end">
-            <a href="{{ url_for('main.edit_appliance', appliance_id=appliance.id) }}"
-               class="btn btn-warning btn-sm">Edit Appliance</a>
-        </div>
+{# ── Details ──────────────────────────────────────────── #}
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Details</h5>
+        <a href="{{ url_for('main.edit_appliance', appliance_id=appliance.id) }}"
+           class="btn btn-warning btn-sm">Edit Appliance</a>
     </div>
+    <div class="card-body p-0">
+        <table class="table table-bordered mb-0">
+            <tr><th style="width:170px">Description</th><td>{{ appliance.description }}</td></tr>
+            <tr><th>Make / Model</th><td>{{ appliance.make_model }}</td></tr>
+            <tr><th>Serial Number</th><td>{{ appliance.serial_number or '—' }}</td></tr>
+            <tr><th>Location</th><td>{{ appliance.location }}</td></tr>
+            <tr><th>Owner</th><td>{{ appliance.owner }}</td></tr>
+            <tr><th>Class</th><td>{{ appliance.class_type }}</td></tr>
+            <tr><th>Appliance Type</th><td>{{ appliance.supply_type }}</td></tr>
+            <tr><th>Purchase Date</th><td>{{ appliance.purchase_date.strftime('%d/%m/%Y') if appliance.purchase_date else '—' }}</td></tr>
+            <tr><th>Purchase Price</th><td>{{ '$%.2f' % appliance.purchase_price if appliance.purchase_price else '—' }}</td></tr>
+            <tr>
+                <th>Receipt</th>
+                <td>
+                    {% if appliance.receipt_filepath %}
+                        <a href="{{ url_for('static', filename='uploads/' + appliance.receipt_filepath) }}"
+                           target="_blank" class="btn btn-sm btn-outline-secondary">View Receipt</a>
+                    {% else %}
+                        —
+                    {% endif %}
+                </td>
+            </tr>
+            <tr>
+                <th>Record Created</th>
+                <td>{{ appliance.created_at.strftime('%d/%m/%Y %H:%M') if appliance.created_at else '—' }}</td>
+            </tr>
+            {% if appliance.new_to_service %}
+            <tr>
+                <th>Status</th>
+                <td>
+                    <span class="badge bg-info text-dark">New to Service</span>
+                    <a href="{{ url_for('main.nts_label_preview', appliance_id=appliance.id) }}"
+                       target="_blank" class="btn btn-sm btn-outline-secondary ms-2"
+                       title="Preview NTS label"><i class="mdi mdi-eye"></i></a>
+                    <a href="{{ url_for('main.nts_label', appliance_id=appliance.id) }}"
+                       class="btn btn-sm btn-outline-secondary ms-1"
+                       title="Print NTS label"><i class="mdi mdi-printer"></i></a>
+                </td>
+            </tr>
+            {% if appliance.entry_to_service_date %}
+            <tr>
+                <th>Entry to Service</th>
+                <td>{{ appliance.entry_to_service_date.strftime('%d/%m/%Y') }}</td>
+            </tr>
+            {% endif %}
+            {% if appliance.nts_next_test_due %}
+            <tr>
+                <th>First Test Due</th>
+                <td>{{ appliance.nts_next_test_due.strftime('%d/%m/%Y') }}</td>
+            </tr>
+            {% endif %}
+            {% endif %}
+        </table>
+    </div>
+</div>
 
-    <table class="table table-bordered">
-        <tr><th>Description</th><td>{{ appliance.description }}</td></tr>
-        <tr><th>Make / Model</th><td>{{ appliance.make_model }}</td></tr>
-        <tr><th>Serial Number</th><td>{{ appliance.serial_number or '—' }}</td></tr>
-        <tr><th>Location</th><td>{{ appliance.location }}</td></tr>
-        <tr><th>Owner</th><td>{{ appliance.owner }}</td></tr>
-        <tr><th>Class</th><td>{{ appliance.class_type }}</td></tr>
-        <tr><th>Appliance Type</th><td>{{ appliance.supply_type }}</td></tr>
-        <tr><th>Purchase Date</th><td>{{ appliance.purchase_date.strftime('%d/%m/%Y') if appliance.purchase_date else '—' }}</td></tr>
-        <tr><th>Purchase Price</th><td>{{ '$%.2f' % appliance.purchase_price if appliance.purchase_price else '—' }}</td></tr>
-        <tr>
-            <th>Receipt</th>
-            <td>
-                {% if appliance.receipt_filepath %}
-                    <a href="{{ url_for('static', filename='uploads/' + appliance.receipt_filepath) }}"
-                       target="_blank" class="btn btn-sm btn-outline-secondary">View Receipt</a>
-                {% else %}
-                    —
-                {% endif %}
-            </td>
-        </tr>
-        <tr>
-            <th>Record Created</th>
-            <td>{{ appliance.created_at.strftime('%d/%m/%Y %H:%M') if appliance.created_at else '—' }}</td>
-        </tr>
-        {% if appliance.new_to_service %}
-        <tr>
-            <th>Status</th>
-            <td>
-                <span class="badge bg-info text-dark">New to Service</span>
-                <a href="{{ url_for('main.nts_label_preview', appliance_id=appliance.id) }}"
-                   target="_blank" class="btn btn-sm btn-outline-secondary ms-2"
-                   title="Preview NTS label"><i class="mdi mdi-eye"></i></a>
-                <a href="{{ url_for('main.nts_label', appliance_id=appliance.id) }}"
-                   class="btn btn-sm btn-outline-secondary ms-1"
-                   title="Print NTS label"><i class="mdi mdi-printer"></i></a>
-            </td>
-        </tr>
-        {% if appliance.entry_to_service_date %}
-        <tr>
-            <th>Entry to Service</th>
-            <td>{{ appliance.entry_to_service_date.strftime('%d/%m/%Y') }}</td>
-        </tr>
-        {% endif %}
-        {% if appliance.nts_next_test_due %}
-        <tr>
-            <th>First Test Due</th>
-            <td>{{ appliance.nts_next_test_due.strftime('%d/%m/%Y') }}</td>
-        </tr>
-        {% endif %}
-        {% endif %}
-    </table>
-
-    {% set last_test = appliance.tests | selectattr('disposed', 'equalto', False) | sort(attribute='test_date') | last %}
-    <div class="d-flex justify-content-between align-items-center mt-4 mb-2">
+{# ── Test History ─────────────────────────────────────── #}
+{% set last_test = appliance.tests | selectattr('disposed', 'equalto', False) | sort(attribute='test_date') | last %}
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
         <h5 class="mb-0">Test History</h5>
-        <div>
+        <div class="d-flex gap-2">
             <a href="{{ url_for('main.new_test', appliance_id=appliance.id) }}"
                class="btn btn-success btn-sm">Add Test</a>
             {% if last_test %}
             <a href="{{ url_for('main.test_pdf', test_id=last_test.id) }}"
-               class="btn btn-outline-dark btn-sm ms-1" target="_blank">Test Report PDF</a>
+               class="btn btn-outline-dark btn-sm" target="_blank">Test Report PDF</a>
             {% endif %}
         </div>
     </div>
+    <div class="card-body p-0">
+        {% if appliance.tests|selectattr('disposed', 'equalto', False)|list %}
+        <table class="table table-striped mb-0">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Standard</th>
+                    <th>Result</th>
+                    <th>Next Due</th>
+                    <th>Tag</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for test in appliance.tests | selectattr('disposed', 'equalto', False) | sort(attribute='test_date', reverse=True) %}
+                <tr>
+                    <td>{{ test.test_date.strftime('%d/%m/%Y') }}</td>
+                    <td>{{ test.test_standard | std }}</td>
+                    <td>
+                        {% if test.overall_result == "PASS" %}
+                            <span class="badge bg-success">PASS</span>
+                        {% else %}
+                            <span class="badge bg-danger">FAIL</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ test.next_test_due.strftime('%d/%m/%Y') if test.next_test_due else '—' }}</td>
+                    <td>{{ test.tag_number }}</td>
+                    <td class="text-end">
+                        <a href="{{ url_for('main.test_detail', test_id=test.id) }}"
+                           class="btn btn-sm btn-primary">View</a>
+                        <a href="{{ url_for('main.test_label_preview', test_id=test.id) }}"
+                           class="btn btn-sm btn-outline-secondary" target="_blank"
+                           title="Preview label">
+                            <i class="mdi mdi-eye"></i>
+                        </a>
+                        <a href="{{ url_for('main.test_label', test_id=test.id) }}"
+                           class="btn btn-sm btn-outline-secondary"
+                           title="Print label">
+                            <i class="mdi mdi-printer"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+            <p class="text-muted px-3 py-2 mb-0">No tests recorded for this appliance.</p>
+        {% endif %}
+    </div>
+</div>
 
-    {% if appliance.tests|selectattr('disposed', 'equalto', False)|list %}
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>Date</th>
-                <th>Standard</th>
-                <th>Result</th>
-                <th>Tag</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for test in appliance.tests if not test.disposed %}
-            <tr>
-                <td>{{ test.test_date.strftime('%d/%m/%Y') }}</td>
-                <td>{{ test.test_standard | std }}</td>
-                <td>
-                    {% if test.overall_result == "PASS" %}
-                        <span class="badge bg-success">PASS</span>
-                    {% else %}
-                        <span class="badge bg-danger">FAIL</span>
-                    {% endif %}
-                </td>
-                <td>{{ test.tag_number }}</td>
-                <td>
-                    <a href="{{ url_for('main.test_detail', test_id=test.id) }}"
-                       class="btn btn-sm btn-primary">View</a>
-                    <a href="{{ url_for('main.test_label_preview', test_id=test.id) }}"
-                       class="btn btn-sm btn-outline-secondary" target="_blank"
-                       title="Preview label">
-                        <i class="mdi mdi-eye"></i>
-                    </a>
-                    <a href="{{ url_for('main.test_label', test_id=test.id) }}"
-                       class="btn btn-sm btn-outline-secondary"
-                       title="Print label">
-                        <i class="mdi mdi-printer"></i>
-                    </a>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    {% else %}
-        <p class="text-danger">No tests recorded for this appliance.</p>
-    {% endif %}
-
-    <div class="d-flex justify-content-between align-items-center mt-4 mb-2">
+{# ── Repair History ───────────────────────────────────── #}
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
         <h5 class="mb-0">Repair History</h5>
-        <div>
+        <div class="d-flex gap-2">
             <a href="{{ url_for('main.new_repair', appliance_id=appliance.id) }}"
                class="btn btn-outline-success btn-sm">Add Repair</a>
             <a href="{{ url_for('main.repair_history_pdf', appliance_id=appliance.id) }}"
-               class="btn btn-outline-dark btn-sm ms-1" target="_blank">Repair History PDF</a>
+               class="btn btn-outline-dark btn-sm" target="_blank">Repair History PDF</a>
         </div>
     </div>
-
-    {% set active_repairs = appliance.repairs|selectattr('disposed', 'equalto', False)|list %}
-    {% if active_repairs %}
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>Date</th>
-                <th>Repaired By</th>
-                <th>Description</th>
-                <th>Status</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for repair in active_repairs|sort(attribute='repair_date') %}
-            <tr>
-                <td>{{ repair.repair_date.strftime('%d/%m/%Y') }}</td>
-                <td>{{ repair.repaired_by or '—' }}</td>
-                <td>{{ repair.description[:80] }}{% if repair.description|length > 80 %}…{% endif %}</td>
-                <td>
-                    {% if repair.locked_by_test_date %}
-                        <span class="badge bg-secondary">Locked</span>
-                    {% else %}
-                        <span class="badge bg-success">Open</span>
-                    {% endif %}
-                </td>
-                <td>
-                    <a href="{{ url_for('main.repair_detail', repair_id=repair.id) }}"
-                       class="btn btn-sm btn-primary">View</a>
-                    {% if not repair.locked_by_test_date %}
-                    <a href="{{ url_for('main.edit_repair', repair_id=repair.id) }}"
-                       class="btn btn-sm btn-warning">Edit</a>
-                    <form method="post" action="{{ url_for('main.delete_repair', repair_id=repair.id) }}"
-                          class="d-inline"
-                          onsubmit="return confirm('Permanently delete this repair record?');">
-                        <button type="submit" class="btn btn-sm btn-danger">Delete</button>
-                    </form>
-                    {% endif %}
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    {% else %}
-        <p class="text-muted">No repairs recorded for this appliance.</p>
-    {% endif %}
-
-    {% if active_repairs %}
-    {% set ns = namespace(total_cost=0, total_minutes=0, has_cost=false, has_time=false) %}
-    {% for repair in active_repairs %}
-        {% if repair.parts_cost is not none %}
-            {% set ns.total_cost = ns.total_cost + repair.parts_cost %}
-            {% set ns.has_cost = true %}
-        {% endif %}
-        {% if repair.labour_minutes is not none %}
-            {% set ns.total_minutes = ns.total_minutes + repair.labour_minutes %}
-            {% set ns.has_time = true %}
-        {% endif %}
-    {% endfor %}
-    {% if ns.has_cost or ns.has_time %}
-    <table class="table table-sm" style="max-width:400px">
-        <tbody>
-            {% if ns.has_cost %}
-            <tr>
-                <th>Total Parts Cost</th>
-                <td>${{ '%.2f' % ns.total_cost }}</td>
-            </tr>
-            {% endif %}
-            {% if ns.has_time %}
-            <tr>
-                <th>Total Labour Time</th>
-                <td>{{ ns.total_minutes // 60 }}:{{ '%02d' % (ns.total_minutes % 60) }}</td>
-            </tr>
-            {% endif %}
-        </tbody>
-    </table>
-    {% endif %}
-    {% endif %}
-
-    <h5 class="mt-4">Photo Gallery</h5>
-    <div class="row">
-        {% for test in appliance.tests if not test.disposed %}
-            {% for photo in test.photos %}
-                {% set ext = photo.filename.lower().rsplit('.', 1)[-1] if '.' in photo.filename else '' %}
-                <div class="col-md-3 mb-3">
-                    <a href="{{ url_for('static', filename='uploads/' ~ photo.filepath) }}" target="_blank">
-                        {% if ext in ('jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp') %}
-                        <img src="{{ url_for('static', filename='uploads/' ~ photo.filepath) }}"
-                             class="img-fluid img-thumbnail">
+    <div class="card-body p-0">
+        {% set active_repairs = appliance.repairs|selectattr('disposed', 'equalto', False)|list %}
+        {% if active_repairs %}
+        <table class="table table-striped mb-0">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Repaired By</th>
+                    <th>Description</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for repair in active_repairs|sort(attribute='repair_date', reverse=True) %}
+                <tr>
+                    <td>{{ repair.repair_date.strftime('%d/%m/%Y') }}</td>
+                    <td>{{ repair.repaired_by or '—' }}</td>
+                    <td>{{ repair.description[:80] }}{% if repair.description|length > 80 %}…{% endif %}</td>
+                    <td>
+                        {% if repair.locked_by_test_date %}
+                            <span class="badge bg-secondary">Locked</span>
                         {% else %}
-                        <div class="border rounded d-flex flex-column align-items-center justify-content-center text-muted p-3"
-                             style="height:120px;">
-                            <i class="mdi mdi-file-outline" style="font-size:2.5rem;"></i>
-                            <small class="mt-1 text-truncate w-100 text-center">{{ photo.filename }}</small>
-                        </div>
+                            <span class="badge bg-success">Open</span>
                         {% endif %}
-                    </a>
-                </div>
-            {% endfor %}
-        {% endfor %}
-    </div>
+                    </td>
+                    <td class="text-end">
+                        <a href="{{ url_for('main.repair_detail', repair_id=repair.id) }}"
+                           class="btn btn-sm btn-primary">View</a>
+                        {% if not repair.locked_by_test_date %}
+                        <a href="{{ url_for('main.edit_repair', repair_id=repair.id) }}"
+                           class="btn btn-sm btn-warning">Edit</a>
+                        <form method="post" action="{{ url_for('main.delete_repair', repair_id=repair.id) }}"
+                              class="d-inline"
+                              onsubmit="return confirm('Permanently delete this repair record?');">
+                            <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
 
+        {% set ns = namespace(total_cost=0, total_minutes=0, has_cost=false, has_time=false) %}
+        {% for repair in active_repairs %}
+            {% if repair.parts_cost is not none %}
+                {% set ns.total_cost = ns.total_cost + repair.parts_cost %}
+                {% set ns.has_cost = true %}
+            {% endif %}
+            {% if repair.labour_minutes is not none %}
+                {% set ns.total_minutes = ns.total_minutes + repair.labour_minutes %}
+                {% set ns.has_time = true %}
+            {% endif %}
+        {% endfor %}
+        {% if ns.has_cost or ns.has_time %}
+        <div class="px-3 py-3">
+            <table class="table table-sm table-bordered mb-0" style="max-width:320px">
+                <tbody>
+                    {% if ns.has_cost %}
+                    <tr>
+                        <th>Total Parts Cost</th>
+                        <td>${{ '%.2f' % ns.total_cost }}</td>
+                    </tr>
+                    {% endif %}
+                    {% if ns.has_time %}
+                    <tr>
+                        <th>Total Labour Time</th>
+                        <td>{{ ns.total_minutes // 60 }}:{{ '%02d' % (ns.total_minutes % 60) }}</td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+
+        {% else %}
+            <p class="text-muted px-3 py-2 mb-0">No repairs recorded for this appliance.</p>
+        {% endif %}
+    </div>
 </div>
+
+{# ── Photo Gallery ────────────────────────────────────── #}
+{% set all_photos = [] %}
+{% for test in appliance.tests if not test.disposed %}
+    {% for photo in test.photos %}{% set _ = all_photos.append(photo) %}{% endfor %}
+{% endfor %}
+{% if all_photos %}
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">Photo Gallery</h5>
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+            {% for test in appliance.tests if not test.disposed %}
+                {% for photo in test.photos %}
+                    {% set ext = photo.filename.lower().rsplit('.', 1)[-1] if '.' in photo.filename else '' %}
+                    <div class="col-6 col-md-3">
+                        <a href="{{ url_for('static', filename='uploads/' ~ photo.filepath) }}" target="_blank">
+                            {% if ext in ('jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp') %}
+                            <img src="{{ url_for('static', filename='uploads/' ~ photo.filepath) }}"
+                                 class="img-fluid img-thumbnail" style="height:150px; width:100%; object-fit:cover;">
+                            {% else %}
+                            <div class="border rounded d-flex flex-column align-items-center justify-content-center text-muted p-3"
+                                 style="height:150px;">
+                                <i class="mdi mdi-file-outline" style="font-size:2.5rem;"></i>
+                                <small class="mt-1 text-truncate w-100 text-center">{{ photo.filename }}</small>
+                            </div>
+                            {% endif %}
+                        </a>
+                    </div>
+                {% endfor %}
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
 
 {% endblock %}

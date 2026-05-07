@@ -42,20 +42,27 @@
             <ul class="navbar-nav me-auto">
 
                 <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('main.dashboard') }}">Dashboard</a>
+                    <a class="nav-link text-white" href="{{ url_for('main.dashboard') }}">
+                        <i class="mdi mdi-view-dashboard me-1"></i>Dashboard
+                    </a>
                 </li>
 
                 <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('main.appliance_list') }}">Appliances</a>
-                </li>
-
-                <!-- NEW: Add Appliance -->
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('main.new_appliance') }}">Add Appliance</a>
+                    <a class="nav-link text-white" href="{{ url_for('main.appliance_list') }}">
+                        <i class="mdi mdi-format-list-bulleted me-1"></i>Appliances
+                    </a>
                 </li>
 
                 <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('setup.status') }}">Setup</a>
+                    <a class="nav-link" href="{{ url_for('main.new_appliance') }}">
+                        <i class="mdi mdi-plus-circle-outline me-1"></i>Add Appliance
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('setup.status') }}">
+                        <i class="mdi mdi-cog-outline me-1"></i>Setup
+                    </a>
                 </li>
 
             </ul>
