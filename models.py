@@ -91,6 +91,8 @@ class TestRecord(db.Model):
     functional_check = db.Column(db.String(255))
     accessories = db.Column(db.String(255))
     safe_for_resale = db.Column(db.String(255))
+    no_outstanding_recalls = db.Column(db.String(10))
+    pins_insulated = db.Column(db.String(10))
 
     repair_description = db.Column(db.Text)
     repaired_by = db.Column(db.String(255))

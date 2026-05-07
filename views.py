@@ -21,6 +21,15 @@ from utils import (
 
 bp = Blueprint("main", __name__)
 
+
+def _auto_tag(appliance):
+    prefix = appliance.asset_number
+    existing = {t.tag_number for t in appliance.tests}
+    seq = 1
+    while f"{prefix}-{seq}" in existing:
+        seq += 1
+    return f"{prefix}-{seq}"
+
 # ---------------------------------------------------------
 # Dashboard
 # ---------------------------------------------------------
@@ -390,7 +399,7 @@ def new_test(appliance_id):
             test_date=test_date,
             test_type=form["test_type"],
             test_standard=form["test_standard"],
-            tag_number=form["tag_number"],
+            tag_number=form.get("tag_number").strip() or _auto_tag(appliance),
             next_test_due=next_due.date(),
             overall_result=form["overall_result"],
             comments=form.get("comments"),
@@ -418,6 +427,8 @@ def new_test(appliance_id):
             functional_check=form.get("functional_check"),
             accessories=form.get("accessories"),
             safe_for_resale=form.get("safe_for_resale"),
+            no_outstanding_recalls=form.get("no_outstanding_recalls") or None,
+            pins_insulated=form.get("pins_insulated") or None,
 
             repair_description=form.get("repair_description"),
             repaired_by=form.get("repaired_by"),

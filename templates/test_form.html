@@ -359,6 +359,34 @@ AS/NZS 5762: Testing of electrical equipment after repair.">
             <option value="NO">NO</option>
             </select>
         </div>
+        <div class="col-md-6">
+            <label class="form-label">
+                No outstanding recalls?
+                <span data-bs-toggle="tooltip"
+                      title="Check the ACCC Product Safety Australia recalls database to confirm no active recalls apply to this appliance.">
+                    ⓘ
+                </span>
+            </label>
+            <select name="no_outstanding_recalls" class="form-select">
+                <option value="" selected disabled>Select...</option>
+                <option value="PASS">PASS</option>
+                <option value="FAIL">FAIL</option>
+            </select>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">
+                Active and neutral pins insulated to AS/NZS 3112?
+                <span data-bs-toggle="tooltip"
+                      title="Confirm the active and neutral pins on the plug are insulated (sleeved) as required by AS/NZS 3112 for second-hand appliance resale.">
+                    ⓘ
+                </span>
+            </label>
+            <select name="pins_insulated" class="form-select">
+                <option value="" selected disabled>Select...</option>
+                <option value="PASS">PASS</option>
+                <option value="FAIL">FAIL</option>
+            </select>
+        </div>
         </div>
         <hr class="mt-4">
     </div>
@@ -390,7 +418,8 @@ AS/NZS 5762: Testing of electrical equipment after repair.">
     <h4 class="mt-3">Overall Assessment</h4>
     <div class="col-md-4">
         <label class="form-label">Overall Result</label>
-        <select name="overall_result" class="form-select" required>
+        <select name="overall_result" id="overall_result" class="form-select" required>
+            <option value="" disabled selected>Select...</option>
             <option value="PASS">PASS</option>
             <option value="FAIL">FAIL</option>
         </select>
@@ -399,7 +428,8 @@ AS/NZS 5762: Testing of electrical equipment after repair.">
     <!-- Tag Number -->
     <div class="col-md-4">
         <label class="form-label">Tag Number</label>
-        <input type="text" name="tag_number" class="form-control" required>
+        <input type="text" name="tag_number" class="form-control"
+               placeholder="Leave blank to auto-assign (e.g. {{ appliance.asset_number }}-1)">
     </div>
 
     <!-- Comments -->
@@ -472,6 +502,63 @@ document.addEventListener("DOMContentLoaded", function () {
         const today = new Date().toISOString().split("T")[0];
         dateField.value = today;
     }
+});
+</script>
+
+<!-- Overall Result auto-FAIL logic -->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const overall = document.getElementById("overall_result");
+
+    // Watch every select that has a FAIL option, except overall_result itself
+    const watched = Array.from(document.querySelectorAll("select")).filter(function (sel) {
+        return sel !== overall && Array.from(sel.options).some(function (o) { return o.value === "FAIL"; });
+    });
+
+    function syncOverall() {
+        const anyFail = watched.some(function (sel) { return sel.value === "FAIL"; });
+        if (anyFail) {
+            overall.value = "FAIL";
+            overall.disabled = true;
+        } else {
+            overall.disabled = false;
+        }
+    }
+
+    watched.forEach(function (sel) { sel.addEventListener("change", syncOverall); });
+    syncOverall();
+
+    // Re-enable before submit so the value is included in POST data
+    document.getElementById("testForm").addEventListener("submit", function () {
+        overall.disabled = false;
+    }, true);
+});
+</script>
+
+<!-- Required field asterisks -->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const targets = [
+        ...document.querySelectorAll("[required]:not([type='hidden'])"),
+        document.getElementById("retest_selector")
+    ].filter(Boolean);
+
+    targets.forEach(function (el) {
+        let node = el.parentElement;
+        while (node && node.tagName !== "FORM") {
+            const label = node.querySelector(":scope > label.form-label");
+            if (label && !label.querySelector(".req-star")) {
+                const star = document.createElement("span");
+                star.className = "req-star text-danger ms-1";
+                star.setAttribute("aria-hidden", "true");
+                star.textContent = "*";
+                const tooltip = label.querySelector("[data-bs-toggle='tooltip']");
+                tooltip ? label.insertBefore(star, tooltip) : label.appendChild(star);
+                break;
+            }
+            node = node.parentElement;
+        }
+    });
 });
 </script>
 
