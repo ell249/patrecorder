@@ -160,7 +160,7 @@
     <tbody>
         {% for test in recent_tests %}
         <tr>
-            <td>{{ test.test_date }}</td>
+            <td>{{ test.test_date.strftime('%d/%m/%Y') }}</td>
             <td><a href="{{ url_for('main.appliance_detail', appliance_id=test.appliance.id) }}">{{ test.appliance.asset_number }}</a></td>
             <td>{{ test.appliance.description }}</td>   <!-- NEW COLUMN -->
             <td>{{ test.test_standard | std }}</td>
@@ -181,14 +181,64 @@
                     PDF
                 </a>
 
-                <a href="{{ url_for('main.new_repair', appliance_id=test.appliance.id) }}"
-                class="btn btn-sm btn-outline-success ms-1">
-                    Add Repair
+                <a href="{{ url_for('main.test_label_preview', test_id=test.id) }}"
+                class="btn btn-sm btn-outline-secondary ms-1" target="_blank"
+                title="Preview label">
+                    <i class="mdi mdi-eye"></i>
+                </a>
+
+                <a href="{{ url_for('main.test_label', test_id=test.id) }}"
+                class="btn btn-sm btn-outline-secondary ms-1"
+                title="Print label">
+                    <i class="mdi mdi-printer"></i>
                 </a>
             </td>
         </tr>
         {% endfor %}
     </tbody>
 </table>
+
+{% if recent_repairs %}
+<!-- Recent Repairs -->
+<h4 class="mt-5">Recent Repairs</h4>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Date</th>
+            <th>Asset</th>
+            <th>Description</th>
+            <th>Repaired By</th>
+            <th>Status</th>
+            <th class="text-end">Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for repair in recent_repairs %}
+        <tr>
+            <td>{{ repair.repair_date.strftime('%d/%m/%Y') }}</td>
+            <td><a href="{{ url_for('main.appliance_detail', appliance_id=repair.appliance.id) }}">{{ repair.appliance.asset_number }}</a></td>
+            <td>{{ repair.description[:80] }}{% if repair.description|length > 80 %}…{% endif %}</td>
+            <td>{{ repair.repaired_by or '—' }}</td>
+            <td>
+                {% if repair.locked_by_test_date %}
+                    <span class="badge bg-secondary">Locked</span>
+                {% else %}
+                    <span class="badge bg-success">Open</span>
+                {% endif %}
+            </td>
+            <td class="text-end">
+                <a href="{{ url_for('main.repair_detail', repair_id=repair.id) }}"
+                   class="btn btn-sm btn-primary">View</a>
+                {% if not repair.locked_by_test_date %}
+                <a href="{{ url_for('main.edit_repair', repair_id=repair.id) }}"
+                   class="btn btn-sm btn-warning ms-1">Edit</a>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}
 
 {% endblock %}

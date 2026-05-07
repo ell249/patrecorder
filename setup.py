@@ -187,6 +187,9 @@ def status():
         'brother_red':     current_app.config.get('BROTHER_RED', 'false'),
         'base_url':        current_app.config.get('BASE_URL', ''),
     }
+    dashboard_settings = {
+        'dashboard_recent_limit': current_app.config.get('DASHBOARD_RECENT_LIMIT', '5'),
+    }
 
     schema = _check_schema() if db_ok else {"tables": [], "all_ok": True, "error": None}
     migration_status = _get_migration_status()
@@ -199,7 +202,29 @@ def status():
                            uploads=uploads,
                            printer=printer,
                            printer_settings=printer_settings,
+                           dashboard_settings=dashboard_settings,
                            schema=schema)
+
+
+# ---------------------------------------------------------
+# POST /setup/dashboard  — save dashboard settings
+# ---------------------------------------------------------
+
+@bp.route('/setup/dashboard', methods=['POST'])
+def save_dashboard():
+    from printer import _write_config
+    fields = {
+        'DASHBOARD_RECENT_LIMIT': request.form.get('dashboard_recent_limit', '5').strip(),
+    }
+    try:
+        _write_config(fields)
+    except Exception as exc:
+        flash(f'Could not write config.py: {exc}', 'danger')
+        return redirect(url_for('setup.status'))
+    for key, value in fields.items():
+        current_app.config[key] = value
+    flash('Dashboard settings saved.', 'success')
+    return redirect(url_for('setup.status'))
 
 
 # ---------------------------------------------------------

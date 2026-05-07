@@ -133,10 +133,20 @@ def dashboard():
         .count()
     )
 
+    from flask import current_app
+    recent_limit = int(current_app.config.get('DASHBOARD_RECENT_LIMIT', 5))
+
     recent_tests = (
         TestRecord.query.filter_by(disposed=False)
         .order_by(TestRecord.test_date.desc())
-        .limit(10)
+        .limit(recent_limit)
+        .all()
+    )
+
+    recent_repairs = (
+        RepairRecord.query.filter_by(disposed=False)
+        .order_by(RepairRecord.repair_date.desc())
+        .limit(recent_limit)
         .all()
     )
 
@@ -153,6 +163,7 @@ def dashboard():
         required_count=required_count,
         reason_map=reason_map,
         nts_not_yet_due=nts_not_yet_due,
+        recent_repairs=recent_repairs,
     )
 
 # ---------------------------------------------------------

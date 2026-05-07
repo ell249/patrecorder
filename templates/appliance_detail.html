@@ -30,12 +30,6 @@
     <div class="d-flex justify-content-between mb-3">
         <h5>Details</h5>
         <div class="d-flex gap-2 flex-wrap justify-content-end">
-            {% if appliance.new_to_service %}
-            <a href="{{ url_for('main.nts_label_preview', appliance_id=appliance.id) }}"
-               target="_blank" class="btn btn-outline-secondary btn-sm">Preview NTS Label</a>
-            <a href="{{ url_for('main.nts_label', appliance_id=appliance.id) }}"
-               class="btn btn-outline-primary btn-sm">Print NTS Label</a>
-            {% endif %}
             <a href="{{ url_for('main.edit_appliance', appliance_id=appliance.id) }}"
                class="btn btn-warning btn-sm">Edit Appliance</a>
         </div>
@@ -69,7 +63,15 @@
         {% if appliance.new_to_service %}
         <tr>
             <th>Status</th>
-            <td><span class="badge bg-info text-dark">New to Service</span></td>
+            <td>
+                <span class="badge bg-info text-dark">New to Service</span>
+                <a href="{{ url_for('main.nts_label_preview', appliance_id=appliance.id) }}"
+                   target="_blank" class="btn btn-sm btn-outline-secondary ms-2"
+                   title="Preview NTS label"><i class="mdi mdi-eye"></i></a>
+                <a href="{{ url_for('main.nts_label', appliance_id=appliance.id) }}"
+                   class="btn btn-sm btn-outline-secondary ms-1"
+                   title="Print NTS label"><i class="mdi mdi-printer"></i></a>
+            </td>
         </tr>
         {% if appliance.entry_to_service_date %}
         <tr>
@@ -86,10 +88,17 @@
         {% endif %}
     </table>
 
+    {% set last_test = appliance.tests | selectattr('disposed', 'equalto', False) | sort(attribute='test_date') | last %}
     <div class="d-flex justify-content-between align-items-center mt-4 mb-2">
         <h5 class="mb-0">Test History</h5>
-        <a href="{{ url_for('main.new_test', appliance_id=appliance.id) }}"
-           class="btn btn-success btn-sm">Add Test</a>
+        <div>
+            <a href="{{ url_for('main.new_test', appliance_id=appliance.id) }}"
+               class="btn btn-success btn-sm">Add Test</a>
+            {% if last_test %}
+            <a href="{{ url_for('main.test_pdf', test_id=last_test.id) }}"
+               class="btn btn-outline-dark btn-sm ms-1" target="_blank">Test Report PDF</a>
+            {% endif %}
+        </div>
     </div>
 
     {% if appliance.tests|selectattr('disposed', 'equalto', False)|list %}
@@ -144,7 +153,7 @@
             <a href="{{ url_for('main.new_repair', appliance_id=appliance.id) }}"
                class="btn btn-outline-success btn-sm">Add Repair</a>
             <a href="{{ url_for('main.repair_history_pdf', appliance_id=appliance.id) }}"
-               class="btn btn-outline-dark btn-sm ms-1" target="_blank">Repair PDF</a>
+               class="btn btn-outline-dark btn-sm ms-1" target="_blank">Repair History PDF</a>
         </div>
     </div>
 
@@ -230,10 +239,19 @@
     <div class="row">
         {% for test in appliance.tests if not test.disposed %}
             {% for photo in test.photos %}
+                {% set ext = photo.filename.lower().rsplit('.', 1)[-1] if '.' in photo.filename else '' %}
                 <div class="col-md-3 mb-3">
                     <a href="{{ url_for('static', filename='uploads/' ~ photo.filepath) }}" target="_blank">
+                        {% if ext in ('jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp') %}
                         <img src="{{ url_for('static', filename='uploads/' ~ photo.filepath) }}"
                              class="img-fluid img-thumbnail">
+                        {% else %}
+                        <div class="border rounded d-flex flex-column align-items-center justify-content-center text-muted p-3"
+                             style="height:120px;">
+                            <i class="mdi mdi-file-outline" style="font-size:2.5rem;"></i>
+                            <small class="mt-1 text-truncate w-100 text-center">{{ photo.filename }}</small>
+                        </div>
+                        {% endif %}
                     </a>
                 </div>
             {% endfor %}

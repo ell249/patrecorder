@@ -254,9 +254,10 @@ def _nts_side_b(appliance) -> Image.Image:
     pw    = HALF_H
 
     y = 16
-    s = "NEW TO SERVICE"
-    f = _fit(s, True, max_w, 80)
-    y = _centered_text(draw, y, s, f, "black", pw) + 12
+    nts_font = _fit("SERVICE", True, max_w, 140)
+    for line in ("NEW TO", "SERVICE"):
+        y = _centered_text(draw, y, line, nts_font, "black", pw) + 4
+    y += 8
 
     if appliance.entry_to_service_date:
         s = f"Entry: {appliance.entry_to_service_date.strftime('%d/%m/%Y')}"

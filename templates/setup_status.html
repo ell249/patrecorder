@@ -148,6 +148,27 @@
     </div>
 </div>
 
+{# ── Dashboard settings ────────────────────────────────────── #}
+<div class="card mb-4">
+    <div class="card-header fw-semibold">Dashboard</div>
+    <div class="card-body">
+        <form method="post" action="{{ url_for('setup.save_dashboard') }}">
+            <div class="row g-3 mb-3">
+                <div class="col-sm-4">
+                    <label class="form-label fw-semibold">Recent Items to Display</label>
+                    <input type="number" class="form-control" name="dashboard_recent_limit"
+                           min="1" max="50"
+                           value="{{ dashboard_settings.dashboard_recent_limit }}">
+                    <div class="form-text">Number of recent tests and repairs shown on the dashboard.</div>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">
+                <i class="mdi mdi-content-save me-1"></i>Save Dashboard Settings
+            </button>
+        </form>
+    </div>
+</div>
+
 {# ── File & directory permissions ─────────────────────────── #}
 {% set perm_failures = permissions | selectattr('ok', 'equalto', false) | list %}
 <div class="card mb-4">
