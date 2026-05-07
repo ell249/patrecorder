@@ -417,7 +417,7 @@ def new_test(appliance_id):
             vi_guards=form.get("vi_guards"),
 
             # Electrical tests
-            earth_continuity_ohms="N/A" if appliance.class_type == "CLASS I" else (form.get("earth_continuity_ohms") or None),
+            earth_continuity_ohms="N/A" if appliance.class_type == "CLASS II" else (form.get("earth_continuity_ohms") or None),
             insulation_mohms=form.get("insulation_mohms") or None,
             leakage_mA=form.get("leakage_mA") or None,
             polarity_pass=form.get("polarity_pass") or None,

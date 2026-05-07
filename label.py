@@ -221,7 +221,7 @@ def build_label_image(test, config: dict) -> bytes:
     for i, strip_y in enumerate((0, HALF_H)):
         img.paste(side_a.rotate(180), (0, strip_y))
         draw.rectangle([cord_x1, strip_y, cord_x2, strip_y + HALF_H - 1], fill="#ebebeb")
-        img.paste(side_b.rotate(180), (cord_x2 + CORD_MARGIN, strip_y))
+        img.paste(side_b.rotate(180) if i == 0 else side_b, (cord_x2 + CORD_MARGIN, strip_y))
         img.paste(_cord_zone_img(cord_labels[i]), (cord_x1, strip_y))
 
     # ── Cord zone borders (full height, shared by both strips) ────────────────

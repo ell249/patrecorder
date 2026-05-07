@@ -277,10 +277,10 @@ AS/NZS 5762: Testing of electrical equipment after repair.">
                 ⓘ
             </span>
         </label>
-        {% if appliance.class_type == "CLASS I" %}
+        {% if appliance.class_type == "CLASS II" %}
         <input type="text" name="earth_continuity_ohms" class="form-control"
                value="N/A" readonly>
-        <small class="text-muted">Not applicable for Class I appliances (no protective earth).</small>
+        <small class="text-muted">Not applicable for Class II appliances (double or reinforced insulation).</small>
         {% else %}
         <input type="text" name="earth_continuity_ohms" class="form-control">
         <small class="text-muted">PASS: ≤ 1.0 Ω including test lead resistance.</small>
