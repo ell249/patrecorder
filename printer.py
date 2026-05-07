@@ -40,58 +40,12 @@ def save():
 
 
 # ─────────────────────────────────────────────────────────────
-# POST /printer/discover  — mDNS/Bonjour scan (~3 s)
+# POST /printer/discover  — TCP port 9100 subnet scan
 # ─────────────────────────────────────────────────────────────
 
 @bp.route("/printer/discover", methods=["POST"])
 def discover():
-    try:
-        from zeroconf import ServiceBrowser, ServiceListener, Zeroconf
-    except ImportError:
-        return jsonify({"error": "zeroconf package not installed"}), 500
-
-    import time
-    import socket as _socket
-
-    class _Listener(ServiceListener):
-        def __init__(self):
-            self.found = []
-
-        def add_service(self, zc, type_, name):
-            info = zc.get_service_info(type_, name)
-            if not info or not info.addresses:
-                return
-            try:
-                ip = _socket.inet_ntoa(info.addresses[0])
-            except Exception:
-                return
-            self.found.append({
-                "address": f"tcp://{ip}",
-                "name": info.server.rstrip(".") if info.server else ip,
-            })
-
-        def remove_service(self, *_):
-            pass
-
-        def update_service(self, *_):
-            pass
-
-    listener = _Listener()
-    zc = Zeroconf()
-    try:
-        ServiceBrowser(zc, "_pdl-datastream._tcp.local.", listener)
-        ServiceBrowser(zc, "_printer._tcp.local.", listener)
-        time.sleep(3)
-    finally:
-        zc.close()
-
-    seen, results = set(), []
-    for p in listener.found:
-        if p["address"] not in seen:
-            seen.add(p["address"])
-            results.append(p)
-
-    return jsonify(results)
+    return jsonify({"error": "Automatic discovery is not currently implemented in the brother_ql library. Please enter the printer address manually."}), 501
 
 
 # ─────────────────────────────────────────────────────────────
