@@ -285,6 +285,54 @@
     </div>
 </div>
 
+{# ── Schema check ─────────────────────────────────────────── #}
+<div class="card mb-4">
+    <div class="card-header fw-semibold d-flex align-items-center gap-2">
+        Database Schema
+        {% if schema.error %}
+        <span class="badge bg-danger ms-auto">Error</span>
+        {% elif schema.all_ok %}
+        <span class="badge bg-success ms-auto">All OK</span>
+        {% elif schema.tables | selectattr('exists', 'equalto', false) | list %}
+        <span class="badge bg-danger ms-auto">Tables missing</span>
+        {% else %}
+        <span class="badge bg-warning text-dark ms-auto">Migration needed</span>
+        {% endif %}
+    </div>
+    <div class="card-body">
+        {% if schema.error %}
+        <div class="alert alert-danger mb-0">
+            <strong>Could not inspect schema:</strong> {{ schema.error }}
+        </div>
+        {% elif not schema.tables %}
+        <p class="text-muted mb-0">Database not available.</p>
+        {% else %}
+        <table class="table table-sm mb-0">
+            <thead>
+                <tr><th>Table</th><th>Status</th></tr>
+            </thead>
+            <tbody>
+                {% for t in schema.tables %}
+                <tr class="{{ 'table-danger' if not t.ok else '' }}">
+                    <td><code>{{ t.name }}</code></td>
+                    <td>
+                        {% if t.ok %}
+                        <span class="badge bg-success">OK</span>
+                        {% elif not t.exists %}
+                        <span class="text-danger small">Table does not exist — apply migrations below</span>
+                        {% else %}
+                        <span class="badge bg-warning text-dark">Missing columns</span>
+                        <span class="text-muted small ms-1"><code>{{ t.missing_cols | join(', ') }}</code></span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+    </div>
+</div>
+
 {# ── Migration status ─────────────────────────────────────── #}
 <div class="card mb-4">
     <div class="card-header fw-semibold d-flex align-items-center gap-2">

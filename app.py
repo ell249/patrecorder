@@ -1,7 +1,8 @@
 from datetime import datetime, timezone
-from flask import Flask
+from flask import Flask, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
+from sqlalchemy.exc import OperationalError, ProgrammingError
 from werkzeug.middleware.proxy_fix import ProxyFix
 from config import Config
 from utils import format_standard
@@ -63,6 +64,22 @@ def create_app():
 
     from printer import bp as printer_bp
     app.register_blueprint(printer_bp)
+
+    # ---------------------------------------------------------
+    # Database schema error handler
+    # Catches missing columns / tables and sends the user to
+    # the status page where they can apply pending migrations.
+    # ---------------------------------------------------------
+    @app.errorhandler(OperationalError)
+    @app.errorhandler(ProgrammingError)
+    def handle_db_schema_error(e):
+        app.logger.error("Database schema error: %s", e)
+        flash(
+            "A database error occurred — a migration may be required. "
+            f"Detail: {e.orig}",
+            "danger",
+        )
+        return redirect(url_for("setup.status"))
 
     return app
 

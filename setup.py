@@ -176,7 +176,6 @@ def status():
     from printer import check_printer
     uri = current_app.config.get('SQLALCHEMY_DATABASE_URI', '')
     conn_info = _parse_uri(uri)
-    migration_status = _get_migration_status()
     permissions = _check_permissions()
     db_ok = _check_db(current_app._get_current_object())
     uploads = _check_uploads()
@@ -188,6 +187,20 @@ def status():
         'brother_red':     current_app.config.get('BROTHER_RED', 'false'),
         'base_url':        current_app.config.get('BASE_URL', ''),
     }
+
+    schema = _check_schema() if db_ok else {"tables": [], "all_ok": True, "error": None}
+    migration_status = _get_migration_status()
+
+    # Schema has drifted but no migration file covers it yet — generate one now
+    # so the Apply button appears immediately for the user to click.
+    if db_ok and not schema['all_ok'] and migration_status.get('is_up_to_date') and not migration_status.get('error'):
+        try:
+            from flask_migrate import migrate as generate_migration
+            generate_migration(message="auto")
+            migration_status = _get_migration_status()
+        except Exception as exc:
+            current_app.logger.warning("Auto-generate migration failed: %s", exc)
+
     return render_template('setup_status.html',
                            conn_info=conn_info,
                            migration=migration_status,
@@ -195,7 +208,8 @@ def status():
                            db_ok=db_ok,
                            uploads=uploads,
                            printer=printer,
-                           printer_settings=printer_settings)
+                           printer_settings=printer_settings,
+                           schema=schema)
 
 
 # ---------------------------------------------------------
@@ -418,6 +432,33 @@ def _check_uploads():
         for p in orphaned_paths
         if os.path.exists(os.path.join(uploads_root, p))
     )
+    return result
+
+
+def _check_schema():
+    """Compare actual DB columns against SQLAlchemy model metadata."""
+    from sqlalchemy import inspect as sa_inspect
+    result = {"tables": [], "all_ok": True, "error": None}
+    try:
+        inspector = sa_inspect(db.engine)
+        existing_tables = set(inspector.get_table_names())
+        for table_name, table in sorted(db.metadata.tables.items()):
+            entry = {
+                "name": table_name,
+                "exists": table_name in existing_tables,
+                "missing_cols": [],
+                "ok": False,
+            }
+            if entry["exists"]:
+                present = {c["name"] for c in inspector.get_columns(table_name)}
+                entry["missing_cols"] = [c.name for c in table.columns if c.name not in present]
+                entry["ok"] = len(entry["missing_cols"]) == 0
+            if not entry["ok"]:
+                result["all_ok"] = False
+            result["tables"].append(entry)
+    except Exception as exc:
+        result["error"] = str(exc)
+        result["all_ok"] = False
     return result
 
 
