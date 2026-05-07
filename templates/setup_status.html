@@ -319,16 +319,34 @@
                         {% if t.ok %}
                         <span class="badge bg-success">OK</span>
                         {% elif not t.exists %}
-                        <span class="text-danger small">Table does not exist — apply migrations below</span>
+                        <span class="text-danger small">Table does not exist — apply pending migrations below</span>
                         {% else %}
                         <span class="badge bg-warning text-dark">Missing columns</span>
-                        <span class="text-muted small ms-1"><code>{{ t.missing_cols | join(', ') }}</code></span>
+                        <span class="text-muted small ms-1"><code>{{ t.missing_cols | join(', ') }}</code>
+                          — generate a migration on the host and rebuild the image (see note below)</span>
                         {% endif %}
                     </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
+        {% if schema.tables | selectattr('ok', 'equalto', false) | selectattr('exists') | list %}
+        <div class="alert alert-warning mt-3 mb-0">
+            <strong>Schema drift detected.</strong>
+            One or more columns are missing from the database but the tables themselves exist.
+            This means no pending migration covers these changes yet.
+            <strong>Do not rely on the app to generate migrations automatically</strong> — migration files
+            generated inside a Docker container are lost when the image is rebuilt.
+            <br><br>
+            To fix:
+            <ol class="mb-0 mt-1">
+                <li>On the host machine, run <code>flask db migrate -m "describe changes"</code></li>
+                <li>Commit the generated file in <code>migrations/versions/</code> to version control</li>
+                <li>Rebuild the Docker image so the file is baked in</li>
+                <li>Return here and click <strong>Apply Pending Migrations</strong></li>
+            </ol>
+        </div>
+        {% endif %}
         {% endif %}
     </div>
 </div>

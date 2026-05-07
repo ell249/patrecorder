@@ -42,6 +42,17 @@ class Appliance(db.Model):
     disposal_price = db.Column(db.Numeric(10, 2))
     disposal_comment = db.Column(db.Text)
 
+    new_to_service               = db.Column(db.Boolean, default=False)
+    entry_to_service_date        = db.Column(db.Date)
+    default_retest_interval_days = db.Column(db.Integer)
+
+    @property
+    def nts_next_test_due(self):
+        if self.entry_to_service_date and self.default_retest_interval_days:
+            from datetime import timedelta
+            return self.entry_to_service_date + timedelta(days=self.default_retest_interval_days)
+        return None
+
     tests = db.relationship("TestRecord", back_populates="appliance")
     repairs = db.relationship("RepairRecord", back_populates="appliance", cascade="all, delete")
 

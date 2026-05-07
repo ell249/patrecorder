@@ -39,12 +39,28 @@ def dashboard():
     today = datetime.today().date()
     soon = today + timedelta(days=30)
 
+    # Non-NTS appliances with no tests
     never_tested = (
         Appliance.query
-        .filter(Appliance.disposed == False)
+        .filter(Appliance.disposed == False, Appliance.new_to_service != True)
         .filter(~Appliance.tests.any())
         .all()
     )
+
+    # NTS appliances with no tests — split by whether the interval has elapsed
+    nts_untested = (
+        Appliance.query
+        .filter(Appliance.disposed == False, Appliance.new_to_service == True)
+        .filter(~Appliance.tests.any())
+        .all()
+    )
+    nts_not_yet_due, nts_now_due = [], []
+    for _a in nts_untested:
+        _due = _a.nts_next_test_due
+        if _due and _due > today:
+            nts_not_yet_due.append(_a)
+        else:
+            nts_now_due.append(_a)
 
     due_tests = (
         Appliance.query
@@ -97,8 +113,10 @@ def dashboard():
         reason_map.setdefault(a.id, "Overdue")
     for a in repaired_needs_test:
         reason_map[a.id] = "Repaired – test required"
+    for a in nts_now_due:
+        reason_map[a.id] = "NTS period elapsed – test required"
 
-    due_appliances_map = {a.id: a for a in (never_tested + due_tests + repaired_needs_test)}
+    due_appliances_map = {a.id: a for a in (never_tested + due_tests + repaired_needs_test + nts_now_due)}
     due_appliances = due_appliances_map.values()
 
     upcoming_count = (
@@ -133,7 +151,8 @@ def dashboard():
         due_appliances=due_appliances,
         upcoming_count=upcoming_count,
         required_count=required_count,
-        reason_map=reason_map
+        reason_map=reason_map,
+        nts_not_yet_due=nts_not_yet_due,
     )
 
 # ---------------------------------------------------------
@@ -183,6 +202,9 @@ def new_appliance():
         purchase_date_str = form.get("purchase_date")
         purchase_price_str = form.get("purchase_price")
 
+        entry_date_str = form.get("entry_to_service_date")
+        interval_raw   = form.get("default_retest_interval_days")
+
         appliance = Appliance(
             asset_number=asset_number,
             description=form.get("description"),
@@ -194,6 +216,9 @@ def new_appliance():
             serial_number=form.get("serial_number") or None,
             purchase_date=datetime.strptime(purchase_date_str, "%Y-%m-%d").date() if purchase_date_str else None,
             purchase_price=float(purchase_price_str) if purchase_price_str else None,
+            new_to_service=bool(form.get("new_to_service")),
+            entry_to_service_date=datetime.strptime(entry_date_str, "%Y-%m-%d").date() if entry_date_str else None,
+            default_retest_interval_days=int(interval_raw) if interval_raw else None,
         )
 
         db.session.add(appliance)
@@ -227,6 +252,9 @@ def edit_appliance(appliance_id):
         purchase_date_str = form.get("purchase_date")
         purchase_price_str = form.get("purchase_price")
 
+        entry_date_str = form.get("entry_to_service_date")
+        interval_raw   = form.get("default_retest_interval_days")
+
         appliance.asset_number = form["asset_number"]
         appliance.description = form.get("description")
         appliance.make_model = form.get("make_model")
@@ -237,6 +265,9 @@ def edit_appliance(appliance_id):
         appliance.serial_number = form.get("serial_number") or None
         appliance.purchase_date = datetime.strptime(purchase_date_str, "%Y-%m-%d").date() if purchase_date_str else None
         appliance.purchase_price = float(purchase_price_str) if purchase_price_str else None
+        appliance.new_to_service = bool(form.get("new_to_service"))
+        appliance.entry_to_service_date = datetime.strptime(entry_date_str, "%Y-%m-%d").date() if entry_date_str else None
+        appliance.default_retest_interval_days = int(interval_raw) if interval_raw else None
 
         receipt = request.files.get("receipt")
         if receipt and receipt.filename:
@@ -842,6 +873,51 @@ def test_label_preview(test_id):
         "BROTHER_RED": current_app.config.get("BROTHER_RED", "false"),
     }
     img_bytes = build_label_image(test, config)
+    response = make_response(img_bytes)
+    response.headers["Content-Type"] = "image/png"
+    response.headers["Cache-Control"] = "no-store"
+    return response
+
+
+@bp.route("/appliance/<int:appliance_id>/nts-label")
+def nts_label(appliance_id):
+    from flask import current_app
+    from label import build_nts_label_image, print_label
+
+    appliance = Appliance.query.get_or_404(appliance_id)
+    if not appliance.new_to_service:
+        flash("This appliance is not flagged as New to Service.", "warning")
+        return redirect(url_for("main.appliance_detail", appliance_id=appliance_id))
+
+    config = {
+        "BASE_URL":        current_app.config.get("BASE_URL", ""),
+        "BROTHER_PRINTER": current_app.config.get("BROTHER_PRINTER", ""),
+        "BROTHER_MODEL":   current_app.config.get("BROTHER_MODEL", "QL-810W"),
+        "BROTHER_LABEL":   current_app.config.get("BROTHER_LABEL", "62"),
+        "BROTHER_RED":     current_app.config.get("BROTHER_RED", "false"),
+    }
+    if not config["BROTHER_PRINTER"]:
+        flash("No printer configured. Set a printer address in Printer Settings.", "warning")
+        return redirect(url_for("main.appliance_detail", appliance_id=appliance_id))
+
+    try:
+        img_bytes = build_nts_label_image(appliance, config)
+        print_label(img_bytes, config)
+        flash("NTS label sent to printer.", "success")
+    except Exception as exc:
+        flash(f"Print failed: {exc}", "danger")
+
+    return redirect(url_for("main.appliance_detail", appliance_id=appliance_id))
+
+
+@bp.route("/appliance/<int:appliance_id>/nts-label/preview")
+def nts_label_preview(appliance_id):
+    from flask import current_app
+    from label import build_nts_label_image
+
+    appliance = Appliance.query.get_or_404(appliance_id)
+    config = {"BASE_URL": current_app.config.get("BASE_URL", "")}
+    img_bytes = build_nts_label_image(appliance, config)
     response = make_response(img_bytes)
     response.headers["Content-Type"] = "image/png"
     response.headers["Cache-Control"] = "no-store"

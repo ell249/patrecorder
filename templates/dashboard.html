@@ -42,6 +42,31 @@
 
 </div>
 
+{% if nts_not_yet_due %}
+<div class="alert alert-info mt-3">
+    <strong>New to Service — not yet due for first test ({{ nts_not_yet_due|length }})</strong>
+    <table class="table table-sm mt-2 mb-0">
+        <thead>
+            <tr><th>Asset</th><th>Description</th><th>Entry Date</th><th>First Test Due</th><th></th></tr>
+        </thead>
+        <tbody>
+            {% for a in nts_not_yet_due %}
+            <tr>
+                <td><a href="{{ url_for('main.appliance_detail', appliance_id=a.id) }}">{{ a.asset_number }}</a></td>
+                <td>{{ a.description or '—' }}</td>
+                <td>{{ a.entry_to_service_date.strftime('%d/%m/%Y') if a.entry_to_service_date else '—' }}</td>
+                <td>{{ a.nts_next_test_due.strftime('%d/%m/%Y') if a.nts_next_test_due else '—' }}</td>
+                <td>
+                    <a href="{{ url_for('main.nts_label_preview', appliance_id=a.id) }}"
+                       target="_blank" class="btn btn-sm btn-outline-secondary">Preview NTS Label</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
 <!-- Appliances Due or Never Tested -->
 <h4 class="mt-4">Appliances Due for Testing</h4>
 <p class="text-muted">Includes appliances never tested, with tests due within 30 days, or repaired since their last test.</p>
@@ -85,6 +110,8 @@
                     <span class="badge bg-warning text-dark">Repaired – test required</span>
                 {% elif reason == 'Never tested' %}
                     <span class="badge bg-danger">Never tested</span>
+                {% elif reason == 'NTS period elapsed – test required' %}
+                    <span class="badge bg-info text-dark">NTS period elapsed</span>
                 {% else %}
                     <span class="badge bg-secondary">Overdue</span>
                 {% endif %}

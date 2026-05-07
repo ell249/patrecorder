@@ -575,6 +575,17 @@ document.addEventListener("DOMContentLoaded", function () {
 document.getElementById("retest_selector").addEventListener("change", function () {
     document.getElementById("retest_interval").value = this.value;
 });
+(function () {
+    const defaultDays = {{ appliance.default_retest_interval_days or 'null' }};
+    if (defaultDays) {
+        const sel = document.getElementById("retest_selector");
+        const opt = Array.from(sel.options).find(function (o) { return parseInt(o.value) === defaultDays; });
+        if (opt) {
+            opt.selected = true;
+            document.getElementById("retest_interval").value = defaultDays;
+        }
+    }
+})();
 </script>
 
 <!-- Client-side validation -->

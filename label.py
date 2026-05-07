@@ -244,6 +244,76 @@ def build_label_image(test, config: dict) -> bytes:
     return buf.getvalue()
 
 
+# ── NTS Side B — New to Service status ───────────────────────────────────────
+
+def _nts_side_b(appliance) -> Image.Image:
+    """NTS status panel: 'NEW TO SERVICE', entry date, next due, compliance text."""
+    panel = Image.new("RGB", (HALF_H, CONTENT_W), "white")
+    draw  = ImageDraw.Draw(panel)
+    max_w = HALF_H - 20
+    pw    = HALF_H
+
+    y = 16
+    s = "NEW TO SERVICE"
+    f = _fit(s, True, max_w, 80)
+    y = _centered_text(draw, y, s, f, "black", pw) + 12
+
+    if appliance.entry_to_service_date:
+        s = f"Entry: {appliance.entry_to_service_date.strftime('%d/%m/%Y')}"
+        y = _centered_text(draw, y, s, _fit(s, False, max_w, 32), "black", pw) + 8
+
+    due = appliance.nts_next_test_due
+    if due:
+        s = f"Test due: {due.strftime('%d/%m/%Y')}"
+        y = _centered_text(draw, y, s, _fit(s, True, max_w, 32), "black", pw) + 10
+
+    for line in ["Not tested to", "AS/NZS 3760"]:
+        y = _centered_text(draw, y, line, _fit(line, False, max_w, 22), "#555555", pw) + 6
+
+    return panel.rotate(-90, expand=True)   # 90° CW → CONTENT_W × HALF_H
+
+
+class _ApplianceProxy:
+    """Thin shim so _side_a (which reads test.appliance.*) can render an NTS label."""
+    def __init__(self, appliance):
+        self.appliance = appliance
+        self.id = None
+
+
+def build_nts_label_image(appliance, config: dict) -> bytes:
+    """Cord-wrap NTS label — same geometry as build_label_image, NTS content."""
+    img = Image.new("RGB", (CANVAS_W, CANVAS_H), "white")
+
+    base_url = config.get("BASE_URL", "").rstrip("/")
+    qr_url   = f"{base_url}/appliance/{appliance.id}" if base_url else f"/appliance/{appliance.id}"
+    qr_img   = qrcode.make(qr_url).convert("RGB").resize((QR_SIZE, QR_SIZE))
+
+    proxy = _ApplianceProxy(appliance)
+    nts_a = _side_a(proxy, config, qr_img)   # 570×348
+    nts_b = _nts_side_b(appliance)            # 570×348
+
+    cord_x1 = CONTENT_W + CORD_MARGIN
+    cord_x2 = CONTENT_W + CORD_MARGIN + CORD_GAP
+    draw = ImageDraw.Draw(img)
+
+    cord_labels = ["--- CABLE ---", "--- APPLIANCE ---"]
+    for i, strip_y in enumerate((0, HALF_H)):
+        img.paste(nts_a.rotate(180), (0, strip_y))
+        draw.rectangle([cord_x1, strip_y, cord_x2, strip_y + HALF_H - 1], fill="#ebebeb")
+        img.paste(nts_b.rotate(180) if i == 0 else nts_b, (cord_x2 + CORD_MARGIN, strip_y))
+        img.paste(_cord_zone_img(cord_labels[i]), (cord_x1, strip_y))
+
+    _dashed_vline(draw, cord_x1,     "#999999", width=2, dash=14)
+    _dashed_vline(draw, cord_x2 - 1, "#999999", width=2, dash=14)
+    _dashed_hline(draw, HALF_H,      "#999999", width=2, dash=10)
+
+    img = img.rotate(90, expand=True)
+
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    return buf.getvalue()
+
+
 def print_label(img_bytes: bytes, config: dict) -> None:
     from brother_ql.backends.helpers import send
     from brother_ql.conversion import convert

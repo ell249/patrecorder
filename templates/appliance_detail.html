@@ -29,7 +29,13 @@
 
     <div class="d-flex justify-content-between mb-3">
         <h5>Details</h5>
-        <div>
+        <div class="d-flex gap-2 flex-wrap justify-content-end">
+            {% if appliance.new_to_service %}
+            <a href="{{ url_for('main.nts_label_preview', appliance_id=appliance.id) }}"
+               target="_blank" class="btn btn-outline-secondary btn-sm">Preview NTS Label</a>
+            <a href="{{ url_for('main.nts_label', appliance_id=appliance.id) }}"
+               class="btn btn-outline-primary btn-sm">Print NTS Label</a>
+            {% endif %}
             <a href="{{ url_for('main.edit_appliance', appliance_id=appliance.id) }}"
                class="btn btn-warning btn-sm">Edit Appliance</a>
         </div>
@@ -60,6 +66,24 @@
             <th>Record Created</th>
             <td>{{ appliance.created_at.strftime('%d/%m/%Y %H:%M') if appliance.created_at else '—' }}</td>
         </tr>
+        {% if appliance.new_to_service %}
+        <tr>
+            <th>Status</th>
+            <td><span class="badge bg-info text-dark">New to Service</span></td>
+        </tr>
+        {% if appliance.entry_to_service_date %}
+        <tr>
+            <th>Entry to Service</th>
+            <td>{{ appliance.entry_to_service_date.strftime('%d/%m/%Y') }}</td>
+        </tr>
+        {% endif %}
+        {% if appliance.nts_next_test_due %}
+        <tr>
+            <th>First Test Due</th>
+            <td>{{ appliance.nts_next_test_due.strftime('%d/%m/%Y') }}</td>
+        </tr>
+        {% endif %}
+        {% endif %}
     </table>
 
     <div class="d-flex justify-content-between align-items-center mt-4 mb-2">

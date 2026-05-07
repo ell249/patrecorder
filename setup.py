@@ -191,16 +191,6 @@ def status():
     schema = _check_schema() if db_ok else {"tables": [], "all_ok": True, "error": None}
     migration_status = _get_migration_status()
 
-    # Schema has drifted but no migration file covers it yet — generate one now
-    # so the Apply button appears immediately for the user to click.
-    if db_ok and not schema['all_ok'] and migration_status.get('is_up_to_date') and not migration_status.get('error'):
-        try:
-            from flask_migrate import migrate as generate_migration
-            generate_migration(message="auto")
-            migration_status = _get_migration_status()
-        except Exception as exc:
-            current_app.logger.warning("Auto-generate migration failed: %s", exc)
-
     return render_template('setup_status.html',
                            conn_info=conn_info,
                            migration=migration_status,
