@@ -453,7 +453,7 @@ def new_test(appliance_id):
             leakage_mA=form.get("leakage_mA") or None,
             polarity_pass=form.get("polarity_pass") or None,
 
-            # 5761 / 5762
+            # 5761
             condition_assessment=form.get("condition_assessment"),
             functional_check=form.get("functional_check"),
             accessories=form.get("accessories"),
@@ -461,13 +461,29 @@ def new_test(appliance_id):
             no_outstanding_recalls=form.get("no_outstanding_recalls") or None,
             pins_insulated=form.get("pins_insulated") or None,
 
-            repair_description=form.get("repair_description"),
-            repaired_by=form.get("repaired_by"),
-            parts_replaced=form.get("parts_replaced"),
-            post_repair_test=form.get("post_repair_test"),
+            # 5762 — functional tests
+            func_test_1_method=form.get("func_test_1_method") or None,
+            func_test_1_result=form.get("func_test_1_result") or None,
+            func_test_2_method=form.get("func_test_2_method") or None,
+            func_test_2_result=form.get("func_test_2_result") or None,
+            func_test_3_method=form.get("func_test_3_method") or None,
+            func_test_3_result=form.get("func_test_3_result") or None,
+            func_test_4_method=form.get("func_test_4_method") or None,
+            func_test_4_result=form.get("func_test_4_result") or None,
+            func_test_5_method=form.get("func_test_5_method") or None,
+            func_test_5_result=form.get("func_test_5_result") or None,
         )
 
         db.session.add(test)
+        db.session.flush()  # get test.id before linking repairs
+
+        # 5762 — link selected repair records (many-to-many)
+        selected_repair_ids = [int(x) for x in form.getlist("linked_repair_ids") if x.isdigit()]
+        if selected_repair_ids:
+            test.linked_repairs = RepairRecord.query.filter(
+                RepairRecord.id.in_(selected_repair_ids)
+            ).all()
+
         db.session.commit()
 
         # Lock any open repair records that predate this test
@@ -513,13 +529,21 @@ def new_test(appliance_id):
         appliance.class_type or "ANY",
         appliance.supply_type or "ANY"
     )
+    unlocked_repairs = (
+        RepairRecord.query
+        .filter_by(appliance_id=appliance.id, disposed=False)
+        .filter(RepairRecord.locked_by_test_date == None)
+        .order_by(RepairRecord.repair_date.desc())
+        .all()
+    )
 
     return render_template(
         "test_form.html",
         appliance=appliance,
         testers=testers,
         rules=rules,
-        suggested_rule=suggested_rule
+        suggested_rule=suggested_rule,
+        unlocked_repairs=unlocked_repairs,
     )
 
 # ---------------------------------------------------------

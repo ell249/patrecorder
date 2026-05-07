@@ -34,13 +34,51 @@ th { background: #eee; }
 <tr><th>Phone</th><td>{{ tester.phone_number or 'N/A' }}</td></tr>
 </table>
 
-<h3>Repair Information</h3>
+<h3>Verified Repair Records</h3>
+{% if test.linked_repairs %}
 <table>
-<tr><th>Repair Description</th><td>{{ test.repair_description or 'N/A' }}</td></tr>
-<tr><th>Repaired By</th><td>{{ test.repaired_by or 'N/A' }}</td></tr>
-<tr><th>Parts Replaced</th><td>{{ test.parts_replaced or 'N/A' }}</td></tr>
-<tr><th>Post‑Repair Test</th><td>{{ test.post_repair_test or 'N/A' }}</td></tr>
+<thead><tr><th>Date</th><th>Description</th><th>Repaired By</th></tr></thead>
+<tbody>
+{% for r in test.linked_repairs %}
+<tr>
+  <td>{{ r.repair_date.strftime('%d/%m/%Y') }}</td>
+  <td>{{ r.description }}</td>
+  <td>{{ r.repaired_by or '—' }}</td>
+</tr>
+{% endfor %}
+</tbody>
 </table>
+{% else %}
+<p>No repair records linked.</p>
+{% endif %}
+
+<h3>Functional Tests</h3>
+{% set func_rows = [
+  (1, test.func_test_1_method, test.func_test_1_result),
+  (2, test.func_test_2_method, test.func_test_2_result),
+  (3, test.func_test_3_method, test.func_test_3_result),
+  (4, test.func_test_4_method, test.func_test_4_result),
+  (5, test.func_test_5_method, test.func_test_5_result),
+] %}
+{% set filled = func_rows | selectattr(1) | list %}
+{% if filled %}
+<table>
+<thead><tr><th>#</th><th>Test Method</th><th>Result</th></tr></thead>
+<tbody>
+{% for n, method, result in func_rows %}
+{% if method or result %}
+<tr>
+  <td>{{ n }}</td>
+  <td>{{ method or '—' }}</td>
+  <td>{{ result or '—' }}</td>
+</tr>
+{% endif %}
+{% endfor %}
+</tbody>
+</table>
+{% else %}
+<p>No functional tests recorded.</p>
+{% endif %}
 
 <h3>Test Information</h3>
 <table>

@@ -60,13 +60,52 @@
     {% endif %}
 
     {% if test.test_standard == "5762" %}
-    <h5 class="mt-4">5762 Repair Information</h5>
-    <table class="table table-bordered">
-        <tr><th>Repair Description</th><td>{{ test.repair_description or 'N/A' }}</td></tr>
-        <tr><th>Repaired By</th><td>{{ test.repaired_by or 'N/A' }}</td></tr>
-        <tr><th>Parts Replaced</th><td>{{ test.parts_replaced or 'N/A' }}</td></tr>
-        <tr><th>Post‑Repair Test</th><td>{{ test.post_repair_test or 'N/A' }}</td></tr>
+    <h5 class="mt-4">AS/NZS 5762 — Post-Repair Verification</h5>
+
+    {% if test.linked_repairs %}
+    <h6 class="mt-3">Verified Repair Records</h6>
+    <ul>
+        {% for r in test.linked_repairs %}
+        <li>
+            <a href="{{ url_for('main.repair_detail', repair_id=r.id) }}">
+                {{ r.repair_date.strftime('%d/%m/%Y') }} — {{ r.description[:120] }}
+            </a>
+            {% if r.repaired_by %}<span class="text-muted">({{ r.repaired_by }})</span>{% endif %}
+        </li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+
+    {% set func_rows = [
+        (1, test.func_test_1_method, test.func_test_1_result),
+        (2, test.func_test_2_method, test.func_test_2_result),
+        (3, test.func_test_3_method, test.func_test_3_result),
+        (4, test.func_test_4_method, test.func_test_4_result),
+        (5, test.func_test_5_method, test.func_test_5_result),
+    ] %}
+    {% set filled = func_rows | selectattr(1) | list %}
+    {% if filled %}
+    <h6 class="mt-3">Functional Tests</h6>
+    <table class="table table-sm table-bordered">
+        <thead><tr><th style="width:2.5rem">#</th><th>Method</th><th style="width:7rem">Result</th></tr></thead>
+        <tbody>
+        {% for n, method, result in func_rows %}
+        {% if method or result %}
+        <tr>
+            <td class="text-center">{{ n }}</td>
+            <td>{{ method or '—' }}</td>
+            <td>
+                {% if result == 'PASS' %}<span class="badge bg-success">PASS</span>
+                {% elif result == 'FAIL' %}<span class="badge bg-danger">FAIL</span>
+                {% else %}—{% endif %}
+            </td>
+        </tr>
+        {% endif %}
+        {% endfor %}
+        </tbody>
     </table>
+    {% endif %}
+
     {% endif %}
 
     <h5 class="mt-4">Comments</h5>

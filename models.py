@@ -1,5 +1,12 @@
 from app import db
 
+# Join table: test_record ↔ repair_record (many-to-many for AS/NZS 5762 verification)
+test_repair_link = db.Table(
+    'test_repair_link',
+    db.Column('test_record_id',   db.Integer, db.ForeignKey('test_record.id'),   primary_key=True),
+    db.Column('repair_record_id', db.Integer, db.ForeignKey('repair_record.id'), primary_key=True),
+)
+
 # ---------------------------------------------------------
 # Tester Table
 # ---------------------------------------------------------
@@ -97,7 +104,7 @@ class TestRecord(db.Model):
     leakage_mA = db.Column(db.String(50))
     polarity_pass = db.Column(db.String(50))
 
-    # 5761 / 5762 fields
+    # 5761 fields
     condition_assessment = db.Column(db.String(255))
     functional_check = db.Column(db.String(255))
     accessories = db.Column(db.String(255))
@@ -105,10 +112,21 @@ class TestRecord(db.Model):
     no_outstanding_recalls = db.Column(db.String(10))
     pins_insulated = db.Column(db.String(10))
 
-    repair_description = db.Column(db.Text)
-    repaired_by = db.Column(db.String(255))
-    parts_replaced = db.Column(db.Text)
-    post_repair_test = db.Column(db.String(255))
+    # 5762 — linked repair records (many-to-many)
+    linked_repairs = db.relationship('RepairRecord', secondary='test_repair_link',
+                                     backref=db.backref('verification_tests', lazy='dynamic'))
+
+    # 5762 — structured functional tests (up to 5)
+    func_test_1_method = db.Column(db.String(500))
+    func_test_1_result = db.Column(db.String(10))
+    func_test_2_method = db.Column(db.String(500))
+    func_test_2_result = db.Column(db.String(10))
+    func_test_3_method = db.Column(db.String(500))
+    func_test_3_result = db.Column(db.String(10))
+    func_test_4_method = db.Column(db.String(500))
+    func_test_4_result = db.Column(db.String(10))
+    func_test_5_method = db.Column(db.String(500))
+    func_test_5_result = db.Column(db.String(10))
 
     # Relationships
     appliance = db.relationship("Appliance", back_populates="tests")

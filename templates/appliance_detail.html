@@ -106,7 +106,7 @@
         <tbody>
             {% for test in appliance.tests if not test.disposed %}
             <tr>
-                <td>{{ test.test_date }}</td>
+                <td>{{ test.test_date.strftime('%d/%m/%Y') }}</td>
                 <td>{{ test.test_standard | std }}</td>
                 <td>
                     {% if test.overall_result == "PASS" %}

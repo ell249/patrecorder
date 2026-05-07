@@ -323,20 +323,19 @@
                         {% else %}
                         <span class="badge bg-warning text-dark">Missing columns</span>
                         <span class="text-muted small ms-1"><code>{{ t.missing_cols | join(', ') }}</code>
-                          — generate a migration on the host and rebuild the image (see note below)</span>
+                          {% if migration.pending %} — apply the pending migration below{% else %} — no migration file found (see note below){% endif %}</span>
                         {% endif %}
                     </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
-        {% if schema.tables | selectattr('ok', 'equalto', false) | selectattr('exists') | list %}
+        {% if schema.tables | selectattr('ok', 'equalto', false) | selectattr('exists') | list
+              and (migration.is_up_to_date or not migration.pending) %}
         <div class="alert alert-warning mt-3 mb-0">
-            <strong>Schema drift detected.</strong>
-            One or more columns are missing from the database but the tables themselves exist.
-            This means no pending migration covers these changes yet.
-            <strong>Do not rely on the app to generate migrations automatically</strong> — migration files
-            generated inside a Docker container are lost when the image is rebuilt.
+            <strong>Schema drift detected — no migration file found.</strong>
+            One or more columns are missing from the database but no pending migration exists to add them.
+            The migration file has not been generated yet, or was generated inside the Docker container and lost when the image was rebuilt.
             <br><br>
             To fix:
             <ol class="mb-0 mt-1">
