@@ -7,8 +7,8 @@ from PIL import Image, ImageDraw, ImageFont
 
 # Canvas dimensions (before final 90° rotation).
 # Height = 62mm tape printable width (696px ≈ 58mm).
-# Width  = label length (~110mm).
-CANVAS_W = 1300
+# Width  = label length (~90mm).
+CANVAS_W = 1063
 CANVAS_H = 696
 
 # Cord-wrap geometry.
@@ -20,7 +20,7 @@ CANVAS_H = 696
 #   CONTENT_W  — width of each content panel left/right of the band
 CORD_GAP    = 160
 CORD_MARGIN = 40                                              # white space each side of the grey zone
-CONTENT_W   = (CANVAS_W - CORD_GAP - 2 * CORD_MARGIN) // 2  # 500px ≈ 42mm
+CONTENT_W   = (CANVAS_W - CORD_GAP - 2 * CORD_MARGIN) // 2  # 411px ≈ 35mm
 HALF_H      = CANVAS_H // 2                                  # 348px — height of each label strip
 
 QR_SIZE = 280   # fits in the 348px-wide portrait panel (34px margin per side)
@@ -231,7 +231,7 @@ def build_label_image(test, config: dict) -> bytes:
     # ── Horizontal cut line between the two labels ─────────────────────────────
     # After the final 90° CCW rotation this becomes a vertical cut line at
     # x=348 — exactly down the middle of the 696px tape width.
-    _dashed_hline(draw, HALF_H, "#bbbbbb", width=1, dash=10)
+    _dashed_hline(draw, HALF_H, "#999999", width=2, dash=10)
 
     # ── Final 90° CCW rotation ────────────────────────────────────────────────
     # Converts the 1300×696 canvas to the 696×1300 image the Brother QL expects.
