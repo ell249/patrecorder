@@ -23,6 +23,7 @@ config.local.py
 *.secret
 *.env
 .env*
+blog-post.md
 
 # --- Uploads ---
 static/uploads/
