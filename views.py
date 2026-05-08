@@ -224,8 +224,7 @@ def new_appliance():
             appliance.receipt_filepath = f"receipts/{appliance.id}/{filename}"
             db.session.commit()
 
-        flash("Appliance added successfully.", "success")
-        return redirect(url_for("main.appliance_detail", appliance_id=appliance.id))
+        return redirect(url_for("main.appliance_detail", appliance_id=appliance.id, just_created=1))
 
     return render_template("appliance_form.html")
 
