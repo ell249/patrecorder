@@ -1,6 +1,11 @@
+import csv
+import io
+import ipaddress
 import os
 import re
 import socket
+import urllib.request
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from flask import (
     Blueprint, current_app, flash, jsonify,
@@ -45,12 +50,75 @@ def save():
 
 @bp.route("/printer/discover", methods=["POST"])
 def discover():
-    return jsonify({"error": "Automatic discovery is not currently implemented in the brother_ql library. Please enter the printer address manually."}), 501
+    body   = request.get_json(silent=True) or {}
+    subnet = (body.get("subnet") or "").strip()
+
+    candidates: set[str] = set()
+
+    if subnet:
+        try:
+            candidates.update(_scan_subnet(subnet))
+        except ValueError:
+            return jsonify({"error": "Invalid subnet — use CIDR notation, e.g. 192.168.1.0/24"}), 400
+
+    if not candidates:
+        return jsonify([])
+
+    results = []
+    with ThreadPoolExecutor(max_workers=50) as pool:
+        futures = {pool.submit(_fetch_printer_info, ip): ip for ip in candidates}
+        for future in as_completed(futures):
+            info = future.result()
+            if info:
+                ip = futures[future]
+                results.append({
+                    "address":  f"tcp://{ip}",
+                    "name":     info["name"],
+                    "model":    info["model"],
+                    "serial":   info["serial"],
+                    "firmware": info["firmware"],
+                })
+
+    return jsonify(results)
 
 
 # ─────────────────────────────────────────────────────────────
 # Helpers
 # ─────────────────────────────────────────────────────────────
+
+def _scan_subnet(cidr: str) -> list[str]:
+    net = ipaddress.ip_network(cidr, strict=False)
+    if net.num_addresses > 65536:
+        raise ValueError("Subnet too large (max /16)")
+
+    def _probe(ip):
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.settimeout(0.3)
+            rc = s.connect_ex((str(ip), 9100))
+            s.close()
+            return str(ip) if rc == 0 else None
+        except Exception:
+            return None
+
+    with ThreadPoolExecutor(max_workers=100) as pool:
+        return [ip for ip in pool.map(_probe, net.hosts()) if ip is not None]
+
+
+def _fetch_printer_info(ip: str) -> dict | None:
+    try:
+        with urllib.request.urlopen(f"http://{ip}/etc/mnt_info.csv", timeout=2) as resp:
+            text = resp.read().decode("utf-8", errors="replace")
+        row = next(csv.DictReader(io.StringIO(text)))
+        return {
+            "model":    row["Model Name"].strip(),
+            "name":     row["Node Name"].strip(),
+            "serial":   row["Serial No."].strip(),
+            "firmware": row["Firmware Version"].strip(),
+        }
+    except Exception:
+        return None
+
 
 def check_printer(app) -> dict:
     addr  = app.config.get("BROTHER_PRINTER", "")

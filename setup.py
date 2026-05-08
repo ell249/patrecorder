@@ -1,5 +1,7 @@
+import ipaddress
 import os
 import re
+import socket
 import pymysql
 from urllib.parse import urlparse
 
@@ -203,7 +205,8 @@ def status():
                            printer=printer,
                            printer_settings=printer_settings,
                            dashboard_settings=dashboard_settings,
-                           schema=schema)
+                           schema=schema,
+                           default_subnet=_host_to_subnet(conn_info['host']))
 
 
 # ---------------------------------------------------------
@@ -296,6 +299,17 @@ def run_cleanup():
 # ---------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------
+
+def _host_to_subnet(host: str) -> str:
+    """Return the /24 CIDR for a MySQL host, or '' for localhost/unresolvable."""
+    if not host or host in ("localhost", "127.0.0.1", "::1"):
+        return ""
+    try:
+        ip = socket.gethostbyname(host)
+        return str(ipaddress.ip_network(f"{ip}/24", strict=False))
+    except Exception:
+        return ""
+
 
 def _parse_uri(uri):
     """Extract host/port/user/db_name from a SQLAlchemy URI for form pre-fill."""
