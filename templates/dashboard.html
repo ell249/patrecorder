@@ -21,7 +21,10 @@
     <div class="col-md-4">
         <div class="card text-bg-warning mb-3">
             <div class="card-body">
-                <h5 class="card-title">Upcoming Tests (Next 30 Days)</h5>
+                <h5 class="card-title">Upcoming Tests
+                    <span data-bs-toggle="tooltip"
+                          title="Includes appliances with tests due within the next 30 days.">ⓘ</span>
+                </h5>
                 <p class="card-text display-6">{{ upcoming_count }}</p>
             </div>
         </div>
@@ -77,7 +80,7 @@
             <th>Asset</th>
             <th>Description</th>
             <th>Location</th>
-            <th>Last Test</th>
+            <!-- <th>Last Test</th> -->
             <th>Next Due</th>
             <th>Reason</th>
             <th class="text-end">Actions</th>
@@ -90,24 +93,24 @@
             <td><a href="{{ url_for('main.appliance_detail', appliance_id=a.id) }}">{{ a.asset_number }}</a></td>
             <td>{{ a.description }}</td>
             <td>{{ a.location }}</td>
-            <td>
+            <!-- <td>
                 {% if last_test %}
                     {{ last_test.test_date }} ({{ last_test.test_standard | std }})
                 {% else %}
                     <span class="text-danger">Never Tested</span>
                 {% endif %}
-            </td>
+            </td> -->
             <td>
                 {% if last_test and last_test.next_test_due %}
                     {{ last_test.next_test_due }}
                 {% else %}
-                    <span class="text-danger">N/A</span>
+                    <span class="text-danger">Now</span>
                 {% endif %}
             </td>
             <td>
                 {% set reason = reason_map.get(a.id, '') %}
                 {% if reason == 'Repaired – test required' %}
-                    <span class="badge bg-warning text-dark">Repaired – test required</span>
+                    <span class="badge bg-warning text-dark">Repaired</span>
                 {% elif reason == 'Never tested' %}
                     <span class="badge bg-danger">Never tested</span>
                 {% elif reason == 'NTS period elapsed – test required' %}
@@ -117,26 +120,34 @@
                 {% endif %}
             </td>
             <td class="text-end">
-                <a href="{{ url_for('main.appliance_detail', appliance_id=a.id) }}"
-                class="btn btn-sm btn-primary">View</a>
-
-                {% if last_test %}
-                <a href="{{ url_for('main.test_pdf', test_id=last_test.id) }}"
-                class="btn btn-sm btn-danger ms-1"
-                target="_blank">
-                    PDF
-                </a>
-                {% endif %}
-
-                <a href="{{ url_for('main.new_test', appliance_id=a.id) }}"
-                class="btn btn-sm btn-success ms-1">
-                    Add Test
-                </a>
-
-                <a href="{{ url_for('main.new_repair', appliance_id=a.id) }}"
-                class="btn btn-sm btn-outline-success ms-1">
-                    Add Repair
-                </a>
+                <div class="d-none d-lg-flex justify-content-end gap-1">
+                    <a href="{{ url_for('main.appliance_detail', appliance_id=a.id) }}"
+                       class="btn btn-sm btn-primary">View</a>
+                    {% if last_test %}
+                    <a href="{{ url_for('main.test_pdf', test_id=last_test.id) }}"
+                       class="btn btn-sm btn-danger" target="_blank">PDF</a>
+                    {% endif %}
+                    <a href="{{ url_for('main.new_test', appliance_id=a.id) }}"
+                       class="btn btn-sm btn-success">Add Test</a>
+                    <a href="{{ url_for('main.new_repair', appliance_id=a.id) }}"
+                       class="btn btn-sm btn-outline-success">Add Repair</a>
+                </div>
+                <div class="dropdown d-lg-none">
+                    <button class="btn btn-sm btn-secondary dropdown-toggle" type="button"
+                            data-bs-toggle="dropdown" aria-expanded="false">Actions</button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a href="{{ url_for('main.appliance_detail', appliance_id=a.id) }}"
+                               class="dropdown-item">View</a></li>
+                        {% if last_test %}
+                        <li><a href="{{ url_for('main.test_pdf', test_id=last_test.id) }}"
+                               class="dropdown-item" target="_blank">PDF</a></li>
+                        {% endif %}
+                        <li><a href="{{ url_for('main.new_test', appliance_id=a.id) }}"
+                               class="dropdown-item">Add Test</a></li>
+                        <li><a href="{{ url_for('main.new_repair', appliance_id=a.id) }}"
+                               class="dropdown-item">Add Repair</a></li>
+                    </ul>
+                </div>
             </td>
         </tr>
         {% endfor %}
@@ -172,20 +183,28 @@
                 {% endif %}
             </td>
             <td class="text-end">
-                <a href="{{ url_for('main.test_detail', test_id=test.id) }}"
-                class="btn btn-sm btn-primary">View</a>
-
-                <a href="{{ url_for('main.test_label_preview', test_id=test.id) }}"
-                class="btn btn-sm btn-outline-secondary ms-1" target="_blank"
-                title="Preview label">
-                    <i class="mdi mdi-eye"></i>
-                </a>
-
-                <a href="{{ url_for('main.test_label', test_id=test.id) }}"
-                class="btn btn-sm btn-outline-secondary ms-1"
-                title="Print label">
-                    <i class="mdi mdi-printer"></i>
-                </a>
+                <div class="d-none d-lg-flex justify-content-end gap-1">
+                    <a href="{{ url_for('main.test_detail', test_id=test.id) }}"
+                       class="btn btn-sm btn-primary">View</a>
+                    <a href="{{ url_for('main.test_label_preview', test_id=test.id) }}"
+                       class="btn btn-sm btn-outline-secondary" target="_blank"
+                       title="Preview label"><i class="mdi mdi-eye"></i></a>
+                    <a href="{{ url_for('main.test_label', test_id=test.id) }}"
+                       class="btn btn-sm btn-outline-secondary"
+                       title="Print label"><i class="mdi mdi-printer"></i></a>
+                </div>
+                <div class="dropdown d-lg-none">
+                    <button class="btn btn-sm btn-secondary dropdown-toggle" type="button"
+                            data-bs-toggle="dropdown" aria-expanded="false">Actions</button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a href="{{ url_for('main.test_detail', test_id=test.id) }}"
+                               class="dropdown-item">View</a></li>
+                        <li><a href="{{ url_for('main.test_label_preview', test_id=test.id) }}"
+                               class="dropdown-item" target="_blank">Preview Label</a></li>
+                        <li><a href="{{ url_for('main.test_label', test_id=test.id) }}"
+                               class="dropdown-item">Print Label</a></li>
+                    </ul>
+                </div>
             </td>
         </tr>
         {% endfor %}
@@ -222,12 +241,26 @@
                 {% endif %}
             </td>
             <td class="text-end">
-                <a href="{{ url_for('main.repair_detail', repair_id=repair.id) }}"
-                   class="btn btn-sm btn-primary">View</a>
-                {% if not repair.locked_by_test_date %}
-                <a href="{{ url_for('main.edit_repair', repair_id=repair.id) }}"
-                   class="btn btn-sm btn-warning ms-1">Edit</a>
-                {% endif %}
+                <div class="d-none d-lg-flex justify-content-end gap-1">
+                    <a href="{{ url_for('main.repair_detail', repair_id=repair.id) }}"
+                       class="btn btn-sm btn-primary">View</a>
+                    {% if not repair.locked_by_test_date %}
+                    <a href="{{ url_for('main.edit_repair', repair_id=repair.id) }}"
+                       class="btn btn-sm btn-warning">Edit</a>
+                    {% endif %}
+                </div>
+                <div class="dropdown d-lg-none">
+                    <button class="btn btn-sm btn-secondary dropdown-toggle" type="button"
+                            data-bs-toggle="dropdown" aria-expanded="false">Actions</button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a href="{{ url_for('main.repair_detail', repair_id=repair.id) }}"
+                               class="dropdown-item">View</a></li>
+                        {% if not repair.locked_by_test_date %}
+                        <li><a href="{{ url_for('main.edit_repair', repair_id=repair.id) }}"
+                               class="dropdown-item">Edit</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
             </td>
         </tr>
         {% endfor %}

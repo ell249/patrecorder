@@ -89,7 +89,7 @@
 </div>
 
 {# ── Test History ─────────────────────────────────────── #}
-{% set last_test = appliance.tests | selectattr('disposed', 'equalto', False) | sort(attribute='test_date') | last %}
+{% set last_test = active_tests | first %}
 <div class="card mb-4">
     <div class="card-header d-flex justify-content-between align-items-center">
         <h5 class="mb-0">Test History</h5>
@@ -103,7 +103,7 @@
         </div>
     </div>
     <div class="card-body p-0">
-        {% if appliance.tests|selectattr('disposed', 'equalto', False)|list %}
+        {% if active_tests %}
         <table class="table table-striped mb-0">
             <thead>
                 <tr>
@@ -116,7 +116,7 @@
                 </tr>
             </thead>
             <tbody>
-                {% for test in appliance.tests | selectattr('disposed', 'equalto', False) | sort(attribute='test_date', reverse=True) %}
+                {% for test in active_tests %}
                 <tr>
                     <td>{{ test.test_date.strftime('%d/%m/%Y') }}</td>
                     <td>{{ test.test_standard | std }}</td>
@@ -165,7 +165,6 @@
         </div>
     </div>
     <div class="card-body p-0">
-        {% set active_repairs = appliance.repairs|selectattr('disposed', 'equalto', False)|list %}
         {% if active_repairs %}
         <table class="table table-striped mb-0">
             <thead>
@@ -178,7 +177,7 @@
                 </tr>
             </thead>
             <tbody>
-                {% for repair in active_repairs|sort(attribute='repair_date', reverse=True) %}
+                {% for repair in active_repairs %}
                 <tr>
                     <td>{{ repair.repair_date.strftime('%d/%m/%Y') }}</td>
                     <td>{{ repair.repaired_by or '—' }}</td>

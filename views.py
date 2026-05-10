@@ -118,14 +118,14 @@ def dashboard():
 
     recent_tests = (
         TestRecord.query.filter_by(disposed=False)
-        .order_by(TestRecord.test_date.desc())
+        .order_by(TestRecord.test_date.desc(), TestRecord.id.desc())
         .limit(recent_limit)
         .all()
     )
 
     recent_repairs = (
         RepairRecord.query.filter_by(disposed=False)
-        .order_by(RepairRecord.repair_date.desc())
+        .order_by(RepairRecord.repair_date.desc(), RepairRecord.id.desc())
         .limit(recent_limit)
         .all()
     )
@@ -369,14 +369,25 @@ def delete_appliance(appliance_id):
 def appliance_detail(appliance_id):
     appliance = Appliance.query.get_or_404(appliance_id)
 
-    test_summary = summarize_test_types(
-        [t for t in appliance.tests if not t.disposed]
+    active_tests = sorted(
+        [t for t in appliance.tests if not t.disposed],
+        key=lambda t: (t.test_date, t.id),
+        reverse=True,
     )
+    active_repairs = sorted(
+        [r for r in appliance.repairs if not r.disposed],
+        key=lambda r: (r.repair_date, r.id),
+        reverse=True,
+    )
+
+    test_summary = summarize_test_types(active_tests)
 
     return render_template(
         "appliance_detail.html",
         appliance=appliance,
-        test_summary=test_summary
+        active_tests=active_tests,
+        active_repairs=active_repairs,
+        test_summary=test_summary,
     )
 
 # ---------------------------------------------------------
