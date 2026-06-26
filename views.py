@@ -10,7 +10,7 @@ from werkzeug.utils import secure_filename
 
 from app import db
 from config import Config
-from models import Appliance, TestRecord, TestPhoto, RetestRule, Tester, RepairRecord, RepairPhoto
+from models import Appliance, TestRecord, TestPhoto, RetestRule, Tester, RepairRecord, RepairPhoto, ApplianceDocument
 from utils import (
     make_snippet,
     fuzzy,
@@ -215,14 +215,19 @@ def new_appliance():
         db.session.add(appliance)
         db.session.commit()
 
-        receipt = request.files.get("receipt")
-        if receipt and receipt.filename:
-            filename = secure_filename(receipt.filename)
-            receipt_dir = os.path.join("static", "uploads", "receipts", str(appliance.id))
-            os.makedirs(receipt_dir, exist_ok=True)
-            receipt.save(os.path.join(receipt_dir, filename))
-            appliance.receipt_filepath = f"receipts/{appliance.id}/{filename}"
-            db.session.commit()
+        files = request.files.getlist("documents")
+        for f in files:
+            if f and f.filename:
+                filename = secure_filename(f.filename)
+                doc_dir = os.path.join("static", "uploads", "receipts", str(appliance.id))
+                os.makedirs(doc_dir, exist_ok=True)
+                f.save(os.path.join(doc_dir, filename))
+                db.session.add(ApplianceDocument(
+                    appliance_id=appliance.id,
+                    filename=filename,
+                    filepath=f"receipts/{appliance.id}/{filename}",
+                ))
+        db.session.commit()
 
         return redirect(url_for("main.appliance_detail", appliance_id=appliance.id, just_created=1))
 
@@ -259,18 +264,18 @@ def edit_appliance(appliance_id):
         appliance.entry_to_service_date = datetime.strptime(entry_date_str, "%Y-%m-%d").date() if entry_date_str else None
         appliance.default_retest_interval_days = int(interval_raw) if interval_raw else None
 
-        receipt = request.files.get("receipt")
-        if receipt and receipt.filename:
-            # Remove old receipt file if one exists
-            if appliance.receipt_filepath:
-                old_path = os.path.join("static", "uploads", appliance.receipt_filepath)
-                if os.path.isfile(old_path):
-                    os.remove(old_path)
-            filename = secure_filename(receipt.filename)
-            receipt_dir = os.path.join("static", "uploads", "receipts", str(appliance.id))
-            os.makedirs(receipt_dir, exist_ok=True)
-            receipt.save(os.path.join(receipt_dir, filename))
-            appliance.receipt_filepath = f"receipts/{appliance.id}/{filename}"
+        files = request.files.getlist("documents")
+        for f in files:
+            if f and f.filename:
+                filename = secure_filename(f.filename)
+                doc_dir = os.path.join("static", "uploads", "receipts", str(appliance.id))
+                os.makedirs(doc_dir, exist_ok=True)
+                f.save(os.path.join(doc_dir, filename))
+                db.session.add(ApplianceDocument(
+                    appliance_id=appliance.id,
+                    filename=filename,
+                    filepath=f"receipts/{appliance.id}/{filename}",
+                ))
 
         db.session.commit()
 
@@ -282,6 +287,21 @@ def edit_appliance(appliance_id):
         appliance=appliance,
         edit_mode=True
     )
+
+# ---------------------------------------------------------
+# Delete Appliance Document
+# ---------------------------------------------------------
+
+@bp.route("/appliance-document/<int:doc_id>/delete", methods=["POST"])
+def delete_appliance_document(doc_id):
+    doc = ApplianceDocument.query.get_or_404(doc_id)
+    appliance_id = doc.appliance_id
+    path = os.path.join("static", "uploads", doc.filepath)
+    if os.path.isfile(path):
+        os.remove(path)
+    db.session.delete(doc)
+    db.session.commit()
+    return redirect(url_for("main.appliance_detail", appliance_id=appliance_id))
 
 # ---------------------------------------------------------
 # Dispose Appliance
@@ -350,10 +370,9 @@ def delete_appliance(appliance_id):
         if os.path.isdir(repair_dir):
             shutil.rmtree(repair_dir)
 
-    if appliance.receipt_filepath:
-        receipt_dir = os.path.join("static", "uploads", "receipts", str(appliance.id))
-        if os.path.isdir(receipt_dir):
-            shutil.rmtree(receipt_dir)
+    receipt_dir = os.path.join("static", "uploads", "receipts", str(appliance.id))
+    if os.path.isdir(receipt_dir):
+        shutil.rmtree(receipt_dir)
 
     db.session.delete(appliance)
     db.session.commit()

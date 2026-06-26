@@ -418,7 +418,7 @@ def _check_permissions():
 def _check_uploads():
     """
     Compares files on disk under static/uploads/ against filepaths stored in
-    the database (TestPhoto, RepairPhoto, Appliance.receipt_filepath).
+    the database (TestPhoto, RepairPhoto, ApplianceDocument).
     Returns {'orphaned': [rel_paths], 'total_files': N, 'orphaned_size': bytes, 'error': str|None}
     """
     base = os.path.dirname(os.path.abspath(__file__))
@@ -439,7 +439,7 @@ def _check_uploads():
 
     # Collect all referenced filepaths from the database
     try:
-        from models import TestPhoto, RepairPhoto, Appliance
+        from models import TestPhoto, RepairPhoto, ApplianceDocument
         referenced = set()
         for row in db.session.query(TestPhoto.filepath).all():
             if row.filepath:
@@ -447,9 +447,9 @@ def _check_uploads():
         for row in db.session.query(RepairPhoto.filepath).all():
             if row.filepath:
                 referenced.add(row.filepath.replace(os.sep, '/'))
-        for row in db.session.query(Appliance.receipt_filepath).all():
-            if row.receipt_filepath:
-                referenced.add(row.receipt_filepath.replace(os.sep, '/'))
+        for row in db.session.query(ApplianceDocument.filepath).all():
+            if row.filepath:
+                referenced.add(row.filepath.replace(os.sep, '/'))
     except Exception as e:
         result['error'] = f'Could not query database: {e}'
         return result

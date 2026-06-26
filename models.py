@@ -42,7 +42,6 @@ class Appliance(db.Model):
     serial_number = db.Column(db.String(255))
     purchase_date = db.Column(db.Date)
     purchase_price = db.Column(db.Numeric(10, 2))
-    receipt_filepath = db.Column(db.String(255))
     created_at = db.Column(db.DateTime, server_default=db.func.now())
     disposed = db.Column(db.Boolean, default=False)
     disposal_date = db.Column(db.Date)
@@ -62,6 +61,7 @@ class Appliance(db.Model):
 
     tests = db.relationship("TestRecord", back_populates="appliance")
     repairs = db.relationship("RepairRecord", back_populates="appliance", cascade="all, delete")
+    documents = db.relationship("ApplianceDocument", back_populates="appliance", cascade="all, delete")
 
 
 # ---------------------------------------------------------
@@ -181,6 +181,20 @@ class RepairPhoto(db.Model):
     filepath = db.Column(db.String(255), nullable=False)
 
     repair = db.relationship("RepairRecord", back_populates="photos")
+
+
+# ---------------------------------------------------------
+# Appliance Document Table
+# ---------------------------------------------------------
+class ApplianceDocument(db.Model):
+    __tablename__ = "appliance_document"
+
+    id = db.Column(db.Integer, primary_key=True)
+    appliance_id = db.Column(db.Integer, db.ForeignKey("appliance.id"), nullable=False)
+    filename = db.Column(db.String(255), nullable=False)
+    filepath = db.Column(db.String(255), nullable=False)
+
+    appliance = db.relationship("Appliance", back_populates="documents")
 
 
 # ---------------------------------------------------------

@@ -44,17 +44,6 @@
             <tr><th>Purchase Date</th><td>{{ appliance.purchase_date.strftime('%d/%m/%Y') if appliance.purchase_date else '—' }}</td></tr>
             <tr><th>Purchase Price</th><td>{{ '$%.2f' % appliance.purchase_price if appliance.purchase_price else '—' }}</td></tr>
             <tr>
-                <th>Receipt</th>
-                <td>
-                    {% if appliance.receipt_filepath %}
-                        <a href="{{ url_for('static', filename='uploads/' + appliance.receipt_filepath) }}"
-                           target="_blank" class="btn btn-sm btn-outline-secondary">View Receipt</a>
-                    {% else %}
-                        —
-                    {% endif %}
-                </td>
-            </tr>
-            <tr>
                 <th>Record Created</th>
                 <td>{{ appliance.created_at.strftime('%d/%m/%Y %H:%M') if appliance.created_at else '—' }}</td>
             </tr>
@@ -85,6 +74,45 @@
             {% endif %}
             {% endif %}
         </table>
+    </div>
+</div>
+
+{# ── Documents ────────────────────────────────────────── #}
+<div class="card mb-4">
+    <div class="card-header"><strong>Documents</strong></div>
+    <div class="card-body">
+        {% if appliance.documents %}
+        <div class="row g-2">
+            {% for doc in appliance.documents %}
+            {% set ext = doc.filename.lower().rsplit('.', 1)[-1] if '.' in doc.filename else '' %}
+            <div class="col-6 col-md-3">
+                <a href="{{ url_for('static', filename='uploads/' + doc.filepath) }}" target="_blank">
+                    {% if ext in ('jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp') %}
+                    <img src="{{ url_for('static', filename='uploads/' + doc.filepath) }}"
+                         class="img-fluid rounded" style="object-fit: cover; height: 150px; width: 100%;"
+                         alt="{{ doc.filename }}">
+                    {% else %}
+                    <div class="border rounded d-flex flex-column align-items-center justify-content-center text-muted p-3"
+                         style="height:150px;">
+                        <i class="mdi mdi-file-outline" style="font-size:2.5rem;"></i>
+                        <small class="mt-1 text-truncate w-100 text-center">{{ doc.filename }}</small>
+                    </div>
+                    {% endif %}
+                </a>
+                <form method="post"
+                      action="{{ url_for('main.delete_appliance_document', doc_id=doc.id) }}"
+                      class="mt-1"
+                      onsubmit="return confirm('Delete {{ doc.filename }}?')">
+                    <button type="submit" class="btn btn-sm btn-outline-danger w-100">
+                        <i class="mdi mdi-delete-outline"></i> Delete
+                    </button>
+                </form>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">No documents attached.</p>
+        {% endif %}
     </div>
 </div>
 

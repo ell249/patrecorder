@@ -184,15 +184,13 @@
   </div>
 
   <div class="col-12">
-    <label class="form-label">Purchase Receipt</label>
-    {% if edit_mode and appliance.receipt_filepath %}
+    <label class="form-label">Documents</label>
+    {% if edit_mode and appliance.documents %}
     <div class="mb-2">
-      <a href="{{ url_for('static', filename='uploads/' + appliance.receipt_filepath) }}"
-         target="_blank" class="btn btn-sm btn-outline-secondary">View Current Receipt</a>
-      <small class="text-muted ms-2">Upload a new file to replace it.</small>
+      <small class="text-muted">{{ appliance.documents|length }} document(s) attached. Upload new files to add more.</small>
     </div>
     {% endif %}
-    <input type="file" name="receipt" class="form-control"
+    <input type="file" name="documents" class="form-control" multiple
            accept="image/*,application/pdf">
   </div>
 
