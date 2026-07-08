@@ -60,12 +60,13 @@
     <label class="form-label">
       Class Type
       <span data-bs-toggle="tooltip"
-            title="Class I: has a protective earth conductor. Class II: double or reinforced insulation — no earth required.">ⓘ</span>
+            title="Class I: has a protective earth conductor. Class II: double or reinforced insulation — no earth required. Battery/ELV: battery-operated or extra-low voltage — no mains supply, no re-test required after repair.">ⓘ</span>
     </label>
     <select name="class_type" class="form-select" required>
       <option value="" disabled selected>Select…</option>
-      <option value="CLASS I"  {% if edit_mode and appliance.class_type == 'CLASS I' %}selected{% endif %}>Class I — earthed</option>
-      <option value="CLASS II" {% if edit_mode and appliance.class_type == 'CLASS II' %}selected{% endif %}>Class II — double insulated</option>
+      <option value="CLASS I"      {% if edit_mode and appliance.class_type == 'CLASS I' %}selected{% endif %}>Class I — earthed</option>
+      <option value="CLASS II"     {% if edit_mode and appliance.class_type == 'CLASS II' %}selected{% endif %}>Class II — double insulated</option>
+      <option value="BATTERY_ELV"  {% if edit_mode and appliance.class_type == 'BATTERY_ELV' %}selected{% endif %}>Battery / ELV — no mains supply</option>
     </select>
   </div>
 

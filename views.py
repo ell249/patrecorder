@@ -74,10 +74,11 @@ def dashboard():
         .all()
     )
 
-    # Appliances with open (unlinked/unlocked) repair records
+    # Appliances with open (unlinked/unlocked) repair records — Battery/ELV excluded
     repaired_needs_test = (
         Appliance.query
         .filter(Appliance.disposed == False)
+        .filter(Appliance.class_type != 'BATTERY_ELV')
         .filter(Appliance.repairs.any(
             (RepairRecord.disposed == False) &
             (RepairRecord.locked_by_test_date == None)
@@ -468,9 +469,9 @@ def new_test(appliance_id):
             vi_guards=form.get("vi_guards"),
 
             # Electrical tests
-            earth_continuity_ohms="N/A" if appliance.class_type == "CLASS II" else (form.get("earth_continuity_ohms") or None),
+            earth_continuity_ohms="N/A" if appliance.class_type in ("CLASS II", "BATTERY_ELV") else (form.get("earth_continuity_ohms") or None),
             insulation_mohms=form.get("insulation_mohms") or None,
-            leakage_mA=form.get("leakage_mA") or None,
+            leakage_mA="N/A" if appliance.class_type == "BATTERY_ELV" else (form.get("leakage_mA") or None),
             polarity_pass=form.get("polarity_pass") or None,
 
             # 5761
@@ -541,13 +542,18 @@ def new_test(appliance_id):
         appliance.class_type or "ANY",
         appliance.supply_type or "ANY"
     )
-    unlocked_repairs = (
-        RepairRecord.query
-        .filter_by(appliance_id=appliance.id, disposed=False)
-        .filter(RepairRecord.locked_by_test_date == None)
-        .order_by(RepairRecord.repair_date.desc())
-        .all()
-    )
+    # Battery/ELV appliances don't require post-repair tests, so don't surface unlocked repairs
+    # for the purpose of auto-selecting AS/NZS 5762.
+    if appliance.class_type == "BATTERY_ELV":
+        unlocked_repairs = []
+    else:
+        unlocked_repairs = (
+            RepairRecord.query
+            .filter_by(appliance_id=appliance.id, disposed=False)
+            .filter(RepairRecord.locked_by_test_date == None)
+            .order_by(RepairRecord.repair_date.desc())
+            .all()
+        )
 
     return render_template(
         "test_form.html",

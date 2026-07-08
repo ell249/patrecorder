@@ -8,6 +8,16 @@
     for {{ appliance.asset_number }}
 </h3>
 
+{% if appliance.class_type == 'BATTERY_ELV' %}
+<div class="alert alert-info d-flex align-items-center gap-3 mb-4" role="alert">
+    <span style="font-size:1.6rem;">🔋</span>
+    <div>
+        <strong>Battery / ELV appliance:</strong> Repair work must be performed by a competent person
+        in accordance with WHS legislation. A post-repair electrical safety test is not required for
+        battery or extra-low voltage appliances.
+    </div>
+</div>
+{% else %}
 <div class="alert alert-warning d-flex align-items-center gap-3 mb-4" role="alert">
     <span style="font-size:1.6rem;">⚠️</span>
     <div>
@@ -19,6 +29,7 @@
         </a>
     </div>
 </div>
+{% endif %}
 
 <form method="post" enctype="multipart/form-data" class="row g-3">
 

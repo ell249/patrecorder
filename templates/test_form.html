@@ -277,10 +277,10 @@ AS/NZS 5762: Testing of electrical equipment after repair.">
                 ⓘ
             </span>
         </label>
-        {% if appliance.class_type == "CLASS II" %}
+        {% if appliance.class_type in ("CLASS II", "BATTERY_ELV") %}
         <input type="text" name="earth_continuity_ohms" class="form-control"
                value="N/A" readonly>
-        <small class="text-muted">Not applicable for Class II appliances (double or reinforced insulation).</small>
+        <small class="text-muted">Not applicable for {{ 'Class II' if appliance.class_type == 'CLASS II' else 'Battery / ELV' }} appliances.</small>
         {% else %}
         <div class="input-group">
             <input type="text" name="earth_continuity_ohms" class="form-control">
@@ -317,6 +317,10 @@ AS/NZS 5762: Testing of electrical equipment after repair.">
                 ⓘ
             </span>
         </label>
+        {% if appliance.class_type == "BATTERY_ELV" %}
+        <input type="text" name="leakage_mA" class="form-control" value="N/A" readonly>
+        <small class="text-muted">Not applicable for Battery / ELV appliances.</small>
+        {% else %}
         {% if appliance.class_type == "CLASS II" %}{% set leakage_limit = "1" %}{% else %}{% set leakage_limit = "5" %}{% endif %}
         <div class="input-group">
             <input type="text" name="leakage_mA" class="form-control">
@@ -330,6 +334,7 @@ AS/NZS 5762: Testing of electrical equipment after repair.">
             <small class="text-muted">PASS: ≤ 1 mA (Class II appliance).</small>
         {% else %}
             <small class="text-muted">PASS: ≤ 5 mA (default limit).</small>
+        {% endif %}
         {% endif %}
     </div>
 
