@@ -433,7 +433,7 @@ def new_test(appliance_id):
 
         test_date = datetime.strptime(form["test_date"], "%Y-%m-%d")
         interval_days = int(form["retest_interval"])
-        next_due = test_date + timedelta(days=interval_days)
+        next_due = (test_date + timedelta(days=interval_days)) if interval_days else None
 
         tester_id = int(form["tester_id"])
         tester = Tester.query.get(tester_id)
@@ -452,7 +452,7 @@ def new_test(appliance_id):
             test_type=form["test_type"],
             test_standard=form["test_standard"],
             tag_number=form.get("tag_number").strip() or _auto_tag(appliance),
-            next_test_due=next_due.date(),
+            next_test_due=next_due.date() if next_due else None,
             overall_result=form["overall_result"],
             comments=form.get("comments"),
 
@@ -468,11 +468,11 @@ def new_test(appliance_id):
             vi_strain=form.get("vi_strain"),
             vi_guards=form.get("vi_guards"),
 
-            # Electrical tests
+            # Electrical tests — all N/A for Battery/ELV (section is hidden in the form)
             earth_continuity_ohms="N/A" if appliance.class_type in ("CLASS II", "BATTERY_ELV") else (form.get("earth_continuity_ohms") or None),
-            insulation_mohms=form.get("insulation_mohms") or None,
+            insulation_mohms="N/A" if appliance.class_type == "BATTERY_ELV" else (form.get("insulation_mohms") or None),
             leakage_mA="N/A" if appliance.class_type == "BATTERY_ELV" else (form.get("leakage_mA") or None),
-            polarity_pass=form.get("polarity_pass") or None,
+            polarity_pass="N/A" if appliance.class_type == "BATTERY_ELV" else (form.get("polarity_pass") or None),
 
             # 5761
             condition_assessment=form.get("condition_assessment"),
@@ -833,7 +833,7 @@ def test_pdf(test_id):
 
     if test.test_standard == "5761":
         template = "pdf/test_5761.html"
-    elif test.test_standard == "5762":
+    elif test.test_standard in ("5762", "VISUAL"):
         template = "pdf/test_5762.html"
     else:
         template = "pdf/test_3760.html"

@@ -5,7 +5,7 @@ from flask_migrate import Migrate
 from sqlalchemy.exc import OperationalError, ProgrammingError
 from werkzeug.middleware.proxy_fix import ProxyFix
 from config import Config
-from utils import format_standard
+from utils import format_standard, format_class_type
 
 db = SQLAlchemy()
 
@@ -52,6 +52,7 @@ def create_app():
     # Register Jinja Filters
     # ---------------------------------------------------------
     app.jinja_env.filters["std"] = format_standard
+    app.jinja_env.filters["class_label"] = format_class_type
 
     # ---------------------------------------------------------
     # Register Blueprints (setup first so its before_app_request fires)

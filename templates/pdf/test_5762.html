@@ -14,7 +14,7 @@ th { background: #eee; }
 </head>
 <body>
 
-<h2>{{ test.test_standard | std }} Repaired Appliance Test Report</h2>
+<h2>{{ test.test_standard | std }} {% if test.test_standard != 'VISUAL' %}Repaired Appliance {% endif %}Test Report</h2>
 <img src="data:image/png;base64,{{ qr_code }}" class="qr">
 
 <h3>Appliance Information</h3>
@@ -23,7 +23,7 @@ th { background: #eee; }
 <tr><th>Description</th><td>{{ appliance.description }}</td></tr>
 <tr><th>Make / Model</th><td>{{ appliance.make_model }}</td></tr>
 <tr><th>Location</th><td>{{ appliance.location }}</td></tr>
-<tr><th>Class Type</th><td>{{ appliance.class_type }}</td></tr>
+<tr><th>Class Type</th><td>{{ appliance.class_type | class_label }}</td></tr>
 <tr><th>Appliance Type</th><td>{{ appliance.supply_type }}</td></tr>
 </table>
 
@@ -34,6 +34,7 @@ th { background: #eee; }
 <tr><th>Phone</th><td>{{ tester.phone_number or 'N/A' }}</td></tr>
 </table>
 
+{% if test.test_standard != 'VISUAL' %}
 <h3>Verified Repair Records</h3>
 {% if test.linked_repairs %}
 <table>
@@ -50,6 +51,7 @@ th { background: #eee; }
 </table>
 {% else %}
 <p>No repair records linked.</p>
+{% endif %}
 {% endif %}
 
 <h3>Functional Tests</h3>
@@ -92,17 +94,18 @@ th { background: #eee; }
 <h3>Visual Inspection</h3>
 <table>
 <tr><th>Inspection Item</th><th>Result</th></tr>
-<tr><td>Plug condition OK</td><td>{{ 'PASS' if test.vi_plug else 'FAIL' }}</td></tr>
-<tr><td>Cord condition OK</td><td>{{ 'PASS' if test.vi_cord else 'FAIL' }}</td></tr>
+<tr><td>Plug condition OK</td><td>{{ 'PASS' if test.vi_plug is sameas True else ('FAIL' if test.vi_plug is sameas False else 'N/A') }}</td></tr>
+<tr><td>Cord condition OK</td><td>{{ 'PASS' if test.vi_cord is sameas True else ('FAIL' if test.vi_cord is sameas False else 'N/A') }}</td></tr>
 <tr><td>No damage to casing</td><td>{{ test.vi_casing or '—' }}</td></tr>
-<tr><td>No signs of overheating</td><td>{{ 'PASS' if test.vi_overheat else 'FAIL' }}</td></tr>
+<tr><td>No signs of overheating</td><td>{{ 'PASS' if test.vi_overheat is sameas True else ('FAIL' if test.vi_overheat is sameas False else 'N/A') }}</td></tr>
 <tr><td>Rating label intact</td><td>{{ test.vi_label or '—' }}</td></tr>
-<tr><td>No exposed conductors</td><td>{{ 'PASS' if test.vi_exposed else 'FAIL' }}</td></tr>
+<tr><td>No exposed conductors</td><td>{{ 'PASS' if test.vi_exposed is sameas True else ('FAIL' if test.vi_exposed is sameas False else 'N/A') }}</td></tr>
 <tr><td>Unsafe previous repairs</td><td>{{ test.vi_repairs }}</td></tr>
 <tr><td>Cable strain relief</td><td>{{ test.vi_strain }}</td></tr>
 <tr><td>Safety guards working</td><td>{{ test.vi_guards }}</td></tr>
 </table>
 
+{% if test.test_standard != 'VISUAL' %}
 <h3>Electrical Tests</h3>
 <table>
 <tr><th>Test</th><th>Value</th></tr>
@@ -111,6 +114,7 @@ th { background: #eee; }
 <tr><td>Leakage Current (mA)</td><td>{{ test.leakage_mA or 'N/A' }}</td></tr>
 <tr><td>Polarity</td><td>{{ test.polarity_pass or '—' }}</td></tr>
 </table>
+{% endif %}
 
 <h3>Comments</h3>
 <p>{{ test.comments or 'None' }}</p>

@@ -1,6 +1,13 @@
 {% extends "base.html" %}
 {% block title %}Test Details{% endblock %}
 
+{% macro result_badge(val) %}
+  {%- if val == 'PASS' %}<span class="badge bg-success">PASS</span>
+  {%- elif val == 'FAIL' %}<span class="badge bg-danger">FAIL</span>
+  {%- elif val == 'N/A' %}<span class="badge bg-secondary">N/A</span>
+  {%- else %}{{ val or '—' }}{%- endif %}
+{% endmacro %}
+
 {% block content %}
 
 <h3 class="mb-3">Test Record — <a href="{{ url_for('main.appliance_detail', appliance_id=test.appliance.id) }}">{{ test.appliance.asset_number }}</a></h3>
@@ -29,18 +36,18 @@
 
     <h5 class="mt-4">Visual Inspection</h5>
     <table class="table table-bordered">
-        <tr><th>Plug Condition</th><td>{{ 'PASS' if test.vi_plug else 'FAIL' }}</td></tr>
-        <tr><th>Cord Condition</th><td>{{ 'PASS' if test.vi_cord else 'FAIL' }}</td></tr>
-        <tr><th>Casing Condition</th><td>{{ test.vi_casing or '—' }}</td></tr>
-        <tr><th>Overheating</th><td>{{ 'PASS' if test.vi_overheat else 'FAIL' }}</td></tr>
-        <tr><th>Rating Label</th><td>{{ test.vi_label or '—' }}</td></tr>
-        <tr><th>Exposed Conductors</th><td>{{ 'PASS' if test.vi_exposed else 'FAIL' }}</td></tr>
-
-        <tr><th>Unsafe Repairs</th><td>{{ test.vi_repairs }}</td></tr>
-        <tr><th>Strain Relief</th><td>{{ test.vi_strain }}</td></tr>
-        <tr><th>Safety Guards</th><td>{{ test.vi_guards }}</td></tr>
+        <tr><th>Plug Condition</th><td>{{ result_badge('PASS' if test.vi_plug is sameas True else ('FAIL' if test.vi_plug is sameas False else 'N/A')) }}</td></tr>
+        <tr><th>Cord Condition</th><td>{{ result_badge('PASS' if test.vi_cord is sameas True else ('FAIL' if test.vi_cord is sameas False else 'N/A')) }}</td></tr>
+        <tr><th>Casing Condition</th><td>{{ result_badge(test.vi_casing) }}</td></tr>
+        <tr><th>Overheating</th><td>{{ result_badge('PASS' if test.vi_overheat is sameas True else ('FAIL' if test.vi_overheat is sameas False else 'N/A')) }}</td></tr>
+        <tr><th>Rating Label</th><td>{{ result_badge(test.vi_label) }}</td></tr>
+        <tr><th>Exposed Conductors</th><td>{{ result_badge('PASS' if test.vi_exposed is sameas True else ('FAIL' if test.vi_exposed is sameas False else 'N/A')) }}</td></tr>
+        <tr><th>Unsafe Repairs</th><td>{{ result_badge(test.vi_repairs) }}</td></tr>
+        <tr><th>Strain Relief</th><td>{{ result_badge(test.vi_strain) }}</td></tr>
+        <tr><th>Safety Guards</th><td>{{ result_badge(test.vi_guards) }}</td></tr>
     </table>
 
+    {% if test.test_standard != 'VISUAL' %}
     <h5 class="mt-4">Electrical Tests</h5>
     <table class="table table-bordered">
         <tr><th>Earth Continuity (Ω)</th><td>{{ test.earth_continuity_ohms or 'N/A' }}</td></tr>
@@ -48,6 +55,7 @@
         <tr><th>Leakage Current (mA)</th><td>{{ test.leakage_mA or 'N/A' }}</td></tr>
         <tr><th>Polarity</th><td>{{ test.polarity_pass or '—' }}</td></tr>
     </table>
+    {% endif %}
 
     {% if test.test_standard == "5761" %}
     <h5 class="mt-4">5761 Additional Fields</h5>
@@ -59,10 +67,10 @@
     </table>
     {% endif %}
 
-    {% if test.test_standard == "5762" %}
-    <h5 class="mt-4">AS/NZS 5762 — Post-Repair Verification</h5>
+    {% if test.test_standard in ("5762", "VISUAL") %}
+    <h5 class="mt-4">{% if test.test_standard == "5762" %}AS/NZS 5762 — Post-Repair Verification{% else %}Functional Tests{% endif %}</h5>
 
-    {% if test.linked_repairs %}
+    {% if test.test_standard == "5762" and test.linked_repairs %}
     <h6 class="mt-3">Verified Repair Records</h6>
     <ul>
         {% for r in test.linked_repairs %}

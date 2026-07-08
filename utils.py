@@ -9,13 +9,19 @@ from qrcode.image.pil import PilImage
 # Format Test Standard (3760 → AS/NZS 3760)
 # ---------------------------------------------------------
 def format_standard(code: str) -> str:
-    """
-    Converts a numeric standard code (e.g., '3760') into
-    a fully formatted standard string: 'AS/NZS 3760'.
-    """
     if not code:
         return ""
+    if code == "VISUAL":
+        return "Visual & Functional"
     return f"AS/NZS {code}"
+
+
+def format_class_type(code: str) -> str:
+    return {
+        'CLASS I': 'Class I',
+        'CLASS II': 'Class II',
+        'BATTERY_ELV': 'Battery / ELV',
+    }.get(code, code or '—')
 
 
 # ---------------------------------------------------------

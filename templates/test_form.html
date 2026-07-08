@@ -57,27 +57,39 @@
     <div class="col-md-4">
         <label class="form-label">
             Test Standard
+            {% if appliance.class_type != 'BATTERY_ELV' %}
             <span data-bs-toggle="tooltip"
                   title="AS/NZS 3760: In-service safety inspection and testing of electrical equipment.
 AS/NZS 5761: Testing of second-hand electrical equipment prior to sale.
 AS/NZS 5762: Testing of electrical equipment after repair.">
                 ⓘ
             </span>
+            {% endif %}
         </label>
+        {% if appliance.class_type == 'BATTERY_ELV' %}
+        <input type="text" class="form-control" value="Visual &amp; Functional" readonly>
+        <input type="hidden" name="test_standard" value="VISUAL">
+        {% else %}
         <select name="test_standard" id="test_standard" class="form-select" required>
             <option value="3760" {% if not unlocked_repairs %}selected{% endif %}>AS/NZS 3760</option>
             <option value="5761">AS/NZS 5761</option>
             <option value="5762" {% if unlocked_repairs %}selected{% endif %}>AS/NZS 5762</option>
         </select>
+        {% endif %}
     </div>
 
     <!-- Hidden integer field for retest interval -->
+    {% if appliance.class_type == 'BATTERY_ELV' %}
+    <input type="hidden" name="retest_interval" value="0">
+    {% else %}
     <input type="hidden" name="retest_interval" id="retest_interval" required>
+    {% endif %}
 
     <!-- Retest Interval Selector -->
     <div class="col-md-6">
         <label class="form-label">
             Recommended Retest Interval
+            {% if appliance.class_type != 'BATTERY_ELV' %}
             <span data-bs-toggle="tooltip"
                   title="Intervals follow AS/NZS 3760 guidance.
 3 months (Red): High‑risk environments such as construction and workshops.
@@ -87,7 +99,11 @@ AS/NZS 5762: Testing of electrical equipment after repair.">
 5 years (White): Fixed or rarely moved equipment in controlled environments.">
                 ⓘ
             </span>
+            {% endif %}
         </label>
+        {% if appliance.class_type == 'BATTERY_ELV' %}
+        <input type="text" class="form-control" value="N/A" readonly>
+        {% else %}
         <select id="retest_selector" class="form-select" required>
             <option value="" selected disabled>Select interval...</option>
             <option value="90">3 months – High‑risk environments</option>
@@ -96,11 +112,16 @@ AS/NZS 5762: Testing of electrical equipment after repair.">
             <option value="730">24 months – Residential‑type</option>
             <option value="1825">5 years – Fixed equipment</option>
         </select>
+        {% endif %}
     </div>
 
     <!-- Test Type (DROPDOWN) -->
     <div class="col-md-6">
         <label class="form-label">Test Type</label>
+        {% if appliance.class_type == 'BATTERY_ELV' %}
+        <input type="text" class="form-control" value="N/A" readonly>
+        <input type="hidden" name="test_type" value="N/A">
+        {% else %}
         <select name="test_type" class="form-select" required>
             <option value="" disabled selected>Select test type...</option>
             <option value="Lead">Lead</option>
@@ -108,6 +129,7 @@ AS/NZS 5762: Testing of electrical equipment after repair.">
             <option value="Lead+Appliance Leakage">Lead + Appliance Leakage</option>
             <option value="Lead+RCD">Lead + RCD</option>
         </select>
+        {% endif %}
     </div>
 
     <hr class="mt-4">
@@ -130,6 +152,7 @@ AS/NZS 5762: Testing of electrical equipment after repair.">
                 <option value="" selected disabled>Select...</option>
                 <option value="PASS">PASS</option>
                 <option value="FAIL">FAIL</option>
+                {% if appliance.class_type == 'BATTERY_ELV' %}<option value="N/A">N/A</option>{% endif %}
             </select>
         </div>
 
@@ -145,6 +168,7 @@ AS/NZS 5762: Testing of electrical equipment after repair.">
                 <option value="" selected disabled>Select...</option>
                 <option value="PASS">PASS</option>
                 <option value="FAIL">FAIL</option>
+                {% if appliance.class_type == 'BATTERY_ELV' %}<option value="N/A">N/A</option>{% endif %}
             </select>
         </div>
 
@@ -266,6 +290,7 @@ AS/NZS 5762: Testing of electrical equipment after repair.">
 
     <hr class="mt-4">
 
+    {% if appliance.class_type != 'BATTERY_ELV' %}
     <!-- ELECTRICAL TESTS -->
     <h4 class="mt-3">Electrical Tests</h4>
 
@@ -277,10 +302,10 @@ AS/NZS 5762: Testing of electrical equipment after repair.">
                 ⓘ
             </span>
         </label>
-        {% if appliance.class_type in ("CLASS II", "BATTERY_ELV") %}
+        {% if appliance.class_type == "CLASS II" %}
         <input type="text" name="earth_continuity_ohms" class="form-control"
                value="N/A" readonly>
-        <small class="text-muted">Not applicable for {{ 'Class II' if appliance.class_type == 'CLASS II' else 'Battery / ELV' }} appliances.</small>
+        <small class="text-muted">Not applicable for Class II appliances (double or reinforced insulation).</small>
         {% else %}
         <div class="input-group">
             <input type="text" name="earth_continuity_ohms" class="form-control">
@@ -317,10 +342,6 @@ AS/NZS 5762: Testing of electrical equipment after repair.">
                 ⓘ
             </span>
         </label>
-        {% if appliance.class_type == "BATTERY_ELV" %}
-        <input type="text" name="leakage_mA" class="form-control" value="N/A" readonly>
-        <small class="text-muted">Not applicable for Battery / ELV appliances.</small>
-        {% else %}
         {% if appliance.class_type == "CLASS II" %}{% set leakage_limit = "1" %}{% else %}{% set leakage_limit = "5" %}{% endif %}
         <div class="input-group">
             <input type="text" name="leakage_mA" class="form-control">
@@ -334,7 +355,6 @@ AS/NZS 5762: Testing of electrical equipment after repair.">
             <small class="text-muted">PASS: ≤ 1 mA (Class II appliance).</small>
         {% else %}
             <small class="text-muted">PASS: ≤ 5 mA (default limit).</small>
-        {% endif %}
         {% endif %}
     </div>
 
@@ -356,6 +376,7 @@ AS/NZS 5762: Testing of electrical equipment after repair.">
     </div>
 
     <hr class="mt-4">
+    {% endif %}
 
      <!-- Additional tests -->
     <div id="fields_5761" class="col-12 mt-3" style="display:none;">
@@ -412,6 +433,7 @@ AS/NZS 5762: Testing of electrical equipment after repair.">
         <hr class="mt-4">
     </div>
 
+    {% if appliance.class_type != 'BATTERY_ELV' %}
     <div id="fields_5762" class="col-12 mt-3" style="display:none;">
         <h4 class="mt-3">Additional Requirements for AS/NZS 5762</h4>
         <div class="row g-3">
@@ -516,6 +538,41 @@ AS/NZS 5762: Testing of electrical equipment after repair.">
         </div>
         <hr class="mt-4">
     </div>
+    {% endif %}
+
+    {% if appliance.class_type == 'BATTERY_ELV' %}
+    <!-- Functional Tests — always shown for Battery/ELV -->
+    <h4 class="mt-3">Functional Tests</h4>
+    <div class="col-12">
+        <table class="table table-sm table-bordered align-middle mb-0">
+            <thead>
+                <tr>
+                    <th style="width:2.5rem">#</th>
+                    <th>Test Method / Description</th>
+                    <th style="width:9rem">Result</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for n in [1,2,3,4,5] %}
+                <tr>
+                    <td class="text-center fw-bold">{{ n }}</td>
+                    <td><input type="text" name="func_test_{{ n }}_method" class="form-control form-control-sm"
+                               placeholder="Describe the functional test performed…"></td>
+                    <td>
+                        <select name="func_test_{{ n }}_result" class="form-select form-select-sm func-test-result">
+                            <option value="">—</option>
+                            <option value="PASS">PASS</option>
+                            <option value="FAIL">FAIL</option>
+                        </select>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <small class="text-muted">Leave rows blank for tests not performed.</small>
+    </div>
+    <hr class="mt-4">
+    {% endif %}
 
     <!-- Overall Result -->
     <h4 class="mt-3">Overall Assessment</h4>
