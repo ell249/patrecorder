@@ -70,7 +70,7 @@
     {% if test.test_standard in ("5762", "VISUAL") %}
     <h5 class="mt-4">{% if test.test_standard == "5762" %}AS/NZS 5762 — Post-Repair Verification{% else %}Functional Tests{% endif %}</h5>
 
-    {% if test.test_standard == "5762" and test.linked_repairs %}
+    {% if test.linked_repairs %}
     <h6 class="mt-3">Verified Repair Records</h6>
     <ul>
         {% for r in test.linked_repairs %}

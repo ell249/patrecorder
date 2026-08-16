@@ -541,7 +541,23 @@ AS/NZS 5762: Testing of electrical equipment after repair.">
     {% endif %}
 
     {% if appliance.class_type == 'BATTERY_ELV' %}
-    <!-- Functional Tests — always shown for Battery/ELV -->
+    <!-- Linked Repair Records + Functional Tests — always shown for Battery/ELV -->
+    <div class="col-12 mb-3">
+        <label class="form-label fw-semibold">Linked Repair Record</label>
+        {% if unlocked_repairs %}
+        <select name="linked_repair_ids" id="linkedRepairsSelect"
+                class="form-select" multiple size="{{ [unlocked_repairs|length, 4]|min }}">
+            {% for r in unlocked_repairs %}
+            <option value="{{ r.id }}">
+                {{ r.repair_date.strftime('%d/%m/%Y') }} — {{ r.description[:100] }}{% if r.repaired_by %} ({{ r.repaired_by }}){% endif %}
+            </option>
+            {% endfor %}
+        </select>
+        <small class="text-muted">Hold Ctrl / Cmd to select multiple repairs being verified by this test. Leave unselected if this test is not related to a repair (N/A).</small>
+        {% else %}
+        <p class="text-muted mb-0">No unlocked repair records found for this appliance.</p>
+        {% endif %}
+    </div>
     <h4 class="mt-3">Functional Tests</h4>
     <div class="col-12">
         <table class="table table-sm table-bordered align-middle mb-0">

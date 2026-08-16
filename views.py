@@ -74,11 +74,10 @@ def dashboard():
         .all()
     )
 
-    # Appliances with open (unlinked/unlocked) repair records — Battery/ELV excluded
+    # Appliances with open (unlinked/unlocked) repair records
     repaired_needs_test = (
         Appliance.query
         .filter(Appliance.disposed == False)
-        .filter(Appliance.class_type != 'BATTERY_ELV')
         .filter(Appliance.repairs.any(
             (RepairRecord.disposed == False) &
             (RepairRecord.locked_by_test_date == None)
@@ -542,18 +541,13 @@ def new_test(appliance_id):
         appliance.class_type or "ANY",
         appliance.supply_type or "ANY"
     )
-    # Battery/ELV appliances don't require post-repair tests, so don't surface unlocked repairs
-    # for the purpose of auto-selecting AS/NZS 5762.
-    if appliance.class_type == "BATTERY_ELV":
-        unlocked_repairs = []
-    else:
-        unlocked_repairs = (
-            RepairRecord.query
-            .filter_by(appliance_id=appliance.id, disposed=False)
-            .filter(RepairRecord.locked_by_test_date == None)
-            .order_by(RepairRecord.repair_date.desc())
-            .all()
-        )
+    unlocked_repairs = (
+        RepairRecord.query
+        .filter_by(appliance_id=appliance.id, disposed=False)
+        .filter(RepairRecord.locked_by_test_date == None)
+        .order_by(RepairRecord.repair_date.desc())
+        .all()
+    )
 
     return render_template(
         "test_form.html",

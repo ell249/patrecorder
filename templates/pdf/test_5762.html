@@ -34,7 +34,6 @@ th { background: #eee; }
 <tr><th>Phone</th><td>{{ tester.phone_number or 'N/A' }}</td></tr>
 </table>
 
-{% if test.test_standard != 'VISUAL' %}
 <h3>Verified Repair Records</h3>
 {% if test.linked_repairs %}
 <table>
@@ -51,7 +50,6 @@ th { background: #eee; }
 </table>
 {% else %}
 <p>No repair records linked.</p>
-{% endif %}
 {% endif %}
 
 <h3>Functional Tests</h3>
