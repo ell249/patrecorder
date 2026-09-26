@@ -43,6 +43,19 @@
         </div>
     </div>
 
+    <!-- Switchboards Needing RCD Testing -->
+    <div class="col-md-4">
+        <div class="card mb-3" style="background-color:#fff3cd; border-color:#ffe69c; color:#664d03;">
+            <div class="card-body">
+                <h5 class="card-title">Switchboards Needing RCD Testing
+                    <span data-bs-toggle="tooltip"
+                          title="Per AS/NZS 3760:2022, fixed RCDs require a push-button test every 6 months, plus a trip-time test by a competent person every 12 months (hostile/industrial environments) or 24 months (non-hostile/office environments).">ⓘ</span>
+                </h5>
+                <p class="card-text display-6">{{ switchboard_summaries|length }}</p>
+            </div>
+        </div>
+    </div>
+
 </div>
 
 {% if nts_not_yet_due %}
@@ -68,6 +81,45 @@
         </tbody>
     </table>
 </div>
+{% endif %}
+
+{% if switchboard_summaries %}
+<h4 class="mt-4">Switchboards Needing RCD Testing</h4>
+<p class="text-muted">
+    Fixed RCDs require a push-button test every 6 months, plus a trip-time test by a competent
+    person every 12 months (hostile/industrial environments) or 24 months (non-hostile/office
+    environments) per AS/NZS 3760:2022.
+</p>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Switchboard</th>
+            <th>Location</th>
+            <th>RCDs</th>
+            <th>Never Tested</th>
+            <th>Overdue</th>
+            <th>Due Soon (30 days)</th>
+            <th class="text-end">Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for row in switchboard_summaries %}
+        <tr>
+            <td><a href="{{ url_for('main.switchboard_detail', switchboard_id=row.switchboard.id) }}">{{ row.switchboard.name }}</a></td>
+            <td>{{ row.switchboard.location or '—' }}</td>
+            <td>{{ row.rcd_count }}</td>
+            <td>{% if row.never_tested %}<span class="badge bg-danger">{{ row.never_tested }}</span>{% else %}—{% endif %}</td>
+            <td>{% if row.overdue %}<span class="badge bg-danger">{{ row.overdue }}</span>{% else %}—{% endif %}</td>
+            <td>{% if row.due_soon %}<span class="badge bg-warning text-dark">{{ row.due_soon }}</span>{% else %}—{% endif %}</td>
+            <td class="text-end">
+                <a href="{{ url_for('main.switchboard_detail', switchboard_id=row.switchboard.id) }}"
+                   class="btn btn-sm btn-primary">View</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
 {% endif %}
 
 <!-- Appliances Due or Never Tested -->

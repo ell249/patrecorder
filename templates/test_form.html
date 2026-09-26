@@ -3,8 +3,104 @@
 
 {% block content %}
 
+{% macro rcd_fields(start_visible, editable_type=True, fixed_type=None, fixed_waveform=None) %}
+<h4 class="mt-3">RCD Test</h4>
+<div class="row g-3 rcd-fields-row" {% if not editable_type %}data-rcd-type="{{ fixed_type or '' }}"{% endif %}>
+    {% if editable_type %}
+    <div class="col-md-4">
+        <label class="form-label">RCD Type</label>
+        <select name="rcd_type" class="form-select rcd-field" {% if not start_visible %}disabled{% endif %} required>
+            <option value="" selected disabled>Select type...</option>
+            <option value="Type I">Type I (10 mA)</option>
+            <option value="Type II">Type II (30 mA)</option>
+        </select>
+    </div>
+    <div class="col-md-4">
+        <label class="form-label">
+            RCD Waveform
+            <span data-bs-toggle="tooltip" title="IEC classification — informational only, does not affect PASS/FAIL.">ⓘ</span>
+        </label>
+        <select name="rcd_waveform" class="form-select rcd-field" {% if not start_visible %}disabled{% endif %}>
+            <option value="" selected disabled>Select waveform...</option>
+            <option value="AC">AC</option>
+            <option value="A">A</option>
+            <option value="B">B</option>
+            <option value="F">F</option>
+        </select>
+    </div>
+    {% else %}
+    <div class="col-md-4">
+        <label class="form-label">
+            RCD Type
+            <span data-bs-toggle="tooltip" title="Set on the RCD's appliance record — edit the appliance to change it.">ⓘ</span>
+        </label>
+        <input type="text" class="form-control" value="{{ fixed_type or '—' }}" readonly>
+    </div>
+    <div class="col-md-4">
+        <label class="form-label">RCD Waveform</label>
+        <input type="text" class="form-control" value="{{ fixed_waveform or '—' }}" readonly>
+    </div>
+    {% endif %}
+    <div class="col-md-4">
+        <label class="form-label">RCD Rating</label>
+        <input type="text" class="form-control rcd-rating-display" readonly>
+    </div>
+    <div class="col-md-4">
+        <label class="form-label">Test Method</label>
+        <select name="rcd_test_method" class="form-select rcd-field rcd-method" {% if not start_visible %}disabled{% endif %} required>
+            <option value="" selected disabled>Select method...</option>
+            <option value="Push Button">Push Button</option>
+            <option value="Trip Time">Trip Time</option>
+        </select>
+    </div>
+    <div class="col-md-4 rcd-pushbutton-block" style="display:none;">
+        <label class="form-label">Push Button Test Result</label>
+        <select name="rcd_push_button_result" class="form-select rcd-field" disabled required>
+            <option value="" selected disabled>Select...</option>
+            <option value="PASS">PASS</option>
+            <option value="FAIL">FAIL</option>
+        </select>
+    </div>
+    <div class="col-12 rcd-triptime-block" style="display:none;">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">Trip Time @ 0° (ms)</label>
+                <input type="number" min="0" step="1" name="rcd_trip_time_0deg_ms"
+                       class="form-control rcd-field rcd-triptime-input" data-orientation="0deg" disabled required>
+                <small class="text-muted rcd-result-hint">&nbsp;</small>
+                <select class="d-none rcd-computed-result" data-orientation="0deg">
+                    <option value=""></option><option value="PASS">PASS</option><option value="FAIL">FAIL</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Trip Time @ 180° (ms)</label>
+                <input type="number" min="0" step="1" name="rcd_trip_time_180deg_ms"
+                       class="form-control rcd-field rcd-triptime-input" data-orientation="180deg" disabled required>
+                <small class="text-muted rcd-result-hint">&nbsp;</small>
+                <select class="d-none rcd-computed-result" data-orientation="180deg">
+                    <option value=""></option><option value="PASS">PASS</option><option value="FAIL">FAIL</option>
+                </select>
+            </div>
+        </div>
+    </div>
+</div>
+{% endmacro %}
+
 <h3 class="mb-4">New Test for {{ appliance.asset_number }}</h3>
 
+{% if appliance.class_type == 'FIXED_RCD' %}
+<div class="alert alert-warning d-flex align-items-center gap-3 mb-4" role="alert">
+    <span style="font-size:1.6rem;">⚠️</span>
+    <div>
+        <strong>Before you begin:</strong> Testing a fixed RCD at a switchboard must be performed by a competent
+        person in accordance with AS/NZS 3760 Appendix B, and switchboard access beyond an external test button
+        may require a licensed electrical worker under applicable WHS legislation.
+        <a href="{{ url_for('static', filename='swms_switchboard_rcd.html') }}" target="_blank" class="alert-link ms-1">
+            Read the Safe Work Method Statement (SWMS) &rarr;
+        </a>
+    </div>
+</div>
+{% else %}
 <div class="alert alert-warning d-flex align-items-center gap-3 mb-4" role="alert">
     <span style="font-size:1.6rem;">⚠️</span>
     <div>
@@ -15,6 +111,7 @@
         </a>
     </div>
 </div>
+{% endif %}
 
 <form method="post" enctype="multipart/form-data" class="row g-3" id="testForm">
 
@@ -57,7 +154,7 @@
     <div class="col-md-4">
         <label class="form-label">
             Test Standard
-            {% if appliance.class_type != 'BATTERY_ELV' %}
+            {% if appliance.class_type not in ('BATTERY_ELV', 'FIXED_RCD') %}
             <span data-bs-toggle="tooltip"
                   title="AS/NZS 3760: In-service safety inspection and testing of electrical equipment.
 AS/NZS 5761: Testing of second-hand electrical equipment prior to sale.
@@ -69,6 +166,9 @@ AS/NZS 5762: Testing of electrical equipment after repair.">
         {% if appliance.class_type == 'BATTERY_ELV' %}
         <input type="text" class="form-control" value="Visual &amp; Functional" readonly>
         <input type="hidden" name="test_standard" value="VISUAL">
+        {% elif appliance.class_type == 'FIXED_RCD' %}
+        <input type="text" class="form-control" value="Fixed RCD" readonly>
+        <input type="hidden" name="test_standard" value="FIXED_RCD">
         {% else %}
         <select name="test_standard" id="test_standard" class="form-select" required>
             <option value="3760" {% if not unlocked_repairs %}selected{% endif %}>AS/NZS 3760</option>
@@ -86,6 +186,22 @@ AS/NZS 5762: Testing of electrical equipment after repair.">
     {% endif %}
 
     <!-- Retest Interval Selector -->
+    {% if appliance.class_type == 'FIXED_RCD' %}
+    <div class="col-md-6">
+        <label class="form-label">
+            Recommended Retest Interval
+            <span data-bs-toggle="tooltip"
+                  title="Per AS/NZS 3760:2022, fixed RCDs require a push-button test every 6 months.
+A trip-time test by a competent person is required every 12 months in hostile/industrial
+environments, or every 24 months in non-hostile/office environments.">
+                ⓘ
+            </span>
+        </label>
+        <p class="form-control-plaintext text-muted mb-0">
+            Set automatically from the RCD Test Method and the switchboard's environment, below.
+        </p>
+    </div>
+    {% else %}
     <div class="col-md-6">
         <label class="form-label">
             Recommended Retest Interval
@@ -114,6 +230,7 @@ AS/NZS 5762: Testing of electrical equipment after repair.">
         </select>
         {% endif %}
     </div>
+    {% endif %}
 
     <!-- Test Type (DROPDOWN) -->
     <div class="col-md-6">
@@ -121,6 +238,9 @@ AS/NZS 5762: Testing of electrical equipment after repair.">
         {% if appliance.class_type == 'BATTERY_ELV' %}
         <input type="text" class="form-control" value="N/A" readonly>
         <input type="hidden" name="test_type" value="N/A">
+        {% elif appliance.class_type == 'FIXED_RCD' %}
+        <input type="text" class="form-control" value="Fixed RCD" readonly>
+        <input type="hidden" name="test_type" value="Fixed RCD">
         {% else %}
         <select name="test_type" class="form-select" required>
             <option value="" disabled selected>Select test type...</option>
@@ -134,6 +254,7 @@ AS/NZS 5762: Testing of electrical equipment after repair.">
 
     <hr class="mt-4">
 
+    {% if appliance.class_type not in ('BATTERY_ELV', 'FIXED_RCD') %}
     <!-- VISUAL INSPECTION -->
     <h4 class="mt-3">Visual Inspection Checklist</h4>
     <p class="text-muted">All fields must be selected before submitting.</p>
@@ -289,8 +410,9 @@ AS/NZS 5762: Testing of electrical equipment after repair.">
     </div>
 
     <hr class="mt-4">
+    {% endif %}
 
-    {% if appliance.class_type != 'BATTERY_ELV' %}
+    {% if appliance.class_type not in ('BATTERY_ELV', 'FIXED_RCD') %}
     <!-- ELECTRICAL TESTS -->
     <h4 class="mt-3">Electrical Tests</h4>
 
@@ -376,6 +498,18 @@ AS/NZS 5762: Testing of electrical equipment after repair.">
     </div>
 
     <hr class="mt-4">
+    {% endif %}
+
+    {% if appliance.class_type == 'FIXED_RCD' %}
+    <div class="col-12">
+        {{ rcd_fields(true, editable_type=False, fixed_type=appliance.rcd_type, fixed_waveform=appliance.rcd_waveform) }}
+    </div>
+    <hr class="mt-4">
+    {% elif appliance.class_type != 'BATTERY_ELV' %}
+    <div id="section_rcd" class="col-12 mt-3" style="display:none;">
+        {{ rcd_fields(false, editable_type=True) }}
+        <hr class="mt-4">
+    </div>
     {% endif %}
 
      <!-- Additional tests -->
@@ -633,6 +767,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const select = document.getElementById("test_standard");
     const f5761 = document.getElementById("fields_5761");
     const f5762 = document.getElementById("fields_5762");
+    if (!select) return; // BATTERY_ELV / FIXED_RCD: test_standard is a hidden input, not a select
     function updateFields() {
         const val = select.value;
         f5761.style.display = "none";
@@ -648,27 +783,150 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 </script>
 
-<!-- If it's a Lead + RCD -->
+<!-- If it's a Lead + RCD: toggle the RCD section and comments hint -->
 <script>
 document.addEventListener("DOMContentLoaded", function () {
     const testType = document.querySelector("select[name='test_type']");
-    const comments = document.querySelector("textarea[name='comments']");
+    if (!testType) return; // BATTERY_ELV / FIXED_RCD: test_type is a hidden input, not a select
 
-    function updateCommentsPrompt() {
-        if (testType.value === "Lead+RCD") {
-            comments.placeholder = "Include comment for RCD Trip Time <300ms for Type II 30mA or <40ms for Type I 10mA";
-        } else {
-            comments.placeholder = "Enter comment...";
+    const comments = document.querySelector("textarea[name='comments']");
+    const sectionRcd = document.getElementById("section_rcd"); // absent for BATTERY_ELV
+
+    function updateTestTypeFields() {
+        const isLeadRcd = testType.value === "Lead+RCD";
+
+        comments.placeholder = isLeadRcd
+            ? "Include comment for RCD Trip Time <300ms for Type II 30mA or <40ms for Type I 10mA"
+            : "Enter comment...";
+
+        if (sectionRcd) {
+            sectionRcd.style.display = isLeadRcd ? "" : "none";
+            sectionRcd.querySelectorAll(".rcd-field").forEach(function (el) {
+                el.disabled = !isLeadRcd;
+            });
+            if (isLeadRcd && window.updateRcdMethodFields) {
+                window.updateRcdMethodFields(sectionRcd.querySelector(".rcd-fields-row"));
+            }
         }
     }
 
     // Run on load (in case of form re-render)
-    updateCommentsPrompt();
+    updateTestTypeFields();
 
     // Run whenever the user changes the test type
-    testType.addEventListener("change", updateCommentsPrompt);
+    testType.addEventListener("change", updateTestTypeFields);
 });
 </script>
+
+<!-- RCD sub-fields: rating display, push-button/trip-time toggle, live trip-time PASS/FAIL -->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const RATING_BY_TYPE = { "Type I": "10 mA", "Type II": "30 mA" };
+    const LIMIT_MS_BY_TYPE = { "Type I": 40, "Type II": 300 };
+
+    function setBlockEnabled(block, enabled) {
+        if (!block) return;
+        block.style.display = enabled ? "" : "none";
+        block.querySelectorAll(".rcd-field").forEach(function (el) { el.disabled = !enabled; });
+    }
+
+    // RCD Type is either a live <select name="rcd_type"> (Lead+RCD) or a fixed value
+    // set on the appliance record and exposed via data-rcd-type (Fixed RCD).
+    function getRcdType(container) {
+        const sel = container.querySelector("select[name='rcd_type']");
+        return sel ? sel.value : (container.dataset.rcdType || "");
+    }
+
+    function setTripTimeResult(container, orientation, value) {
+        const hint = container.querySelector('.rcd-triptime-input[data-orientation="' + orientation + '"]')
+            .closest(".col-md-4").querySelector(".rcd-result-hint");
+        const sel = container.querySelector('.rcd-computed-result[data-orientation="' + orientation + '"]');
+        hint.textContent = value ? ("Computed: " + value) : " ";
+        hint.className = "text-muted rcd-result-hint" + (value === "FAIL" ? " text-danger fw-bold" : "");
+        sel.value = value;
+        sel.dispatchEvent(new Event("change")); // the overall-result auto-FAIL scanner only listens for 'change'
+    }
+
+    function evaluateTripTime(container, rcdType, orientation) {
+        const input = container.querySelector('.rcd-triptime-input[data-orientation="' + orientation + '"]');
+        const ms = parseFloat(input.value);
+        const limit = LIMIT_MS_BY_TYPE[rcdType];
+        if (!limit || isNaN(ms)) { setTripTimeResult(container, orientation, ""); return; }
+        setTripTimeResult(container, orientation, ms <= limit ? "PASS" : "FAIL");
+    }
+
+    function updateRcdMethodFields(container) {
+        const rcdType = getRcdType(container);
+        const method = container.querySelector("select[name='rcd_test_method']");
+        const ratingDisplay = container.querySelector(".rcd-rating-display");
+        const pushButtonBlock = container.querySelector(".rcd-pushbutton-block");
+        const tripTimeBlock = container.querySelector(".rcd-triptime-block");
+
+        ratingDisplay.value = RATING_BY_TYPE[rcdType] || "";
+        const isPushButton = method.value === "Push Button";
+        const isTripTime = method.value === "Trip Time";
+        setBlockEnabled(pushButtonBlock, isPushButton);
+        setBlockEnabled(tripTimeBlock, isTripTime);
+
+        if (isTripTime) {
+            evaluateTripTime(container, rcdType, "0deg");
+            evaluateTripTime(container, rcdType, "180deg");
+        } else {
+            setTripTimeResult(container, "0deg", "");
+            setTripTimeResult(container, "180deg", "");
+        }
+    }
+    window.updateRcdMethodFields = updateRcdMethodFields;
+
+    // Wire up every RCD fields block on the page (there's exactly one active at a time:
+    // the FIXED_RCD always-on block, or the Lead+RCD toggleable #section_rcd block)
+    document.querySelectorAll(".rcd-fields-row").forEach(function (container) {
+        const rcdTypeSelect = container.querySelector("select[name='rcd_type']"); // null for Fixed RCD
+        const method = container.querySelector("select[name='rcd_test_method']");
+
+        if (rcdTypeSelect) {
+            rcdTypeSelect.addEventListener("change", function () {
+                updateRcdMethodFields(container);
+            });
+        }
+        method.addEventListener("change", function () {
+            updateRcdMethodFields(container);
+        });
+        container.querySelectorAll(".rcd-triptime-input").forEach(function (input) {
+            input.addEventListener("input", function () {
+                evaluateTripTime(container, getRcdType(container), input.dataset.orientation);
+            });
+        });
+
+        updateRcdMethodFields(container);
+    });
+});
+</script>
+
+{% if appliance.class_type == 'FIXED_RCD' %}
+<!-- Auto-default the retest interval from the Switchboard's environment + chosen RCD test method -->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const pushButtonDays = {{ appliance.switchboard.push_button_interval_days if appliance.switchboard else 180 }};
+    const tripTimeDays = {{ appliance.switchboard.trip_time_interval_days if appliance.switchboard else 365 }};
+
+    const method = document.querySelector("select[name='rcd_test_method']");
+    const retestInterval = document.getElementById("retest_interval");
+    if (!method || !retestInterval) return;
+
+    // No visible selector for Fixed RCD — the hidden field is set directly.
+    function applyRecommendedInterval() {
+        const days = method.value === "Push Button" ? pushButtonDays
+                   : method.value === "Trip Time" ? tripTimeDays
+                   : null;
+        if (days) retestInterval.value = days;
+    }
+
+    method.addEventListener("change", applyRecommendedInterval);
+    applyRecommendedInterval();
+});
+</script>
+{% endif %}
 
 <!-- Auto selet today's date -->
 <script>
@@ -754,13 +1012,16 @@ document.addEventListener("DOMContentLoaded", function () {
 
 <!-- Retest interval generator -->
 <script>
-document.getElementById("retest_selector").addEventListener("change", function () {
-    document.getElementById("retest_interval").value = this.value;
-});
 (function () {
+    const sel = document.getElementById("retest_selector");
+    if (!sel) return; // Fixed RCD: interval is set automatically, no selector on the page
+
+    sel.addEventListener("change", function () {
+        document.getElementById("retest_interval").value = this.value;
+    });
+
     const defaultDays = {{ appliance.default_retest_interval_days or 'null' }};
     if (defaultDays) {
-        const sel = document.getElementById("retest_selector");
         const opt = Array.from(sel.options).find(function (o) { return parseInt(o.value) === defaultDays; });
         if (opt) {
             opt.selected = true;
@@ -777,6 +1038,10 @@ document.getElementById("testForm").addEventListener("submit", function (e) {
 
     // Visual inspection required selects
     document.querySelectorAll(".vi-required").forEach(function (sel) {
+        if (sel.disabled) {
+            sel.classList.remove("is-invalid");
+            return;
+        }
         if (!sel.value) {
             sel.classList.add("is-invalid");
             valid = false;
@@ -787,7 +1052,9 @@ document.getElementById("testForm").addEventListener("submit", function (e) {
 
     // Retest interval must be set
     if (!document.getElementById("retest_interval").value) {
-        alert("Please select a recommended retest interval.");
+        alert(document.getElementById("retest_selector")
+            ? "Please select a recommended retest interval."
+            : "Please select an RCD Test Method — the retest interval is set from it.");
         valid = false;
     }
 

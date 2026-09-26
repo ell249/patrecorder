@@ -10,7 +10,7 @@ from werkzeug.utils import secure_filename
 
 from app import db
 from config import Config
-from models import Appliance, TestRecord, TestPhoto, RetestRule, Tester, RepairRecord, RepairPhoto, ApplianceDocument
+from models import Appliance, TestRecord, TestPhoto, RetestRule, Tester, RepairRecord, RepairPhoto, ApplianceDocument, Switchboard
 from utils import (
     make_snippet,
     fuzzy,
@@ -30,6 +30,21 @@ def _auto_tag(appliance):
         seq += 1
     return f"{prefix}-{seq}"
 
+
+_RCD_TRIP_LIMIT_MS = {"Type I": 40, "Type II": 300}
+
+
+def compute_rcd_trip_result(rcd_type, ms_value):
+    """Server-side source of truth for trip-time PASS/FAIL — never trust client JS."""
+    limit = _RCD_TRIP_LIMIT_MS.get(rcd_type)
+    if not limit or not ms_value:
+        return None
+    try:
+        ms = float(ms_value)
+    except (TypeError, ValueError):
+        return None
+    return "PASS" if ms <= limit else "FAIL"
+
 # ---------------------------------------------------------
 # Dashboard
 # ---------------------------------------------------------
@@ -39,10 +54,12 @@ def dashboard():
     today = datetime.today().date()
     soon = today + timedelta(days=30)
 
-    # Non-NTS appliances with no tests
+    # Non-NTS appliances with no tests — Fixed RCDs are tracked separately, per switchboard,
+    # in the "Switchboards Needing RCD Testing" section below.
     never_tested = (
         Appliance.query
         .filter(Appliance.disposed == False, Appliance.new_to_service != True)
+        .filter(Appliance.class_type != "FIXED_RCD")
         .filter(~Appliance.tests.any())
         .all()
     )
@@ -51,6 +68,7 @@ def dashboard():
     nts_untested = (
         Appliance.query
         .filter(Appliance.disposed == False, Appliance.new_to_service == True)
+        .filter(Appliance.class_type != "FIXED_RCD")
         .filter(~Appliance.tests.any())
         .all()
     )
@@ -67,6 +85,7 @@ def dashboard():
         .join(TestRecord)
         .filter(
             Appliance.disposed == False,
+            Appliance.class_type != "FIXED_RCD",
             TestRecord.disposed == False,
             TestRecord.next_test_due != None,
             TestRecord.next_test_due <= soon
@@ -78,6 +97,7 @@ def dashboard():
     repaired_needs_test = (
         Appliance.query
         .filter(Appliance.disposed == False)
+        .filter(Appliance.class_type != "FIXED_RCD")
         .filter(Appliance.repairs.any(
             (RepairRecord.disposed == False) &
             (RepairRecord.locked_by_test_date == None)
@@ -104,6 +124,7 @@ def dashboard():
         .join(TestRecord)
         .filter(
             Appliance.disposed == False,
+            Appliance.class_type != "FIXED_RCD",
             TestRecord.disposed == False,
             TestRecord.next_test_due != None,
             TestRecord.next_test_due > today,
@@ -134,6 +155,43 @@ def dashboard():
 
     required_count = len(due_appliances_map)
 
+    # Switchboards with RCDs never tested, overdue, or due within 30 days.
+    # Per AS/NZS 3760:2022, fixed RCDs require a push-button test every 6 months,
+    # plus a trip-time test by a competent person every 12 months (hostile/industrial
+    # environments) or 24 months (non-hostile/office environments).
+    switchboard_summaries = []
+    for sb in Switchboard.query.order_by(Switchboard.name).all():
+        rcds = [a for a in sb.rcds if not a.disposed]
+        if not rcds:
+            continue
+
+        never_tested_count = 0
+        overdue_count = 0
+        due_soon_count = 0
+
+        for rcd in rcds:
+            active_tests = [t for t in rcd.tests if not t.disposed]
+            if not active_tests:
+                never_tested_count += 1
+                continue
+            latest = max(active_tests, key=lambda t: t.test_date)
+            if not latest.next_test_due:
+                continue
+            if latest.next_test_due <= today:
+                overdue_count += 1
+            elif latest.next_test_due <= soon:
+                due_soon_count += 1
+
+        needs_attention = never_tested_count + overdue_count + due_soon_count
+        if needs_attention:
+            switchboard_summaries.append({
+                "switchboard": sb,
+                "rcd_count": len(rcds),
+                "never_tested": never_tested_count,
+                "overdue": overdue_count,
+                "due_soon": due_soon_count,
+            })
+
     return render_template(
         "dashboard.html",
         recent_tests=recent_tests,
@@ -144,6 +202,7 @@ def dashboard():
         reason_map=reason_map,
         nts_not_yet_due=nts_not_yet_due,
         recent_repairs=recent_repairs,
+        switchboard_summaries=switchboard_summaries,
     )
 
 # ---------------------------------------------------------
@@ -241,6 +300,10 @@ def new_appliance():
 def edit_appliance(appliance_id):
     appliance = Appliance.query.get_or_404(appliance_id)
 
+    # Fixed RCDs are managed through the dedicated RCD form, not the generic appliance form.
+    if appliance.class_type == "FIXED_RCD":
+        return redirect(url_for("main.edit_rcd", appliance_id=appliance.id))
+
     if request.method == "POST":
         form = request.form
 
@@ -285,7 +348,7 @@ def edit_appliance(appliance_id):
     return render_template(
         "appliance_form.html",
         appliance=appliance,
-        edit_mode=True
+        edit_mode=True,
     )
 
 # ---------------------------------------------------------
@@ -388,6 +451,10 @@ def delete_appliance(appliance_id):
 def appliance_detail(appliance_id):
     appliance = Appliance.query.get_or_404(appliance_id)
 
+    # Fixed RCDs are viewed through the dedicated RCD detail page, not the generic one.
+    if appliance.class_type == "FIXED_RCD":
+        return redirect(url_for("main.rcd_detail", appliance_id=appliance.id, **request.args.to_dict()))
+
     active_tests = sorted(
         [t for t in appliance.tests if not t.disposed],
         key=lambda t: (t.test_date, t.id),
@@ -444,34 +511,57 @@ def new_test(appliance_id):
                 return False
             return None  # N/A or not answered
 
+        # RCD (Lead+RCD / Fixed RCD) — Fixed RCD is derived from the server-known
+        # appliance.class_type (can't be spoofed), Lead+RCD from the submitted test_type.
+        is_fixed_rcd = appliance.class_type == "FIXED_RCD"
+        is_rcd_related = is_fixed_rcd or form.get("test_type") == "Lead+RCD"
+        rcd_method = form.get("rcd_test_method") if is_rcd_related else None
+        test_type_value = "Fixed RCD" if is_fixed_rcd else form["test_type"]
+        test_standard_value = "FIXED_RCD" if is_fixed_rcd else form["test_standard"]
+
+        # Fixed RCDs have their Type/Waveform set once on the Appliance record (not
+        # re-entered per test); Lead+RCD tests still capture them per-test on the form.
+        rcd_type_value = appliance.rcd_type if is_fixed_rcd else ((form.get("rcd_type") or None) if is_rcd_related else None)
+        rcd_waveform_value = appliance.rcd_waveform if is_fixed_rcd else ((form.get("rcd_waveform") or None) if is_rcd_related else None)
+
         test = TestRecord(
             appliance_id=appliance.id,
             tester_id=tester.id,
             test_date=test_date,
-            test_type=form["test_type"],
-            test_standard=form["test_standard"],
+            test_type=test_type_value,
+            test_standard=test_standard_value,
             tag_number=form.get("tag_number").strip() or _auto_tag(appliance),
             next_test_due=next_due.date() if next_due else None,
             overall_result=form["overall_result"],
             comments=form.get("comments"),
 
-            # Visual inspection
-            vi_plug=bool_from_dropdown(form.get("vi_plug")),
-            vi_cord=bool_from_dropdown(form.get("vi_cord")),
-            vi_casing=form.get("vi_casing") or None,
-            vi_overheat=bool_from_dropdown(form.get("vi_overheat")),
-            vi_label=form.get("vi_label") or None,
-            vi_exposed=bool_from_dropdown(form.get("vi_exposed")),
+            # Visual inspection — not applicable for Fixed RCD (section is omitted in the form)
+            vi_plug=None if is_fixed_rcd else bool_from_dropdown(form.get("vi_plug")),
+            vi_cord=None if is_fixed_rcd else bool_from_dropdown(form.get("vi_cord")),
+            vi_casing=None if is_fixed_rcd else (form.get("vi_casing") or None),
+            vi_overheat=None if is_fixed_rcd else bool_from_dropdown(form.get("vi_overheat")),
+            vi_label=None if is_fixed_rcd else (form.get("vi_label") or None),
+            vi_exposed=None if is_fixed_rcd else bool_from_dropdown(form.get("vi_exposed")),
 
-            vi_repairs=form.get("vi_repairs"),
-            vi_strain=form.get("vi_strain"),
-            vi_guards=form.get("vi_guards"),
+            vi_repairs=None if is_fixed_rcd else form.get("vi_repairs"),
+            vi_strain=None if is_fixed_rcd else form.get("vi_strain"),
+            vi_guards=None if is_fixed_rcd else form.get("vi_guards"),
 
-            # Electrical tests — all N/A for Battery/ELV (section is hidden in the form)
-            earth_continuity_ohms="N/A" if appliance.class_type in ("CLASS II", "BATTERY_ELV") else (form.get("earth_continuity_ohms") or None),
-            insulation_mohms="N/A" if appliance.class_type == "BATTERY_ELV" else (form.get("insulation_mohms") or None),
-            leakage_mA="N/A" if appliance.class_type == "BATTERY_ELV" else (form.get("leakage_mA") or None),
-            polarity_pass="N/A" if appliance.class_type == "BATTERY_ELV" else (form.get("polarity_pass") or None),
+            # Electrical tests — all N/A for Battery/ELV and Fixed RCD (section is hidden/omitted in the form)
+            earth_continuity_ohms="N/A" if (appliance.class_type in ("CLASS II", "BATTERY_ELV") or is_fixed_rcd) else (form.get("earth_continuity_ohms") or None),
+            insulation_mohms="N/A" if (appliance.class_type == "BATTERY_ELV" or is_fixed_rcd) else (form.get("insulation_mohms") or None),
+            leakage_mA="N/A" if (appliance.class_type == "BATTERY_ELV" or is_fixed_rcd) else (form.get("leakage_mA") or None),
+            polarity_pass="N/A" if (appliance.class_type == "BATTERY_ELV" or is_fixed_rcd) else (form.get("polarity_pass") or None),
+
+            # RCD (Lead+RCD / Fixed RCD)
+            rcd_type=rcd_type_value,
+            rcd_waveform=rcd_waveform_value,
+            rcd_test_method=rcd_method,
+            rcd_push_button_result=(form.get("rcd_push_button_result") or None) if rcd_method == "Push Button" else None,
+            rcd_trip_time_0deg_ms=(form.get("rcd_trip_time_0deg_ms") or None) if rcd_method == "Trip Time" else None,
+            rcd_trip_time_0deg_result=compute_rcd_trip_result(rcd_type_value, form.get("rcd_trip_time_0deg_ms")) if rcd_method == "Trip Time" else None,
+            rcd_trip_time_180deg_ms=(form.get("rcd_trip_time_180deg_ms") or None) if rcd_method == "Trip Time" else None,
+            rcd_trip_time_180deg_result=compute_rcd_trip_result(rcd_type_value, form.get("rcd_trip_time_180deg_ms")) if rcd_method == "Trip Time" else None,
 
             # 5761
             condition_assessment=form.get("condition_assessment"),
@@ -829,6 +919,8 @@ def test_pdf(test_id):
         template = "pdf/test_5761.html"
     elif test.test_standard in ("5762", "VISUAL"):
         template = "pdf/test_5762.html"
+    elif test.test_standard == "FIXED_RCD":
+        template = "pdf/test_fixed_rcd.html"
     else:
         template = "pdf/test_3760.html"
 
@@ -958,3 +1050,252 @@ def new_tester_modal():
 
     # Return to the test form
     return redirect(url_for("main.new_test", appliance_id=appliance_id))
+
+
+# ---------------------------------------------------------
+# Switchboards
+# ---------------------------------------------------------
+
+@bp.route("/switchboards")
+def switchboard_list():
+    switchboards = Switchboard.query.order_by(Switchboard.name).all()
+    return render_template("switchboard_list.html", switchboards=switchboards)
+
+
+@bp.route("/switchboards/new", methods=["GET", "POST"])
+def new_switchboard():
+    if request.method == "POST":
+        form = request.form
+        switchboard = Switchboard(
+            name=form["name"],
+            location=form.get("location") or None,
+            notes=form.get("notes") or None,
+            environment=form.get("environment") or None,
+        )
+        db.session.add(switchboard)
+        db.session.commit()
+        flash("Switchboard added.", "success")
+        return redirect(url_for("main.switchboard_detail", switchboard_id=switchboard.id))
+
+    return render_template("switchboard_form.html")
+
+
+@bp.route("/switchboards/new/modal", methods=["POST"])
+def new_switchboard_modal():
+    name = request.form["name"]
+    location = request.form.get("location")
+    environment = request.form.get("environment")
+    return_to = request.form.get("return_to")
+
+    switchboard = Switchboard(name=name, location=location or None, environment=environment or None)
+    db.session.add(switchboard)
+    db.session.commit()
+
+    if return_to and return_to.startswith("/"):
+        return redirect(return_to)
+    return redirect(url_for("main.switchboard_detail", switchboard_id=switchboard.id))
+
+
+@bp.route("/switchboard/<int:switchboard_id>/edit", methods=["GET", "POST"])
+def edit_switchboard(switchboard_id):
+    switchboard = Switchboard.query.get_or_404(switchboard_id)
+
+    if request.method == "POST":
+        form = request.form
+        switchboard.name = form["name"]
+        switchboard.location = form.get("location") or None
+        switchboard.notes = form.get("notes") or None
+        switchboard.environment = form.get("environment") or None
+        db.session.commit()
+        flash("Switchboard updated.", "success")
+        return redirect(url_for("main.switchboard_detail", switchboard_id=switchboard.id))
+
+    return render_template("switchboard_form.html", switchboard=switchboard, edit_mode=True)
+
+
+# ---------------------------------------------------------
+# Add / Edit RCD (a Fixed RCD appliance, via a dedicated cut-down form)
+# ---------------------------------------------------------
+
+def _save_rcd_documents(appliance, files):
+    for f in files:
+        if f and f.filename:
+            filename = secure_filename(f.filename)
+            doc_dir = os.path.join("static", "uploads", "receipts", str(appliance.id))
+            os.makedirs(doc_dir, exist_ok=True)
+            f.save(os.path.join(doc_dir, filename))
+            db.session.add(ApplianceDocument(
+                appliance_id=appliance.id,
+                filename=filename,
+                filepath=f"receipts/{appliance.id}/{filename}",
+            ))
+
+
+@bp.route("/switchboards/<int:switchboard_id>/rcds/new", methods=["GET", "POST"])
+def new_rcd(switchboard_id):
+    switchboard = Switchboard.query.get_or_404(switchboard_id)
+
+    if request.method == "POST":
+        form = request.form
+
+        asset_number = form["asset_number"]
+        existing = Appliance.query.filter_by(asset_number=asset_number).first()
+        if existing:
+            suffix = 1
+            while True:
+                candidate = f"{asset_number}-{suffix}"
+                if not Appliance.query.filter_by(asset_number=candidate).first():
+                    asset_number = candidate
+                    break
+                suffix += 1
+
+        purchase_date_str = form.get("purchase_date")
+        purchase_price_str = form.get("purchase_price")
+
+        appliance = Appliance(
+            asset_number=asset_number,
+            description=form.get("description"),
+            make_model=form.get("make_model"),
+            serial_number=form.get("serial_number") or None,
+            class_type="FIXED_RCD",
+            supply_type="N/A",
+            owner="N/A",
+            location=form.get("location"),  # "Area Served"
+            switchboard_id=int(form["switchboard_id"]),
+            rcd_type=form.get("rcd_type") or None,
+            rcd_waveform=form.get("rcd_waveform") or None,
+            purchase_date=datetime.strptime(purchase_date_str, "%Y-%m-%d").date() if purchase_date_str else None,
+            purchase_price=float(purchase_price_str) if purchase_price_str else None,
+            new_to_service=False,
+        )
+
+        db.session.add(appliance)
+        db.session.commit()
+
+        _save_rcd_documents(appliance, request.files.getlist("documents"))
+        db.session.commit()
+
+        flash("RCD added.", "success")
+        return redirect(url_for("main.rcd_detail", appliance_id=appliance.id, just_created=1))
+
+    switchboards = Switchboard.query.order_by(Switchboard.name).all()
+    return render_template("rcd_form.html", switchboard=switchboard, switchboards=switchboards)
+
+
+@bp.route("/rcd/<int:appliance_id>/edit", methods=["GET", "POST"])
+def edit_rcd(appliance_id):
+    appliance = Appliance.query.get_or_404(appliance_id)
+
+    # Only Fixed RCDs use this form — anything else belongs on the generic appliance form.
+    if appliance.class_type != "FIXED_RCD":
+        return redirect(url_for("main.edit_appliance", appliance_id=appliance.id))
+
+    if request.method == "POST":
+        form = request.form
+
+        purchase_date_str = form.get("purchase_date")
+        purchase_price_str = form.get("purchase_price")
+
+        appliance.asset_number = form["asset_number"]
+        appliance.description = form.get("description")
+        appliance.make_model = form.get("make_model")
+        appliance.serial_number = form.get("serial_number") or None
+        appliance.location = form.get("location")  # "Area Served"
+        appliance.switchboard_id = int(form["switchboard_id"])
+        appliance.rcd_type = form.get("rcd_type") or None
+        appliance.rcd_waveform = form.get("rcd_waveform") or None
+        appliance.purchase_date = datetime.strptime(purchase_date_str, "%Y-%m-%d").date() if purchase_date_str else None
+        appliance.purchase_price = float(purchase_price_str) if purchase_price_str else None
+
+        _save_rcd_documents(appliance, request.files.getlist("documents"))
+        db.session.commit()
+
+        flash("RCD updated successfully.", "success")
+        return redirect(url_for("main.rcd_detail", appliance_id=appliance.id))
+
+    switchboards = Switchboard.query.order_by(Switchboard.name).all()
+    return render_template("rcd_form.html", appliance=appliance, edit_mode=True, switchboards=switchboards)
+
+
+@bp.route("/rcd/<int:appliance_id>")
+def rcd_detail(appliance_id):
+    appliance = Appliance.query.get_or_404(appliance_id)
+
+    # Only Fixed RCDs use this page — anything else belongs on the generic appliance detail page.
+    if appliance.class_type != "FIXED_RCD":
+        return redirect(url_for("main.appliance_detail", appliance_id=appliance.id))
+
+    active_tests = sorted(
+        [t for t in appliance.tests if not t.disposed],
+        key=lambda t: (t.test_date, t.id),
+        reverse=True,
+    )
+    active_repairs = sorted(
+        [r for r in appliance.repairs if not r.disposed],
+        key=lambda r: (r.repair_date, r.id),
+        reverse=True,
+    )
+
+    return render_template(
+        "rcd_detail.html",
+        appliance=appliance,
+        active_tests=active_tests,
+        active_repairs=active_repairs,
+    )
+
+
+@bp.route("/switchboard/<int:switchboard_id>")
+def switchboard_detail(switchboard_id):
+    switchboard = Switchboard.query.get_or_404(switchboard_id)
+
+    rcds = (
+        Appliance.query
+        .filter_by(switchboard_id=switchboard.id, class_type="FIXED_RCD")
+        .order_by(Appliance.asset_number)
+        .all()
+    )
+    latest_tests = {
+        rcd.id: max((t for t in rcd.tests if not t.disposed), key=lambda t: t.test_date, default=None)
+        for rcd in rcds
+    }
+
+    return render_template(
+        "switchboard_detail.html",
+        switchboard=switchboard,
+        rcds=rcds,
+        latest_tests=latest_tests,
+    )
+
+
+@bp.route("/switchboard/<int:switchboard_id>/rcd-report/pdf")
+def switchboard_rcd_report_pdf(switchboard_id):
+    switchboard = Switchboard.query.get_or_404(switchboard_id)
+
+    rcds = (
+        Appliance.query
+        .filter_by(switchboard_id=switchboard.id, class_type="FIXED_RCD", disposed=False)
+        .order_by(Appliance.asset_number)
+        .all()
+    )
+    latest_tests = {
+        rcd.id: max((t for t in rcd.tests if not t.disposed), key=lambda t: t.test_date, default=None)
+        for rcd in rcds
+    }
+
+    switchboard_url = url_for("main.switchboard_detail", switchboard_id=switchboard.id, _external=True)
+    qr_code = generate_qr_code(switchboard_url)
+
+    html = render_template(
+        "pdf/switchboard_rcd_report.html",
+        switchboard=switchboard,
+        rcds=rcds,
+        latest_tests=latest_tests,
+        qr_code=qr_code,
+        now=datetime.today(),
+    )
+
+    pdf = HTML(string=html).write_pdf()
+    response = make_response(pdf)
+    response.headers["Content-Type"] = "application/pdf"
+    response.headers["Content-Disposition"] = f"inline; filename=switchboard_{switchboard_id}_rcd_report.pdf"
+    return response

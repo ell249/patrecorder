@@ -17,6 +17,18 @@
         battery or extra-low voltage appliances.
     </div>
 </div>
+{% elif appliance.class_type == 'FIXED_RCD' %}
+<div class="alert alert-warning d-flex align-items-center gap-3 mb-4" role="alert">
+    <span style="font-size:1.6rem;">⚠️</span>
+    <div>
+        <strong>Before you begin:</strong> Repair or replacement of a fixed RCD at a switchboard must be
+        performed by a licensed electrical worker in accordance with WHS legislation. A post-repair RCD
+        test (push-button and/or trip-time) is required before returning the circuit to service.
+        <a href="{{ url_for('static', filename='swms_switchboard_rcd.html') }}" target="_blank" class="alert-link ms-1">
+            Read the Safe Work Method Statement (SWMS) &rarr;
+        </a>
+    </div>
+</div>
 {% else %}
 <div class="alert alert-warning d-flex align-items-center gap-3 mb-4" role="alert">
     <span style="font-size:1.6rem;">⚠️</span>

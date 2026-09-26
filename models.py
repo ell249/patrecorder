@@ -1,5 +1,14 @@
 from app import db
 
+# RCD Type -> Rating (mA), per AS/NZS 3760 (Type I = 10 mA, Type II = 30 mA)
+RCD_RATING_MA_BY_TYPE = {"Type I": "10", "Type II": "30"}
+
+# Fixed RCD retest intervals (days), per AS/NZS 3760:2022: push-button test every 6 months
+# regardless of environment; trip-time test every 12 months (hostile/industrial) or 24
+# months (non-hostile/office).
+RCD_PUSH_BUTTON_INTERVAL_DAYS = 180
+RCD_TRIP_TIME_INTERVAL_DAYS_BY_ENVIRONMENT = {"HOSTILE": 365, "NON_HOSTILE": 730}
+
 # Join table: test_record ↔ repair_record (many-to-many for AS/NZS 5762 verification)
 test_repair_link = db.Table(
     'test_repair_link',
@@ -52,6 +61,12 @@ class Appliance(db.Model):
     entry_to_service_date        = db.Column(db.Date)
     default_retest_interval_days = db.Column(db.Integer)
 
+    switchboard_id = db.Column(db.Integer, db.ForeignKey("switchboard.id"))
+
+    # Fixed RCD hardware properties (set once when the RCD is registered, not per-test)
+    rcd_type = db.Column(db.String(20))       # "Type I" | "Type II"
+    rcd_waveform = db.Column(db.String(10))   # "AC" | "A" | "B" | "F" — informational only
+
     @property
     def nts_next_test_due(self):
         if self.entry_to_service_date and self.default_retest_interval_days:
@@ -59,9 +74,39 @@ class Appliance(db.Model):
             return self.entry_to_service_date + timedelta(days=self.default_retest_interval_days)
         return None
 
+    @property
+    def rcd_rating_ma(self):
+        return RCD_RATING_MA_BY_TYPE.get(self.rcd_type)
+
     tests = db.relationship("TestRecord", back_populates="appliance")
     repairs = db.relationship("RepairRecord", back_populates="appliance", cascade="all, delete")
     documents = db.relationship("ApplianceDocument", back_populates="appliance", cascade="all, delete")
+    switchboard = db.relationship("Switchboard", back_populates="rcds")
+
+
+# ---------------------------------------------------------
+# Switchboard Table
+# ---------------------------------------------------------
+class Switchboard(db.Model):
+    __tablename__ = "switchboard"
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(255), nullable=False)
+    location = db.Column(db.String(255))
+    notes = db.Column(db.Text)
+    environment = db.Column(db.String(20))  # "HOSTILE" | "NON_HOSTILE"
+    created_at = db.Column(db.DateTime, server_default=db.func.now())
+
+    rcds = db.relationship("Appliance", back_populates="switchboard")
+
+    @property
+    def push_button_interval_days(self):
+        return RCD_PUSH_BUTTON_INTERVAL_DAYS
+
+    @property
+    def trip_time_interval_days(self):
+        # Default to the more conservative (hostile) interval when not yet classified.
+        return RCD_TRIP_TIME_INTERVAL_DAYS_BY_ENVIRONMENT.get(self.environment, RCD_TRIP_TIME_INTERVAL_DAYS_BY_ENVIRONMENT["HOSTILE"])
 
 
 # ---------------------------------------------------------
@@ -127,6 +172,20 @@ class TestRecord(db.Model):
     func_test_4_result = db.Column(db.String(10))
     func_test_5_method = db.Column(db.String(500))
     func_test_5_result = db.Column(db.String(10))
+
+    # RCD (Lead+RCD / Fixed RCD)
+    rcd_type = db.Column(db.String(20))                    # "Type I" | "Type II"
+    rcd_waveform = db.Column(db.String(10))                 # "AC" | "A" | "B" | "F" — informational only
+    rcd_test_method = db.Column(db.String(20))              # "Push Button" | "Trip Time"
+    rcd_push_button_result = db.Column(db.String(10))       # "PASS" | "FAIL"
+    rcd_trip_time_0deg_ms = db.Column(db.String(20))
+    rcd_trip_time_0deg_result = db.Column(db.String(10))    # server-computed
+    rcd_trip_time_180deg_ms = db.Column(db.String(20))
+    rcd_trip_time_180deg_result = db.Column(db.String(10))  # server-computed
+
+    @property
+    def rcd_rating_ma(self):
+        return RCD_RATING_MA_BY_TYPE.get(self.rcd_type)
 
     # Relationships
     appliance = db.relationship("Appliance", back_populates="tests")

@@ -14,17 +14,16 @@ th { background: #eee; }
 </head>
 <body>
 
-<h2>{{ test.test_standard | std }} Second‑Hand Appliance Test Report</h2>
+<h2>{{ test.test_standard | std }} Test Report</h2>
 <img src="data:image/png;base64,{{ qr_code }}" class="qr">
 
-<h3>Appliance Information</h3>
+<h3>RCD Information</h3>
 <table>
 <tr><th>Asset Number</th><td>{{ appliance.asset_number }}</td></tr>
-<tr><th>Description</th><td>{{ appliance.description }}</td></tr>
-<tr><th>Make / Model</th><td>{{ appliance.make_model }}</td></tr>
-<tr><th>Location</th><td>{{ appliance.location }}</td></tr>
-<tr><th>Class Type</th><td>{{ appliance.class_type }}</td></tr>
-<tr><th>Appliance Type</th><td>{{ appliance.supply_type }}</td></tr>
+<tr><th>Description</th><td>{{ appliance.description or '—' }}</td></tr>
+<tr><th>Make / Model</th><td>{{ appliance.make_model or '—' }}</td></tr>
+<tr><th>Switchboard</th><td>{{ appliance.switchboard.name if appliance.switchboard else '—' }}</td></tr>
+<tr><th>Switchboard Location</th><td>{{ appliance.switchboard.location if appliance.switchboard else '—' }}</td></tr>
 </table>
 
 <h3>Tester Information</h3>
@@ -43,31 +42,6 @@ th { background: #eee; }
 <tr><th>Overall Result</th><td>{{ test.overall_result }}</td></tr>
 </table>
 
-<h3>Visual Inspection</h3>
-<table>
-<tr><th>Inspection Item</th><th>Result</th></tr>
-<tr><td>Plug condition OK</td><td>{{ 'PASS' if test.vi_plug else 'FAIL' }}</td></tr>
-<tr><td>Cord condition OK</td><td>{{ 'PASS' if test.vi_cord else 'FAIL' }}</td></tr>
-<tr><td>No damage to casing</td><td>{{ test.vi_casing or '—' }}</td></tr>
-<tr><td>No signs of overheating</td><td>{{ 'PASS' if test.vi_overheat else 'FAIL' }}</td></tr>
-<tr><td>Rating label intact</td><td>{{ test.vi_label or '—' }}</td></tr>
-<tr><td>No exposed conductors</td><td>{{ 'PASS' if test.vi_exposed else 'FAIL' }}</td></tr>
-<tr><td>Unsafe previous repairs</td><td>{{ test.vi_repairs }}</td></tr>
-<tr><td>Cable strain relief</td><td>{{ test.vi_strain }}</td></tr>
-<tr><td>Safety guards working</td><td>{{ test.vi_guards }}</td></tr>
-</table>
-
-<h3>5761 Additional Checks</h3>
-<table>
-<tr><th>Condition Assessment</th><td>{{ test.condition_assessment or 'N/A' }}</td></tr>
-<tr><th>Functional Check</th><td>{{ test.functional_check or 'N/A' }}</td></tr>
-<tr><th>Accessories</th><td>{{ test.accessories or 'N/A' }}</td></tr>
-<tr><th>Safe for Resale</th><td>{{ test.safe_for_resale or 'N/A' }}</td></tr>
-<tr><th>No Outstanding Recalls</th><td>{{ test.no_outstanding_recalls or 'N/A' }}</td></tr>
-<tr><th>Active/Neutral Pins Insulated (AS/NZS 3112)</th><td>{{ test.pins_insulated or 'N/A' }}</td></tr>
-</table>
-
-{% if test.test_type == 'Lead+RCD' %}
 <h3>RCD Test</h3>
 <table>
 <tr><th>RCD Type</th><td>{{ test.rcd_type or '—' }}</td></tr>
@@ -81,7 +55,6 @@ th { background: #eee; }
 <tr><th>Trip Time @ 180°</th><td>{{ test.rcd_trip_time_180deg_ms or '—' }} ms — {{ test.rcd_trip_time_180deg_result or '—' }}</td></tr>
 {% endif %}
 </table>
-{% endif %}
 
 <h3>Comments</h3>
 <p>{{ test.comments or 'None' }}</p>

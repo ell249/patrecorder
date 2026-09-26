@@ -1,13 +1,13 @@
 {% extends "base.html" %}
-{% block title %}Appliance Details{% endblock %}
+{% block title %}RCD Details{% endblock %}
 
 {% block content %}
 
-<h3 class="mb-3">Appliance — {{ appliance.asset_number }}</h3>
+<h3 class="mb-3">RCD — {{ appliance.asset_number }}</h3>
 
 {% if appliance.disposed %}
 <div class="alert alert-danger">
-    <strong>Disposed Appliance</strong> — this appliance has been marked as disposed and should not be used.
+    <strong>Disposed RCD</strong> — this RCD has been marked as disposed and should not be relied on for protection.
     {% if appliance.disposal_date or appliance.disposal_price or appliance.disposal_comment %}
     <hr class="my-2">
     <table class="table table-sm table-borderless mb-0">
@@ -29,58 +29,33 @@
 <div class="card mb-4">
     <div class="card-header d-flex justify-content-between align-items-center">
         <h5 class="mb-0">Details</h5>
-        {% if appliance.class_type == 'FIXED_RCD' %}
         <a href="{{ url_for('main.edit_rcd', appliance_id=appliance.id) }}"
            class="btn btn-warning btn-sm">Edit RCD</a>
-        {% else %}
-        <a href="{{ url_for('main.edit_appliance', appliance_id=appliance.id) }}"
-           class="btn btn-warning btn-sm">Edit Appliance</a>
-        {% endif %}
     </div>
     <div class="card-body p-0">
         <table class="table table-bordered mb-0">
             <tr><th style="width:170px">Description</th><td>{{ appliance.description }}</td></tr>
-            <tr><th>Make / Model</th><td>{{ appliance.make_model }}</td></tr>
+            <tr><th>Make / Model</th><td>{{ appliance.make_model or '—' }}</td></tr>
             <tr><th>Serial Number</th><td>{{ appliance.serial_number or '—' }}</td></tr>
-            <tr><th>Location</th><td>{{ appliance.location }}</td></tr>
-            <tr><th>Owner</th><td>{{ appliance.owner }}</td></tr>
-            <tr><th>Class</th><td>{{ appliance.class_type }}</td></tr>
-            <tr><th>Appliance Type</th><td>{{ appliance.supply_type }}</td></tr>
-            {% if appliance.switchboard %}
-            <tr><th>Switchboard</th><td><a href="{{ url_for('main.switchboard_detail', switchboard_id=appliance.switchboard.id) }}">{{ appliance.switchboard.name }}</a></td></tr>
-            {% endif %}
-            <tr><th>Purchase Date</th><td>{{ appliance.purchase_date.strftime('%d/%m/%Y') if appliance.purchase_date else '—' }}</td></tr>
-            <tr><th>Purchase Price</th><td>{{ '$%.2f' % appliance.purchase_price if appliance.purchase_price else '—' }}</td></tr>
+            <tr>
+                <th>Switchboard</th>
+                <td>
+                    {% if appliance.switchboard %}
+                    <a href="{{ url_for('main.switchboard_detail', switchboard_id=appliance.switchboard.id) }}">{{ appliance.switchboard.name }}</a>
+                    ({{ appliance.switchboard.environment | environment_label }})
+                    {% else %}—{% endif %}
+                </td>
+            </tr>
+            <tr><th>RCD Type</th><td>{{ appliance.rcd_type or '—' }}</td></tr>
+            <tr><th>RCD Waveform</th><td>{{ appliance.rcd_waveform or '—' }}</td></tr>
+            <tr><th>RCD Rating</th><td>{{ (appliance.rcd_rating_ma ~ ' mA') if appliance.rcd_rating_ma else '—' }}</td></tr>
+            <tr><th>Area Served</th><td>{{ appliance.location or '—' }}</td></tr>
+            <tr><th>Installed Date</th><td>{{ appliance.purchase_date.strftime('%d/%m/%Y') if appliance.purchase_date else '—' }}</td></tr>
+            <tr><th>Installation Cost</th><td>{{ '$%.2f' % appliance.purchase_price if appliance.purchase_price else '—' }}</td></tr>
             <tr>
                 <th>Record Created</th>
                 <td>{{ appliance.created_at.strftime('%d/%m/%Y %H:%M') if appliance.created_at else '—' }}</td>
             </tr>
-            {% if appliance.new_to_service %}
-            <tr>
-                <th>Status</th>
-                <td>
-                    <span class="badge bg-info text-dark">New to Service</span>
-                    <a href="{{ url_for('main.nts_label_preview', appliance_id=appliance.id) }}"
-                       target="_blank" class="btn btn-sm btn-outline-secondary ms-2"
-                       title="Preview NTS label"><i class="mdi mdi-eye"></i></a>
-                    <a href="{{ url_for('main.nts_label', appliance_id=appliance.id) }}"
-                       class="btn btn-sm btn-outline-secondary ms-1"
-                       title="Print NTS label"><i class="mdi mdi-printer"></i></a>
-                </td>
-            </tr>
-            {% if appliance.entry_to_service_date %}
-            <tr>
-                <th>Entry to Service</th>
-                <td>{{ appliance.entry_to_service_date.strftime('%d/%m/%Y') }}</td>
-            </tr>
-            {% endif %}
-            {% if appliance.nts_next_test_due %}
-            <tr>
-                <th>First Test Due</th>
-                <td>{{ appliance.nts_next_test_due.strftime('%d/%m/%Y') }}</td>
-            </tr>
-            {% endif %}
-            {% endif %}
         </table>
     </div>
 </div>
@@ -144,7 +119,7 @@
             <thead>
                 <tr>
                     <th>Date</th>
-                    <th>Standard</th>
+                    <th>Method</th>
                     <th>Result</th>
                     <th>Next Due</th>
                     <th>Tag</th>
@@ -155,7 +130,12 @@
                 {% for test in active_tests %}
                 <tr>
                     <td>{{ test.test_date.strftime('%d/%m/%Y') }}</td>
-                    <td>{{ test.test_standard | std }}</td>
+                    <td>
+                        {{ test.rcd_test_method or '—' }}
+                        {% if test.rcd_test_method == 'Trip Time' %}
+                        <br><small class="text-muted">0°: {{ test.rcd_trip_time_0deg_ms or '—' }} ms ({{ test.rcd_trip_time_0deg_result or '—' }}) / 180°: {{ test.rcd_trip_time_180deg_ms or '—' }} ms ({{ test.rcd_trip_time_180deg_result or '—' }})</small>
+                        {% endif %}
+                    </td>
                     <td>
                         {% if test.overall_result == "PASS" %}
                             <span class="badge bg-success">PASS</span>
@@ -184,7 +164,7 @@
             </tbody>
         </table>
         {% else %}
-            <p class="text-muted px-3 py-2 mb-0">No tests recorded for this appliance.</p>
+            <p class="text-muted px-3 py-2 mb-0">No tests recorded for this RCD.</p>
         {% endif %}
     </div>
 </div>
@@ -242,41 +222,8 @@
                 {% endfor %}
             </tbody>
         </table>
-
-        {% set ns = namespace(total_cost=0, total_minutes=0, has_cost=false, has_time=false) %}
-        {% for repair in active_repairs %}
-            {% if repair.parts_cost is not none %}
-                {% set ns.total_cost = ns.total_cost + repair.parts_cost %}
-                {% set ns.has_cost = true %}
-            {% endif %}
-            {% if repair.labour_minutes is not none %}
-                {% set ns.total_minutes = ns.total_minutes + repair.labour_minutes %}
-                {% set ns.has_time = true %}
-            {% endif %}
-        {% endfor %}
-        {% if ns.has_cost or ns.has_time %}
-        <div class="px-3 py-3">
-            <table class="table table-sm table-bordered mb-0" style="max-width:320px">
-                <tbody>
-                    {% if ns.has_cost %}
-                    <tr>
-                        <th>Total Parts Cost</th>
-                        <td>${{ '%.2f' % ns.total_cost }}</td>
-                    </tr>
-                    {% endif %}
-                    {% if ns.has_time %}
-                    <tr>
-                        <th>Total Labour Time</th>
-                        <td>{{ ns.total_minutes // 60 }}:{{ '%02d' % (ns.total_minutes % 60) }}</td>
-                    </tr>
-                    {% endif %}
-                </tbody>
-            </table>
-        </div>
-        {% endif %}
-
         {% else %}
-            <p class="text-muted px-3 py-2 mb-0">No repairs recorded for this appliance.</p>
+            <p class="text-muted px-3 py-2 mb-0">No repairs recorded for this RCD.</p>
         {% endif %}
     </div>
 </div>
@@ -318,12 +265,12 @@
 {% endif %}
 
 {% if request.args.get('just_created') %}
-<div class="modal fade" id="applianceCreatedModal" tabindex="-1" aria-labelledby="applianceCreatedModalLabel" aria-hidden="true">
+<div class="modal fade" id="rcdCreatedModal" tabindex="-1" aria-labelledby="rcdCreatedModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header border-0 pb-0">
-                <h5 class="modal-title" id="applianceCreatedModalLabel">
-                    <i class="mdi mdi-check-circle text-success me-2"></i>Appliance added successfully
+                <h5 class="modal-title" id="rcdCreatedModalLabel">
+                    <i class="mdi mdi-check-circle text-success me-2"></i>RCD added successfully
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
@@ -335,12 +282,8 @@
                    class="btn btn-primary">
                     <i class="mdi mdi-clipboard-check-outline me-1"></i>Add Test
                 </a>
-                <a href="{{ url_for('main.new_repair', appliance_id=appliance.id) }}"
-                   class="btn btn-outline-secondary">
-                    <i class="mdi mdi-wrench-outline me-1"></i>Add Repair
-                </a>
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
-                    View Appliance
+                    View RCD
                 </button>
             </div>
         </div>
@@ -353,7 +296,7 @@
 {% if request.args.get('just_created') %}
 {% block scripts %}
 <script>
-    new bootstrap.Modal(document.getElementById('applianceCreatedModal')).show();
+    new bootstrap.Modal(document.getElementById('rcdCreatedModal')).show();
 </script>
 {% endblock %}
 {% endif %}

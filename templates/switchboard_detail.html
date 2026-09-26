@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Switchboard Details{% endblock %}
+
+{% block content %}
+
+<h3 class="mb-3">Switchboard — {{ switchboard.name }}</h3>
+
+<div class="card p-3">
+    <table class="table table-bordered">
+        <tr><th>Name</th><td>{{ switchboard.name }}</td></tr>
+        <tr><th>Location</th><td>{{ switchboard.location or '—' }}</td></tr>
+        <tr><th>Environment</th><td>{{ switchboard.environment | environment_label }}</td></tr>
+        <tr><th>Notes</th><td>{{ switchboard.notes or '—' }}</td></tr>
+    </table>
+
+    <div class="d-flex gap-2 mb-3 flex-wrap">
+        <a href="{{ url_for('main.edit_switchboard', switchboard_id=switchboard.id) }}" class="btn btn-outline-secondary">
+            Edit Switchboard
+        </a>
+        <a href="{{ url_for('main.new_rcd', switchboard_id=switchboard.id) }}" class="btn btn-success">
+            Add RCD
+        </a>
+        <a href="{{ url_for('main.switchboard_rcd_report_pdf', switchboard_id=switchboard.id) }}" class="btn btn-primary">
+            <i class="mdi mdi-file-pdf-box me-1"></i>Download RCD Report
+        </a>
+        <a href="{{ url_for('static', filename='swms_switchboard_rcd.html') }}" target="_blank" class="btn btn-outline-warning">
+            <i class="mdi mdi-file-document-outline me-1"></i>Read SWMS
+        </a>
+    </div>
+
+    <h5>RCDs on this Switchboard</h5>
+    <table class="table table-striped align-middle">
+        <thead>
+            <tr>
+                <th>Asset Number</th>
+                <th>Description</th>
+                <th>RCD Type</th>
+                <th>Last Test Date</th>
+                <th>Last Result</th>
+                <th>Next Due</th>
+                <th style="white-space: nowrap;">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for rcd in rcds %}
+            {% set test = latest_tests.get(rcd.id) %}
+            <tr>
+                <td><a href="{{ url_for('main.rcd_detail', appliance_id=rcd.id) }}">{{ rcd.asset_number }}</a></td>
+                <td>{{ rcd.description or '—' }}</td>
+                <td>{{ rcd.rcd_type or '—' }}</td>
+                <td>{{ test.test_date.strftime('%d/%m/%Y') if test else '—' }}</td>
+                <td>
+                    {% if test %}
+                        {% if test.overall_result == 'PASS' %}
+                            <span class="badge bg-success">PASS</span>
+                        {% else %}
+                            <span class="badge bg-danger">FAIL</span>
+                        {% endif %}
+                    {% else %}
+                        <span class="text-muted">Not tested</span>
+                    {% endif %}
+                </td>
+                <td>{{ test.next_test_due.strftime('%d/%m/%Y') if test and test.next_test_due else '—' }}</td>
+                <td class="text-end" style="white-space: nowrap;">
+                    <a href="{{ url_for('main.new_test', appliance_id=rcd.id) }}" class="btn btn-sm btn-success">Add Test</a>
+                    <a href="{{ url_for('main.edit_rcd', appliance_id=rcd.id) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
+                </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="7" class="text-muted">No RCDs linked to this switchboard yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% endblock %}

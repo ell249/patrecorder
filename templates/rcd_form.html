@@ -1,0 +1,369 @@
+{% extends "base.html" %}
+{% block title %}{% if edit_mode %}Edit RCD{% else %}Add RCD{% endif %}{% endblock %}
+
+{% block content %}
+<h3 class="mb-3">
+  {% if edit_mode %}Edit RCD — {{ appliance.asset_number }}{% else %}Add RCD to {{ switchboard.name }}{% endif %}
+</h3>
+
+<form method="post" enctype="multipart/form-data" class="row g-3">
+
+  <!-- ── Identification ─────────────────────────────────── -->
+  <h5 class="col-12 mb-0">Identification</h5>
+
+  <div class="col-md-4">
+    <label class="form-label">Asset Number</label>
+    <input type="text" name="asset_number" id="assetNumberField" class="form-control"
+           value="{% if edit_mode %}{{ appliance.asset_number }}{% endif %}"
+           required>
+  </div>
+
+  <div class="col-md-8">
+    <label class="form-label">Description</label>
+    <input type="text" name="description" class="form-control"
+           value="{{ appliance.description if edit_mode else '' }}"
+           placeholder="e.g. Main switchboard RCD, Circuit 4"
+           required>
+  </div>
+
+  <div class="col-md-6">
+    <label class="form-label">Make / Model</label>
+    <input type="text" name="make_model" class="form-control"
+           value="{{ appliance.make_model if edit_mode else '' }}">
+  </div>
+
+  <div class="col-md-6">
+    <label class="form-label">Serial Number</label>
+    <input type="text" name="serial_number" class="form-control"
+           value="{{ appliance.serial_number or '' if edit_mode else '' }}">
+  </div>
+
+  <!-- ── RCD Details ─────────────────────────────────────── -->
+  <hr class="mt-2 mb-0">
+  <h5 class="col-12 mb-0">RCD Details</h5>
+
+  <div class="col-md-4">
+    <label class="form-label">Switchboard</label>
+    <div class="input-group">
+      <select name="switchboard_id" class="form-select" required>
+        <option value="" disabled {% if not (edit_mode and appliance.switchboard_id) and not switchboard %}selected{% endif %}>Select switchboard...</option>
+        {% for sb in switchboards %}
+        <option value="{{ sb.id }}"
+                {% if (edit_mode and appliance.switchboard_id == sb.id) or (not edit_mode and switchboard and switchboard.id == sb.id) %}selected{% endif %}>
+          {{ sb.name }}{% if sb.location %} — {{ sb.location }}{% endif %}
+        </option>
+        {% endfor %}
+      </select>
+      <button type="button" class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#addSwitchboardModal">
+        <i class="mdi mdi-plus"></i>
+      </button>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <label class="form-label">
+      RCD Type <span class="req-star text-danger ms-1" aria-hidden="true">*</span>
+      <span data-bs-toggle="tooltip"
+            title="Type I (10 mA): higher sensitivity, typically used in wet areas and for additional protection of individuals. Type II (30 mA): general-purpose protection. This determines the trip-time limit used when this RCD is tested (≤ 40 ms for Type I, ≤ 300 ms for Type II).">ⓘ</span>
+    </label>
+    <div class="d-flex gap-2 flex-wrap">
+      {% for value, label, roman in [('Type I', 'Type I (10 mA)', 'I'), ('Type II', 'Type II (30 mA)', 'II')] %}
+      <input type="radio" class="btn-check" name="rcd_type" value="{{ value }}" id="rcdType_{{ loop.index }}"
+             {% if edit_mode and appliance.rcd_type == value %}checked{% endif %} required>
+      <label class="btn btn-outline-secondary d-flex align-items-center gap-2 py-2" for="rcdType_{{ loop.index }}">
+        <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true">
+          <circle cx="11" cy="11" r="10" fill="none" stroke="currentColor" stroke-width="1.4"/>
+          <text x="11" y="15" text-anchor="middle" font-size="9" fill="currentColor">{{ roman }}</text>
+        </svg>
+        {{ label }}
+      </label>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="col-md-8">
+    <label class="form-label">
+      RCD Waveform
+      <span data-bs-toggle="tooltip"
+            title="IEC classification of the residual current waveforms this RCD can detect — match the symbol printed on the device's rating label. This is informational only and does not affect PASS/FAIL.">ⓘ</span>
+    </label>
+    <div class="d-flex gap-2 flex-wrap">
+      {% for value in ['AC', 'A', 'B', 'F'] %}
+      <input type="radio" class="btn-check" name="rcd_waveform" value="{{ value }}" id="rcdWaveform_{{ value }}"
+             {% if edit_mode and appliance.rcd_waveform == value %}checked{% endif %}>
+      <label class="btn btn-outline-secondary d-flex align-items-center gap-2 py-2" for="rcdWaveform_{{ value }}">
+        {% if value == 'AC' %}
+        <svg width="30" height="20" viewBox="0 0 30 20" aria-hidden="true">
+          <path d="M1 10 C4 2 8 2 11 10 C14 18 18 18 21 10 C24 2 28 2 28 10" stroke="currentColor" fill="none" stroke-width="1.6"/>
+        </svg>
+        {% elif value == 'A' %}
+        <svg width="30" height="24" viewBox="0 0 30 24" aria-hidden="true">
+          <path d="M1 8 C4 1 8 1 11 8 C14 15 18 15 21 8 C24 1 28 1 28 8" stroke="currentColor" fill="none" stroke-width="1.5"/>
+          <path d="M1 20 C3 14 5 14 7 20 M9 20 C11 14 13 14 15 20 M17 20 C19 14 21 14 23 20" stroke="currentColor" fill="none" stroke-width="1.3"/>
+        </svg>
+        {% elif value == 'B' %}
+        <svg width="30" height="26" viewBox="0 0 30 26" aria-hidden="true">
+          <path d="M1 6 C4 -1 8 -1 11 6 C14 13 18 13 21 6 C24 -1 28 -1 28 6" stroke="currentColor" fill="none" stroke-width="1.5"/>
+          <path d="M1 18 C3 12 5 12 7 18 M9 18 C11 12 13 12 15 18 M17 18 C19 12 21 12 23 18" stroke="currentColor" fill="none" stroke-width="1.3"/>
+          <line x1="1" y1="24" x2="28" y2="24" stroke="currentColor" stroke-width="1.6"/>
+        </svg>
+        {% else %}
+        <svg width="30" height="24" viewBox="0 0 30 24" aria-hidden="true">
+          <path d="M1 8 C4 1 8 1 11 8 C14 15 18 15 21 8 C24 1 28 1 28 8" stroke="currentColor" fill="none" stroke-width="1.6"/>
+          <path d="M1 20 q1.5 -4 3 0 q1.5 4 3 0 q1.5 -4 3 0 q1.5 4 3 0 q1.5 -4 3 0 q1.5 4 3 0 q1.5 -4 3 0 q1.5 4 3 0"
+                stroke="currentColor" fill="none" stroke-width="1.2"/>
+        </svg>
+        {% endif %}
+        {{ value }}
+      </label>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="col-12">
+    <div class="alert alert-light border small mb-0">
+      <strong>Not sure which waveform?</strong> Compare the icons above to the symbol printed on the RCD's rating label.
+      <span class="text-muted">(Simplified reference icons — always confirm against the exact symbol on the device or its datasheet before relying on this.)</span>
+      <table class="table table-sm table-bordered mt-2 mb-0 bg-white">
+        <tbody>
+          <tr><th style="width:6rem">AC</th><td>Detects standard sinusoidal AC residual currents. The most common general-purpose type.</td></tr>
+          <tr><th>A</th><td>Also detects pulsating DC residual currents. Required for circuits with electronic equipment (e.g. variable speed drives, some IT and appliance electronics).</td></tr>
+          <tr><th>B</th><td>Also detects smooth DC residual currents. Required for three-phase equipment with rectifiers (e.g. EV chargers, solar inverters, some medical equipment).</td></tr>
+          <tr><th>F</th><td>Also detects mixed-frequency residual currents from frequency converters (e.g. some single-phase appliances with variable-frequency drives).</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── Area Served ─────────────────────────────────────── -->
+  <hr class="mt-2 mb-0">
+  <h5 class="col-12 mb-0">Area Served</h5>
+
+  <div class="col-12">
+    <label class="form-label">
+      Area Served
+      <span data-bs-toggle="tooltip" title="Which circuits or areas this RCD protects — helps identify affected areas before testing.">ⓘ</span>
+    </label>
+    <input type="text" name="location" class="form-control"
+           value="{{ appliance.location if edit_mode else '' }}"
+           placeholder="e.g. Kitchen power circuits, Workshop socket outlets">
+  </div>
+
+  <!-- ── Installed ─────────────────────────────────────── -->
+  <hr class="mt-2 mb-0">
+  <h5 class="col-12 mb-0">Installed</h5>
+
+  <div class="col-md-3">
+    <label class="form-label">Installed Date</label>
+    <input type="date" name="purchase_date" class="form-control"
+           value="{{ appliance.purchase_date.strftime('%Y-%m-%d') if edit_mode and appliance.purchase_date else '' }}">
+  </div>
+
+  <div class="col-md-3">
+    <label class="form-label">Installation Cost ($)</label>
+    <div class="input-group">
+      <span class="input-group-text">$</span>
+      <input type="number" name="purchase_price" class="form-control" min="0" step="0.01"
+             value="{{ '%.2f' % appliance.purchase_price if edit_mode and appliance.purchase_price else '' }}">
+    </div>
+  </div>
+
+  <div class="col-12">
+    <label class="form-label">Documents</label>
+    {% if edit_mode and appliance.documents %}
+    <div class="mb-2">
+      <small class="text-muted">{{ appliance.documents|length }} document(s) attached. Upload new files to add more.</small>
+    </div>
+    {% endif %}
+    <input type="file" name="documents" class="form-control" multiple
+           accept="image/*,application/pdf">
+  </div>
+
+  <!-- Required field asterisks -->
+  <script>
+  document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll("[required]:not([type='hidden'])").forEach(function (el) {
+      let node = el.parentElement;
+      while (node && node.tagName !== "FORM") {
+        const label = node.querySelector(":scope > label.form-label");
+        if (label && !label.querySelector(".req-star")) {
+          const star = document.createElement("span");
+          star.className = "req-star text-danger ms-1";
+          star.setAttribute("aria-hidden", "true");
+          star.textContent = "*";
+          const tooltip = label.querySelector("[data-bs-toggle='tooltip']");
+          tooltip ? label.insertBefore(star, tooltip) : label.appendChild(star);
+          break;
+        }
+        node = node.parentElement;
+      }
+    });
+  });
+  </script>
+
+  <!-- ── Actions ───────────────────────────────────────── -->
+  <hr class="mt-2 mb-0">
+  <div class="col-12">
+    <button type="submit" class="btn btn-primary">
+      {% if edit_mode %}Save Changes{% else %}Save RCD{% endif %}
+    </button>
+    <a href="{{ url_for('main.switchboard_detail', switchboard_id=switchboard.id if not edit_mode else appliance.switchboard_id) }}" class="btn btn-secondary">Cancel</a>
+  </div>
+
+</form>
+
+<!-- Add Switchboard Modal — kept outside the main form; a form element cannot
+     contain another one without browsers closing the outer one early -->
+
+<div class="modal fade" id="addSwitchboardModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="POST" action="{{ url_for('main.new_switchboard_modal') }}">
+        <div class="modal-header">
+          <h5 class="modal-title">Add Switchboard</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" name="return_to" value="{% if edit_mode %}{{ url_for('main.edit_rcd', appliance_id=appliance.id) }}{% else %}{{ url_for('main.new_rcd', switchboard_id=switchboard.id) }}{% endif %}">
+          <div class="mb-3">
+            <label class="form-label">Name</label>
+            <input type="text" name="name" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Location</label>
+            <input type="text" name="location" class="form-control">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">
+              Environment
+              <span data-bs-toggle="tooltip"
+                    title="Determines the recommended RCD retest intervals per AS/NZS 3760:2022. Push-button testing is 6-monthly either way; trip-time testing is 12-monthly (hostile) or 24-monthly (non-hostile).">ⓘ</span>
+            </label>
+            <select name="environment" class="form-select" required>
+              <option value="" disabled selected>Select…</option>
+              <option value="HOSTILE">Hostile / Industrial (12-monthly trip-time test)</option>
+              <option value="NON_HOSTILE">Non-hostile / Office (24-monthly trip-time test)</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-success">Save Switchboard</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% if edit_mode %}
+<hr class="my-4">
+
+{% if not appliance.disposed %}
+<!-- Dispose Appliance — triggers modal -->
+<button type="button" class="btn btn-warning mb-3"
+        data-bs-toggle="modal" data-bs-target="#disposeModal">
+  Dispose RCD
+</button>
+
+<!-- Dispose Modal -->
+<div class="modal fade" id="disposeModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="post" action="{{ url_for('main.dispose_appliance', appliance_id=appliance.id) }}">
+        <div class="modal-header">
+          <h5 class="modal-title">Dispose RCD</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body row g-3">
+
+          <div class="col-md-6">
+            <label class="form-label">Disposal Date <span class="text-danger">*</span></label>
+            <input type="date" name="disposal_date" id="disposal_date"
+                   class="form-control" required>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Disposal Price ($)</label>
+            <div class="input-group">
+              <span class="input-group-text">$</span>
+              <input type="number" name="disposal_price" class="form-control"
+                     min="0" step="0.01" placeholder="0.00">
+            </div>
+          </div>
+
+          <div class="col-12">
+            <label class="form-label">Disposal Comment</label>
+            <textarea name="disposal_comment" class="form-control" rows="4"
+                      placeholder="Describe why this RCD is being removed, e.g. 'Replaced — nuisance tripping' or 'Switchboard decommissioned'"></textarea>
+          </div>
+
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-warning">Confirm Disposal</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const dateField = document.getElementById("disposal_date");
+  if (dateField && !dateField.value) {
+    dateField.value = new Date().toISOString().split("T")[0];
+  }
+});
+</script>
+
+{% else %}
+<!-- Restore Appliance -->
+<form method="post" action="{{ url_for('main.restore_appliance', appliance_id=appliance.id) }}"
+      onsubmit="return confirm('Restore this RCD to active status?');">
+  <button type="submit" class="btn btn-success mb-3">
+    Restore RCD
+  </button>
+</form>
+{% endif %}
+
+<!-- Hard Delete -->
+<form method="post" action="{{ url_for('main.delete_appliance', appliance_id=appliance.id) }}"
+      onsubmit="return confirm('Are you sure you want to permanently delete this RCD and all its tests?');">
+  <button type="submit" class="btn btn-danger">
+    Delete RCD
+  </button>
+</form>
+
+{% endif %}
+
+{% if not edit_mode %}
+<script>
+function generateTimestamp() {
+    const now = new Date();
+    const pad = n => n.toString().padStart(2, '0');
+    return (
+        pad(now.getFullYear() % 100) +
+        pad(now.getMonth() + 1) +
+        pad(now.getDate()) +
+        "-" +
+        pad(now.getHours()) +
+        pad(now.getMinutes()) +
+        pad(now.getSeconds())
+    );
+}
+
+window.addEventListener("DOMContentLoaded", () => {
+    document.getElementById("assetNumberField").value = "R" + generateTimestamp();
+});
+</script>
+{% endif %}
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (el) {
+    new bootstrap.Tooltip(el);
+  });
+});
+</script>
+
+{% endblock %}

@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}{% if edit_mode %}Edit Switchboard{% else %}Add Switchboard{% endif %}{% endblock %}
+
+{% block content %}
+<h3 class="mb-3">
+  {% if edit_mode %}Edit Switchboard{% else %}Add New Switchboard{% endif %}
+</h3>
+
+<form method="post" class="row g-3">
+
+  <div class="col-md-6">
+    <label class="form-label">Name</label>
+    <input type="text" name="name" class="form-control"
+           value="{{ switchboard.name if edit_mode else '' }}" required>
+  </div>
+
+  <div class="col-md-6">
+    <label class="form-label">Location</label>
+    <input type="text" name="location" class="form-control"
+           value="{{ switchboard.location or '' if edit_mode else '' }}">
+  </div>
+
+  <div class="col-md-6">
+    <label class="form-label">
+      Environment
+      <span data-bs-toggle="tooltip"
+            title="Determines the recommended RCD retest intervals per AS/NZS 3760:2022. Hostile/Industrial: factories, manufacturing, assembly, maintenance, fabrication — trip-time test every 12 months. Non-hostile/Office: offices, residential common areas — trip-time test every 24 months. Push-button testing is 6-monthly either way.">ⓘ</span>
+    </label>
+    <select name="environment" class="form-select" required>
+      <option value="" disabled {% if not (edit_mode and switchboard.environment) %}selected{% endif %}>Select…</option>
+      <option value="HOSTILE"     {% if edit_mode and switchboard.environment == 'HOSTILE' %}selected{% endif %}>Hostile / Industrial (12-monthly trip-time test)</option>
+      <option value="NON_HOSTILE" {% if edit_mode and switchboard.environment == 'NON_HOSTILE' %}selected{% endif %}>Non-hostile / Office (24-monthly trip-time test)</option>
+    </select>
+  </div>
+
+  <div class="col-12">
+    <label class="form-label">Notes</label>
+    <textarea name="notes" class="form-control" rows="3">{{ switchboard.notes or '' if edit_mode else '' }}</textarea>
+  </div>
+
+  <div class="col-12 mt-4">
+    <button type="submit" class="btn btn-primary">
+      {% if edit_mode %}Save Changes{% else %}Save Switchboard{% endif %}
+    </button>
+    <a href="{{ url_for('main.switchboard_list') }}" class="btn btn-secondary">Cancel</a>
+  </div>
+
+</form>
+
+{% endblock %}

@@ -34,6 +34,7 @@
         </tr>
     </table>
 
+    {% if test.test_standard != 'FIXED_RCD' %}
     <h5 class="mt-4">Visual Inspection</h5>
     <table class="table table-bordered">
         <tr><th>Plug Condition</th><td>{{ result_badge('PASS' if test.vi_plug is sameas True else ('FAIL' if test.vi_plug is sameas False else 'N/A')) }}</td></tr>
@@ -46,14 +47,31 @@
         <tr><th>Strain Relief</th><td>{{ result_badge(test.vi_strain) }}</td></tr>
         <tr><th>Safety Guards</th><td>{{ result_badge(test.vi_guards) }}</td></tr>
     </table>
+    {% endif %}
 
-    {% if test.test_standard != 'VISUAL' %}
+    {% if test.test_standard not in ('VISUAL', 'FIXED_RCD') %}
     <h5 class="mt-4">Electrical Tests</h5>
     <table class="table table-bordered">
         <tr><th>Earth Continuity (Ω)</th><td>{{ test.earth_continuity_ohms or 'N/A' }}</td></tr>
         <tr><th>Insulation Resistance (MΩ)</th><td>{{ test.insulation_mohms or 'N/A' }}</td></tr>
         <tr><th>Leakage Current (mA)</th><td>{{ test.leakage_mA or 'N/A' }}</td></tr>
         <tr><th>Polarity</th><td>{{ test.polarity_pass or '—' }}</td></tr>
+    </table>
+    {% endif %}
+
+    {% if test.test_type in ('Lead+RCD', 'Fixed RCD') %}
+    <h5 class="mt-4">RCD Test</h5>
+    <table class="table table-bordered">
+        <tr><th>RCD Type</th><td>{{ test.rcd_type or '—' }}</td></tr>
+        <tr><th>RCD Waveform</th><td>{{ test.rcd_waveform or '—' }}</td></tr>
+        <tr><th>RCD Rating</th><td>{{ (test.rcd_rating_ma ~ ' mA') if test.rcd_rating_ma else '—' }}</td></tr>
+        <tr><th>Test Method</th><td>{{ test.rcd_test_method or '—' }}</td></tr>
+        {% if test.rcd_test_method == 'Push Button' %}
+        <tr><th>Push Button Result</th><td>{{ result_badge(test.rcd_push_button_result) }}</td></tr>
+        {% elif test.rcd_test_method == 'Trip Time' %}
+        <tr><th>Trip Time @ 0°</th><td>{{ test.rcd_trip_time_0deg_ms or '—' }} ms — {{ result_badge(test.rcd_trip_time_0deg_result) }}</td></tr>
+        <tr><th>Trip Time @ 180°</th><td>{{ test.rcd_trip_time_180deg_ms or '—' }} ms — {{ result_badge(test.rcd_trip_time_180deg_result) }}</td></tr>
+        {% endif %}
     </table>
     {% endif %}
 

@@ -1,0 +1,12 @@
+name: patrecorder
+services:
+  patrecorder:
+    image: patrecorder:latest
+    build: .
+    container_name: patrecorder
+    restart: unless-stopped
+    ports:
+      - "5090:5090"
+    volumes:
+      - ./static/uploads:/app/static/uploads
+      - ./config.py:/app/config.py

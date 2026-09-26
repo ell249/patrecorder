@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Switchboards{% endblock %}
+
+{% block content %}
+
+<h3 class="mb-4">Switchboards</h3>
+
+<div class="mb-3">
+    <a href="{{ url_for('main.new_switchboard') }}" class="btn btn-primary">
+        New Switchboard
+    </a>
+</div>
+
+<table class="table table-striped align-middle">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Location</th>
+            <th>RCDs</th>
+            <th style="white-space: nowrap;">Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for sb in switchboards %}
+        <tr>
+            <td><a href="{{ url_for('main.switchboard_detail', switchboard_id=sb.id) }}">{{ sb.name }}</a></td>
+            <td>{{ sb.location or '—' }}</td>
+            <td>{{ sb.rcds | length }}</td>
+            <td class="text-end" style="white-space: nowrap;">
+                <a href="{{ url_for('main.switchboard_detail', switchboard_id=sb.id) }}" class="btn btn-sm btn-primary">View</a>
+                <a href="{{ url_for('main.edit_switchboard', switchboard_id=sb.id) }}" class="btn btn-sm btn-outline-secondary ms-1">Edit</a>
+            </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" class="text-muted">No switchboards added yet.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% endblock %}

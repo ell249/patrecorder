@@ -13,6 +13,8 @@ def format_standard(code: str) -> str:
         return ""
     if code == "VISUAL":
         return "Visual & Functional"
+    if code == "FIXED_RCD":
+        return "Fixed RCD"
     return f"AS/NZS {code}"
 
 
@@ -21,7 +23,15 @@ def format_class_type(code: str) -> str:
         'CLASS I': 'Class I',
         'CLASS II': 'Class II',
         'BATTERY_ELV': 'Battery / ELV',
+        'FIXED_RCD': 'Fixed RCD',
     }.get(code, code or '—')
+
+
+def format_environment(code: str) -> str:
+    return {
+        'HOSTILE': 'Hostile / Industrial',
+        'NON_HOSTILE': 'Non-hostile / Office',
+    }.get(code, '—')
 
 
 # ---------------------------------------------------------

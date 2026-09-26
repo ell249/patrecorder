@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+body { font-family: Arial, sans-serif; font-size: 12px; margin: 20px; }
+h2 { margin-bottom: 0; }
+h3 { margin-top: 25px; margin-bottom: 5px; }
+table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+th, td { border: 1px solid #444; padding: 6px; vertical-align: top; }
+th { background: #eee; }
+.badge-pass { background: #198754; color: #fff; padding: 2px 6px; border-radius: 3px; font-size: 10px; }
+.badge-fail { background: #dc3545; color: #fff; padding: 2px 6px; border-radius: 3px; font-size: 10px; }
+.footer { margin-top: 30px; font-size: 10px; color: #888; border-top: 1px solid #ddd; padding-top: 8px; }
+.qr { float: right; width: 120px; }
+</style>
+</head>
+<body>
+
+<h2>Switchboard RCD Report</h2>
+<img src="data:image/png;base64,{{ qr_code }}" class="qr">
+
+<h3>Switchboard Information</h3>
+<table>
+<tr><th>Name</th><td>{{ switchboard.name }}</td></tr>
+<tr><th>Location</th><td>{{ switchboard.location or '—' }}</td></tr>
+<tr><th>Environment</th><td>{{ switchboard.environment | environment_label }}</td></tr>
+{% if switchboard.notes %}<tr><th>Notes</th><td>{{ switchboard.notes }}</td></tr>{% endif %}
+</table>
+
+<h3>RCDs ({{ rcds | length }} total)</h3>
+
+{% if rcds %}
+<table>
+<tr>
+    <th>Asset Number</th>
+    <th>Description</th>
+    <th>RCD Type</th>
+    <th>Rating</th>
+    <th>Method</th>
+    <th>Result</th>
+    <th style="width:80px">Test Date</th>
+    <th style="width:80px">Next Due</th>
+    <th style="width:70px">Overall</th>
+</tr>
+{% for rcd in rcds %}
+{% set test = latest_tests.get(rcd.id) %}
+<tr>
+    <td>{{ rcd.asset_number }}</td>
+    <td>{{ rcd.description or '—' }}</td>
+    <td>{{ test.rcd_type if test else '—' }}</td>
+    <td>{{ (test.rcd_rating_ma ~ ' mA') if test and test.rcd_rating_ma else '—' }}</td>
+    <td>{{ test.rcd_test_method if test else '—' }}</td>
+    <td>
+        {% if not test %}
+            No test recorded
+        {% elif test.rcd_test_method == 'Push Button' %}
+            {{ test.rcd_push_button_result or '—' }}
+        {% elif test.rcd_test_method == 'Trip Time' %}
+            0°: {{ test.rcd_trip_time_0deg_ms or '—' }} ms ({{ test.rcd_trip_time_0deg_result or '—' }})<br>
+            180°: {{ test.rcd_trip_time_180deg_ms or '—' }} ms ({{ test.rcd_trip_time_180deg_result or '—' }})
+        {% else %}
+            —
+        {% endif %}
+    </td>
+    <td>{{ test.test_date.strftime('%d/%m/%Y') if test else '—' }}</td>
+    <td>{{ test.next_test_due.strftime('%d/%m/%Y') if test and test.next_test_due else '—' }}</td>
+    <td>
+        {% if test %}
+            {% if test.overall_result == 'PASS' %}<span class="badge-pass">PASS</span>
+            {% else %}<span class="badge-fail">FAIL</span>{% endif %}
+        {% else %}—{% endif %}
+    </td>
+</tr>
+{% endfor %}
+</table>
+{% else %}
+<p>No RCDs are currently linked to this switchboard.</p>
+{% endif %}
+
+<div class="footer">
+    Generated on {{ now.strftime('%d/%m/%Y %H:%M') if now else '' }}
+</div>
+
+</body>
+</html>
