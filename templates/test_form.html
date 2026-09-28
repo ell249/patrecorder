@@ -756,7 +756,11 @@ environments, or every 24 months in non-hostile/office environments.">
 
     <div class="col-12 mt-4">
         <button type="submit" class="btn btn-success">Save Test</button>
+        {% if appliance.class_type == 'FIXED_RCD' and appliance.switchboard_id %}
+        <a href="{{ url_for('main.switchboard_detail', switchboard_id=appliance.switchboard_id) }}" class="btn btn-secondary">Cancel</a>
+        {% else %}
         <a href="{{ url_for('main.appliance_detail', appliance_id=appliance.id) }}" class="btn btn-secondary">Cancel</a>
+        {% endif %}
     </div>
 
 </form>

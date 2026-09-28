@@ -32,6 +32,7 @@
     <table class="table table-striped align-middle">
         <thead>
             <tr>
+                <th>Status</th>
                 <th>Asset Number</th>
                 <th>Description</th>
                 <th>RCD Type</th>
@@ -44,7 +45,15 @@
         <tbody>
             {% for rcd in rcds %}
             {% set test = latest_tests.get(rcd.id) %}
-            <tr>
+            {% set status = statuses.get(rcd.id) %}
+            <tr class="{% if status == 'never' or status == 'overdue' %}table-danger{% elif status == 'due_soon' %}table-warning{% endif %}">
+                <td>
+                    {% if status == 'never' %}<span class="badge bg-danger">Never Tested</span>
+                    {% elif status == 'overdue' %}<span class="badge bg-danger">Overdue</span>
+                    {% elif status == 'due_soon' %}<span class="badge bg-warning text-dark">Due Soon</span>
+                    {% else %}<span class="badge bg-success">Up to Date</span>
+                    {% endif %}
+                </td>
                 <td><a href="{{ url_for('main.rcd_detail', appliance_id=rcd.id) }}">{{ rcd.asset_number }}</a></td>
                 <td>{{ rcd.description or '—' }}</td>
                 <td>{{ rcd.rcd_type or '—' }}</td>
@@ -67,7 +76,7 @@
                 </td>
             </tr>
             {% else %}
-            <tr><td colspan="7" class="text-muted">No RCDs linked to this switchboard yet.</td></tr>
+            <tr><td colspan="8" class="text-muted">No RCDs linked to this switchboard yet.</td></tr>
             {% endfor %}
         </tbody>
     </table>

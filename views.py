@@ -621,6 +621,10 @@ def new_test(appliance_id):
 
         db.session.commit()
 
+        if appliance.class_type == "FIXED_RCD" and appliance.switchboard_id:
+            flash(f"{appliance.asset_number} tested — {test.overall_result}.", "success" if test.overall_result == "PASS" else "danger")
+            return redirect(url_for("main.switchboard_detail", switchboard_id=appliance.switchboard_id))
+
         flash("Test record saved.", "success")
         return redirect(url_for("main.appliance_detail", appliance_id=appliance.id))
 
@@ -1259,11 +1263,33 @@ def switchboard_detail(switchboard_id):
         for rcd in rcds
     }
 
+    # Sort so RCDs needing attention (never tested, then overdue, then due soon) come first,
+    # to make working through a switchboard's untested RCDs quicker.
+    today = datetime.today().date()
+    soon = today + timedelta(days=30)
+
+    def priority(rcd):
+        test = latest_tests.get(rcd.id)
+        if not test:
+            return 0  # never tested
+        if not test.next_test_due:
+            return 3
+        if test.next_test_due <= today:
+            return 1  # overdue
+        if test.next_test_due <= soon:
+            return 2  # due soon
+        return 3  # up to date
+
+    STATUS_BY_PRIORITY = {0: "never", 1: "overdue", 2: "due_soon", 3: "ok"}
+    statuses = {rcd.id: STATUS_BY_PRIORITY[priority(rcd)] for rcd in rcds}
+    rcds = sorted(rcds, key=lambda rcd: (priority(rcd), rcd.asset_number))
+
     return render_template(
         "switchboard_detail.html",
         switchboard=switchboard,
         rcds=rcds,
         latest_tests=latest_tests,
+        statuses=statuses,
     )
 
 
