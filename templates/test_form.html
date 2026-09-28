@@ -916,6 +916,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const method = document.querySelector("select[name='rcd_test_method']");
     const retestInterval = document.getElementById("retest_interval");
+    const overall = document.getElementById("overall_result");
     if (!method || !retestInterval) return;
 
     // No visible selector for Fixed RCD — the hidden field is set directly.
@@ -926,8 +927,39 @@ document.addEventListener("DOMContentLoaded", function () {
         if (days) retestInterval.value = days;
     }
 
-    method.addEventListener("change", applyRecommendedInterval);
+    // Auto-select PASS once the RCD result is complete and not a FAIL — a Fixed RCD
+    // test has nothing else (no VI/electrical) that could independently pass or fail.
+    // Safe regardless of script/listener ordering relative to the generic auto-FAIL
+    // scanner below: this only ever sets PASS, never FAIL, and only when genuinely
+    // complete — the scanner still independently forces FAIL whenever it applies.
+    function applyOverallResult() {
+        if (!overall) return;
+        let complete = false, passed = false;
+        if (method.value === "Push Button") {
+            const pb = document.querySelector("select[name='rcd_push_button_result']");
+            if (pb && pb.value) { complete = true; passed = pb.value === "PASS"; }
+        } else if (method.value === "Trip Time") {
+            const r0 = document.querySelector(".rcd-computed-result[data-orientation='0deg']");
+            const r180 = document.querySelector(".rcd-computed-result[data-orientation='180deg']");
+            if (r0 && r180 && r0.value && r180.value) {
+                complete = true;
+                passed = r0.value === "PASS" && r180.value === "PASS";
+            }
+        }
+        if (complete && passed) overall.value = "PASS";
+    }
+
+    method.addEventListener("change", function () {
+        applyRecommendedInterval();
+        applyOverallResult();
+    });
+    document.addEventListener("change", function (e) {
+        if (e.target.matches && e.target.matches("select[name='rcd_push_button_result'], .rcd-computed-result")) {
+            applyOverallResult();
+        }
+    });
     applyRecommendedInterval();
+    applyOverallResult();
 });
 </script>
 {% endif %}
@@ -954,7 +986,9 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     function syncOverall() {
-        const anyFail = watched.some(function (sel) { return sel.value === "FAIL"; });
+        // Ignore disabled selects — e.g. a Fixed RCD's Push Button result select stays
+        // at its last value when the tester switches to Trip Time, but is no longer live.
+        const anyFail = watched.some(function (sel) { return sel.value === "FAIL" && !sel.disabled; });
         if (anyFail) {
             overall.value = "FAIL";
             overall.disabled = true;

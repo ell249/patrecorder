@@ -263,6 +263,44 @@
     </tbody>
 </table>
 
+{% if recent_rcd_test_groups %}
+<!-- Recent Switchboard RCD Testing -->
+<h4 class="mt-5">Recent Switchboard RCD Testing</h4>
+<p class="text-muted">Fixed RCD tests are grouped by switchboard here rather than listed individually above.</p>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Switchboard</th>
+            <th>RCDs Tested</th>
+            <th>Latest Test Date</th>
+            <th>Result</th>
+            <th class="text-end">Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for group in recent_rcd_test_groups %}
+        <tr>
+            <td><a href="{{ url_for('main.switchboard_detail', switchboard_id=group.switchboard.id) }}">{{ group.switchboard.name }}</a></td>
+            <td>{{ group.count }}</td>
+            <td>{{ group.latest_date.strftime('%d/%m/%Y') }}</td>
+            <td>
+                {% if group.any_fail %}
+                    <span class="badge bg-danger">FAIL</span>
+                {% else %}
+                    <span class="badge bg-success">PASS</span>
+                {% endif %}
+            </td>
+            <td class="text-end">
+                <a href="{{ url_for('main.switchboard_detail', switchboard_id=group.switchboard.id) }}"
+                   class="btn btn-sm btn-primary">View</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}
+
 {% if recent_repairs %}
 <!-- Recent Repairs -->
 <h4 class="mt-5">Recent Repairs</h4>

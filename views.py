@@ -2,7 +2,7 @@ import os
 from datetime import datetime, timedelta
 from flask import (
     Blueprint, render_template, request, redirect,
-    url_for, flash, make_response
+    url_for, flash, make_response, jsonify
 )
 from sqlalchemy import or_
 from weasyprint import HTML
@@ -44,6 +44,71 @@ def compute_rcd_trip_result(rcd_type, ms_value):
     except (TypeError, ValueError):
         return None
     return "PASS" if ms <= limit else "FAIL"
+
+
+def build_fixed_rcd_test(appliance, tester, test_date, rcd_test_method,
+                          rcd_push_button_result=None,
+                          rcd_trip_time_0deg_ms=None,
+                          rcd_trip_time_180deg_ms=None,
+                          tag_number=None,
+                          comments=None):
+    """Build (but do not add/commit) a TestRecord for a Fixed RCD test.
+
+    Shared by new_test()'s Fixed RCD branch and the bulk row-save endpoint so the
+    AS/NZS 3760 interval/limit rules and field-nulling logic exist in one place.
+    RCD type/waveform and the retest interval are derived from the server-known
+    appliance/switchboard, never trusted from the caller.
+    """
+    rcd_type_value = appliance.rcd_type
+    rcd_waveform_value = appliance.rcd_waveform
+
+    push_button_result = rcd_push_button_result if rcd_test_method == "Push Button" else None
+    trip_0deg_ms = rcd_trip_time_0deg_ms if rcd_test_method == "Trip Time" else None
+    trip_180deg_ms = rcd_trip_time_180deg_ms if rcd_test_method == "Trip Time" else None
+    trip_0deg_result = compute_rcd_trip_result(rcd_type_value, trip_0deg_ms) if rcd_test_method == "Trip Time" else None
+    trip_180deg_result = compute_rcd_trip_result(rcd_type_value, trip_180deg_ms) if rcd_test_method == "Trip Time" else None
+
+    # Overall result is derived from the RCD result itself — a Fixed RCD test has
+    # nothing else (no VI/electrical) that could independently fail or pass.
+    if rcd_test_method == "Push Button":
+        overall_result = push_button_result or "FAIL"
+    elif rcd_test_method == "Trip Time":
+        overall_result = "FAIL" if "FAIL" in (trip_0deg_result, trip_180deg_result) else "PASS"
+    else:
+        overall_result = "FAIL"
+
+    interval_days = (
+        appliance.switchboard.push_button_interval_days if rcd_test_method == "Push Button"
+        else appliance.switchboard.trip_time_interval_days if rcd_test_method == "Trip Time"
+        else None
+    )
+    next_due = (test_date + timedelta(days=interval_days)).date() if interval_days else None
+
+    return TestRecord(
+        appliance_id=appliance.id,
+        tester_id=tester.id,
+        test_date=test_date,
+        test_type="Fixed RCD",
+        test_standard="FIXED_RCD",
+        tag_number=(tag_number or "").strip() or _auto_tag(appliance),
+        next_test_due=next_due,
+        overall_result=overall_result,
+        comments=comments,
+
+        vi_plug=None, vi_cord=None, vi_casing=None, vi_overheat=None,
+        vi_label=None, vi_exposed=None, vi_repairs=None, vi_strain=None, vi_guards=None,
+
+        earth_continuity_ohms="N/A", insulation_mohms="N/A", leakage_mA="N/A", polarity_pass="N/A",
+
+        rcd_type=rcd_type_value,
+        rcd_waveform=rcd_waveform_value,
+        rcd_test_method=rcd_test_method,
+        rcd_push_button_result=push_button_result,
+        rcd_trip_time_0deg_ms=trip_0deg_ms,
+        rcd_trip_time_0deg_result=trip_0deg_result,
+        rcd_trip_time_180deg_ms=trip_180deg_ms,
+        rcd_trip_time_180deg_result=trip_180deg_result,
+    )
 
 # ---------------------------------------------------------
 # Dashboard
@@ -137,12 +202,39 @@ def dashboard():
     from flask import current_app
     recent_limit = int(current_app.config.get('DASHBOARD_RECENT_LIMIT', 5))
 
+    # Fixed RCD tests are excluded here — a single bulk switchboard session can add a
+    # dozen-plus in a few minutes, which would otherwise flood out every other recent
+    # appliance test. They're summarized per-switchboard below instead.
     recent_tests = (
         TestRecord.query.filter_by(disposed=False)
+        .filter(TestRecord.test_standard != "FIXED_RCD")
         .order_by(TestRecord.test_date.desc(), TestRecord.id.desc())
         .limit(recent_limit)
         .all()
     )
+
+    recent_rcd_tests = (
+        TestRecord.query
+        .filter_by(disposed=False, test_standard="FIXED_RCD")
+        .order_by(TestRecord.test_date.desc(), TestRecord.id.desc())
+        .limit(50)
+        .all()
+    )
+    rcd_test_groups = {}
+    for t in recent_rcd_tests:
+        sb = t.appliance.switchboard
+        if not sb:
+            continue
+        group = rcd_test_groups.setdefault(sb.id, {
+            "switchboard": sb, "count": 0, "latest_date": t.test_date, "any_fail": False,
+        })
+        group["count"] += 1
+        group["latest_date"] = max(group["latest_date"], t.test_date)
+        if t.overall_result == "FAIL":
+            group["any_fail"] = True
+    recent_rcd_test_groups = sorted(
+        rcd_test_groups.values(), key=lambda g: g["latest_date"], reverse=True
+    )[:recent_limit]
 
     recent_repairs = (
         RepairRecord.query.filter_by(disposed=False)
@@ -202,6 +294,7 @@ def dashboard():
         reason_map=reason_map,
         nts_not_yet_due=nts_not_yet_due,
         recent_repairs=recent_repairs,
+        recent_rcd_test_groups=recent_rcd_test_groups,
         switchboard_summaries=switchboard_summaries,
     )
 
@@ -498,9 +591,6 @@ def new_test(appliance_id):
         files = request.files.getlist("photos")
 
         test_date = datetime.strptime(form["test_date"], "%Y-%m-%d")
-        interval_days = int(form["retest_interval"])
-        next_due = (test_date + timedelta(days=interval_days)) if interval_days else None
-
         tester_id = int(form["tester_id"])
         tester = Tester.query.get(tester_id)
 
@@ -511,78 +601,89 @@ def new_test(appliance_id):
                 return False
             return None  # N/A or not answered
 
-        # RCD (Lead+RCD / Fixed RCD) — Fixed RCD is derived from the server-known
-        # appliance.class_type (can't be spoofed), Lead+RCD from the submitted test_type.
+        # Fixed RCD is derived from the server-known appliance.class_type (can't be
+        # spoofed) and built via the shared helper also used by the bulk-entry endpoint.
         is_fixed_rcd = appliance.class_type == "FIXED_RCD"
-        is_rcd_related = is_fixed_rcd or form.get("test_type") == "Lead+RCD"
-        rcd_method = form.get("rcd_test_method") if is_rcd_related else None
-        test_type_value = "Fixed RCD" if is_fixed_rcd else form["test_type"]
-        test_standard_value = "FIXED_RCD" if is_fixed_rcd else form["test_standard"]
 
-        # Fixed RCDs have their Type/Waveform set once on the Appliance record (not
-        # re-entered per test); Lead+RCD tests still capture them per-test on the form.
-        rcd_type_value = appliance.rcd_type if is_fixed_rcd else ((form.get("rcd_type") or None) if is_rcd_related else None)
-        rcd_waveform_value = appliance.rcd_waveform if is_fixed_rcd else ((form.get("rcd_waveform") or None) if is_rcd_related else None)
+        if is_fixed_rcd:
+            test = build_fixed_rcd_test(
+                appliance, tester, test_date,
+                rcd_test_method=form.get("rcd_test_method"),
+                rcd_push_button_result=form.get("rcd_push_button_result") or None,
+                rcd_trip_time_0deg_ms=form.get("rcd_trip_time_0deg_ms") or None,
+                rcd_trip_time_180deg_ms=form.get("rcd_trip_time_180deg_ms") or None,
+                tag_number=form.get("tag_number"),
+                comments=form.get("comments"),
+            )
+        else:
+            interval_days = int(form["retest_interval"])
+            next_due = (test_date + timedelta(days=interval_days)) if interval_days else None
 
-        test = TestRecord(
-            appliance_id=appliance.id,
-            tester_id=tester.id,
-            test_date=test_date,
-            test_type=test_type_value,
-            test_standard=test_standard_value,
-            tag_number=form.get("tag_number").strip() or _auto_tag(appliance),
-            next_test_due=next_due.date() if next_due else None,
-            overall_result=form["overall_result"],
-            comments=form.get("comments"),
+            # Lead+RCD tests still capture RCD Type/Waveform per-test on the form
+            # (unlike Fixed RCD, where they're set once on the Appliance record).
+            is_rcd_related = form.get("test_type") == "Lead+RCD"
+            rcd_method = form.get("rcd_test_method") if is_rcd_related else None
+            rcd_type_value = (form.get("rcd_type") or None) if is_rcd_related else None
+            rcd_waveform_value = (form.get("rcd_waveform") or None) if is_rcd_related else None
 
-            # Visual inspection — not applicable for Fixed RCD (section is omitted in the form)
-            vi_plug=None if is_fixed_rcd else bool_from_dropdown(form.get("vi_plug")),
-            vi_cord=None if is_fixed_rcd else bool_from_dropdown(form.get("vi_cord")),
-            vi_casing=None if is_fixed_rcd else (form.get("vi_casing") or None),
-            vi_overheat=None if is_fixed_rcd else bool_from_dropdown(form.get("vi_overheat")),
-            vi_label=None if is_fixed_rcd else (form.get("vi_label") or None),
-            vi_exposed=None if is_fixed_rcd else bool_from_dropdown(form.get("vi_exposed")),
+            test = TestRecord(
+                appliance_id=appliance.id,
+                tester_id=tester.id,
+                test_date=test_date,
+                test_type=form["test_type"],
+                test_standard=form["test_standard"],
+                tag_number=form.get("tag_number").strip() or _auto_tag(appliance),
+                next_test_due=next_due.date() if next_due else None,
+                overall_result=form["overall_result"],
+                comments=form.get("comments"),
 
-            vi_repairs=None if is_fixed_rcd else form.get("vi_repairs"),
-            vi_strain=None if is_fixed_rcd else form.get("vi_strain"),
-            vi_guards=None if is_fixed_rcd else form.get("vi_guards"),
+                vi_plug=bool_from_dropdown(form.get("vi_plug")),
+                vi_cord=bool_from_dropdown(form.get("vi_cord")),
+                vi_casing=form.get("vi_casing") or None,
+                vi_overheat=bool_from_dropdown(form.get("vi_overheat")),
+                vi_label=form.get("vi_label") or None,
+                vi_exposed=bool_from_dropdown(form.get("vi_exposed")),
 
-            # Electrical tests — all N/A for Battery/ELV and Fixed RCD (section is hidden/omitted in the form)
-            earth_continuity_ohms="N/A" if (appliance.class_type in ("CLASS II", "BATTERY_ELV") or is_fixed_rcd) else (form.get("earth_continuity_ohms") or None),
-            insulation_mohms="N/A" if (appliance.class_type == "BATTERY_ELV" or is_fixed_rcd) else (form.get("insulation_mohms") or None),
-            leakage_mA="N/A" if (appliance.class_type == "BATTERY_ELV" or is_fixed_rcd) else (form.get("leakage_mA") or None),
-            polarity_pass="N/A" if (appliance.class_type == "BATTERY_ELV" or is_fixed_rcd) else (form.get("polarity_pass") or None),
+                vi_repairs=form.get("vi_repairs"),
+                vi_strain=form.get("vi_strain"),
+                vi_guards=form.get("vi_guards"),
 
-            # RCD (Lead+RCD / Fixed RCD)
-            rcd_type=rcd_type_value,
-            rcd_waveform=rcd_waveform_value,
-            rcd_test_method=rcd_method,
-            rcd_push_button_result=(form.get("rcd_push_button_result") or None) if rcd_method == "Push Button" else None,
-            rcd_trip_time_0deg_ms=(form.get("rcd_trip_time_0deg_ms") or None) if rcd_method == "Trip Time" else None,
-            rcd_trip_time_0deg_result=compute_rcd_trip_result(rcd_type_value, form.get("rcd_trip_time_0deg_ms")) if rcd_method == "Trip Time" else None,
-            rcd_trip_time_180deg_ms=(form.get("rcd_trip_time_180deg_ms") or None) if rcd_method == "Trip Time" else None,
-            rcd_trip_time_180deg_result=compute_rcd_trip_result(rcd_type_value, form.get("rcd_trip_time_180deg_ms")) if rcd_method == "Trip Time" else None,
+                # Electrical tests — all N/A for Battery/ELV (section is hidden in the form)
+                earth_continuity_ohms="N/A" if appliance.class_type in ("CLASS II", "BATTERY_ELV") else (form.get("earth_continuity_ohms") or None),
+                insulation_mohms="N/A" if appliance.class_type == "BATTERY_ELV" else (form.get("insulation_mohms") or None),
+                leakage_mA="N/A" if appliance.class_type == "BATTERY_ELV" else (form.get("leakage_mA") or None),
+                polarity_pass="N/A" if appliance.class_type == "BATTERY_ELV" else (form.get("polarity_pass") or None),
 
-            # 5761
-            condition_assessment=form.get("condition_assessment"),
-            functional_check=form.get("functional_check"),
-            accessories=form.get("accessories"),
-            safe_for_resale=form.get("safe_for_resale"),
-            no_outstanding_recalls=form.get("no_outstanding_recalls") or None,
-            pins_insulated=form.get("pins_insulated") or None,
+                # RCD (Lead+RCD)
+                rcd_type=rcd_type_value,
+                rcd_waveform=rcd_waveform_value,
+                rcd_test_method=rcd_method,
+                rcd_push_button_result=(form.get("rcd_push_button_result") or None) if rcd_method == "Push Button" else None,
+                rcd_trip_time_0deg_ms=(form.get("rcd_trip_time_0deg_ms") or None) if rcd_method == "Trip Time" else None,
+                rcd_trip_time_0deg_result=compute_rcd_trip_result(rcd_type_value, form.get("rcd_trip_time_0deg_ms")) if rcd_method == "Trip Time" else None,
+                rcd_trip_time_180deg_ms=(form.get("rcd_trip_time_180deg_ms") or None) if rcd_method == "Trip Time" else None,
+                rcd_trip_time_180deg_result=compute_rcd_trip_result(rcd_type_value, form.get("rcd_trip_time_180deg_ms")) if rcd_method == "Trip Time" else None,
 
-            # 5762 — functional tests
-            func_test_1_method=form.get("func_test_1_method") or None,
-            func_test_1_result=form.get("func_test_1_result") or None,
-            func_test_2_method=form.get("func_test_2_method") or None,
-            func_test_2_result=form.get("func_test_2_result") or None,
-            func_test_3_method=form.get("func_test_3_method") or None,
-            func_test_3_result=form.get("func_test_3_result") or None,
-            func_test_4_method=form.get("func_test_4_method") or None,
-            func_test_4_result=form.get("func_test_4_result") or None,
-            func_test_5_method=form.get("func_test_5_method") or None,
-            func_test_5_result=form.get("func_test_5_result") or None,
-        )
+                # 5761
+                condition_assessment=form.get("condition_assessment"),
+                functional_check=form.get("functional_check"),
+                accessories=form.get("accessories"),
+                safe_for_resale=form.get("safe_for_resale"),
+                no_outstanding_recalls=form.get("no_outstanding_recalls") or None,
+                pins_insulated=form.get("pins_insulated") or None,
+
+                # 5762 — functional tests
+                func_test_1_method=form.get("func_test_1_method") or None,
+                func_test_1_result=form.get("func_test_1_result") or None,
+                func_test_2_method=form.get("func_test_2_method") or None,
+                func_test_2_result=form.get("func_test_2_result") or None,
+                func_test_3_method=form.get("func_test_3_method") or None,
+                func_test_3_result=form.get("func_test_3_result") or None,
+                func_test_4_method=form.get("func_test_4_method") or None,
+                func_test_4_result=form.get("func_test_4_result") or None,
+                func_test_5_method=form.get("func_test_5_method") or None,
+                func_test_5_result=form.get("func_test_5_result") or None,
+            )
 
         db.session.add(test)
         db.session.flush()  # get test.id before linking repairs
@@ -1047,10 +1148,14 @@ def new_tester_modal():
     cert = request.form["certificate_number"]
     phone = request.form.get("phone")
     appliance_id = request.form.get("appliance_id")
+    return_to = request.form.get("return_to")
 
     tester = Tester(full_name=full_name, certificate_number=cert, phone_number=phone)
     db.session.add(tester)
     db.session.commit()
+
+    if return_to and return_to.startswith("/"):
+        return redirect(return_to)
 
     # Return to the test form
     return redirect(url_for("main.new_test", appliance_id=appliance_id))
@@ -1248,6 +1353,24 @@ def rcd_detail(appliance_id):
     )
 
 
+# Sort priority so RCDs needing attention (never tested, then overdue, then due soon)
+# come first — shared by the switchboard detail page and the bulk test entry page.
+_RCD_STATUS_PRIORITY = {"never": 0, "overdue": 1, "due_soon": 2, "ok": 3}
+
+
+def _rcd_status(rcd, latest_tests, today, soon):
+    test = latest_tests.get(rcd.id)
+    if not test:
+        return "never"
+    if not test.next_test_due:
+        return "ok"
+    if test.next_test_due <= today:
+        return "overdue"
+    if test.next_test_due <= soon:
+        return "due_soon"
+    return "ok"
+
+
 @bp.route("/switchboard/<int:switchboard_id>")
 def switchboard_detail(switchboard_id):
     switchboard = Switchboard.query.get_or_404(switchboard_id)
@@ -1263,26 +1386,10 @@ def switchboard_detail(switchboard_id):
         for rcd in rcds
     }
 
-    # Sort so RCDs needing attention (never tested, then overdue, then due soon) come first,
-    # to make working through a switchboard's untested RCDs quicker.
     today = datetime.today().date()
     soon = today + timedelta(days=30)
-
-    def priority(rcd):
-        test = latest_tests.get(rcd.id)
-        if not test:
-            return 0  # never tested
-        if not test.next_test_due:
-            return 3
-        if test.next_test_due <= today:
-            return 1  # overdue
-        if test.next_test_due <= soon:
-            return 2  # due soon
-        return 3  # up to date
-
-    STATUS_BY_PRIORITY = {0: "never", 1: "overdue", 2: "due_soon", 3: "ok"}
-    statuses = {rcd.id: STATUS_BY_PRIORITY[priority(rcd)] for rcd in rcds}
-    rcds = sorted(rcds, key=lambda rcd: (priority(rcd), rcd.asset_number))
+    statuses = {rcd.id: _rcd_status(rcd, latest_tests, today, soon) for rcd in rcds}
+    rcds = sorted(rcds, key=lambda rcd: (_RCD_STATUS_PRIORITY[statuses[rcd.id]], rcd.asset_number))
 
     return render_template(
         "switchboard_detail.html",
@@ -1291,6 +1398,118 @@ def switchboard_detail(switchboard_id):
         latest_tests=latest_tests,
         statuses=statuses,
     )
+
+
+@bp.route("/switchboard/<int:switchboard_id>/tests/bulk")
+def switchboard_bulk_test(switchboard_id):
+    switchboard = Switchboard.query.get_or_404(switchboard_id)
+
+    rcds = (
+        Appliance.query
+        .filter_by(switchboard_id=switchboard.id, class_type="FIXED_RCD", disposed=False)
+        .order_by(Appliance.asset_number)
+        .all()
+    )
+    latest_tests = {
+        rcd.id: max((t for t in rcd.tests if not t.disposed), key=lambda t: t.test_date, default=None)
+        for rcd in rcds
+    }
+
+    today = datetime.today().date()
+    soon = today + timedelta(days=30)
+    statuses = {rcd.id: _rcd_status(rcd, latest_tests, today, soon) for rcd in rcds}
+    rcds = sorted(rcds, key=lambda rcd: (_RCD_STATUS_PRIORITY[statuses[rcd.id]], rcd.asset_number))
+
+    tested_today_ids = {
+        rcd.id for rcd in rcds
+        if (t := latest_tests.get(rcd.id)) and t.test_date == today
+    }
+
+    testers = Tester.query.order_by(Tester.full_name).all()
+
+    return render_template(
+        "switchboard_bulk_test.html",
+        switchboard=switchboard,
+        rcds=rcds,
+        latest_tests=latest_tests,
+        statuses=statuses,
+        tested_today_ids=tested_today_ids,
+        testers=testers,
+    )
+
+
+@bp.route("/switchboard/<int:switchboard_id>/tests/bulk/row/<int:appliance_id>", methods=["POST"])
+def switchboard_bulk_test_row(switchboard_id, appliance_id):
+    switchboard = Switchboard.query.get_or_404(switchboard_id)
+    appliance = Appliance.query.get_or_404(appliance_id)
+
+    if appliance.switchboard_id != switchboard.id or appliance.class_type != "FIXED_RCD":
+        return jsonify(error="This RCD does not belong to this switchboard."), 400
+    if appliance.disposed:
+        return jsonify(error="This RCD has been disposed and cannot be tested."), 400
+
+    data = request.get_json(silent=True) or {}
+
+    tester_id = data.get("tester_id")
+    test_date_str = data.get("test_date")
+    method = data.get("rcd_test_method")
+
+    if not tester_id:
+        return jsonify(error="Select a tester before saving."), 400
+    tester = Tester.query.get(tester_id)
+    if not tester:
+        return jsonify(error="Selected tester not found."), 400
+
+    if not test_date_str:
+        return jsonify(error="Select a test date before saving."), 400
+    try:
+        test_date = datetime.strptime(test_date_str, "%Y-%m-%d")
+    except ValueError:
+        return jsonify(error="Invalid test date."), 400
+
+    if method not in ("Push Button", "Trip Time"):
+        return jsonify(error="Select an RCD test method."), 400
+
+    push_button_result = data.get("rcd_push_button_result") or None
+    trip_0deg_ms = data.get("rcd_trip_time_0deg_ms") or None
+    trip_180deg_ms = data.get("rcd_trip_time_180deg_ms") or None
+
+    if method == "Push Button" and push_button_result not in ("PASS", "FAIL"):
+        return jsonify(error="Select a Push Button result."), 400
+    if method == "Trip Time":
+        if not trip_0deg_ms or not trip_180deg_ms:
+            return jsonify(error="Enter both 0° and 180° trip times."), 400
+        try:
+            float(trip_0deg_ms)
+            float(trip_180deg_ms)
+        except (TypeError, ValueError):
+            return jsonify(error="Trip times must be numeric."), 400
+
+    already_tested_today = any(
+        t.test_date == test_date.date() and not t.disposed
+        for t in appliance.tests
+    )
+    if already_tested_today:
+        return jsonify(error="This RCD already has a test recorded for that date."), 409
+
+    test = build_fixed_rcd_test(
+        appliance, tester, test_date, method,
+        rcd_push_button_result=push_button_result,
+        rcd_trip_time_0deg_ms=trip_0deg_ms,
+        rcd_trip_time_180deg_ms=trip_180deg_ms,
+    )
+    db.session.add(test)
+    db.session.commit()
+
+    return jsonify(
+        ok=True,
+        test_id=test.id,
+        appliance_id=appliance.id,
+        overall_result=test.overall_result,
+        next_test_due=test.next_test_due.strftime("%d/%m/%Y") if test.next_test_due else None,
+        tag_number=test.tag_number,
+        test_detail_url=url_for("main.test_detail", test_id=test.id),
+    ), 200
 
 
 @bp.route("/switchboard/<int:switchboard_id>/rcd-report/pdf")
